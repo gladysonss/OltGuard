@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OltBootstrapStatus {
+  PENDING
+  WALKING
+  ACTIVE
+  FAILED
+}
+
+model Olt {
+  id       String @id @default(uuid())
+  name     String
+  ipAddress String @unique
+
+  snmpCommunity String
+  snmpPort      Int    @default(161)
+  sshUsername   String
+  sshPassword   String
+  sshPort       Int    @default(22)
+
+  // Estado do walk() de bootstrap — permite retomar de onde parou se falhar no meio.
+  bootstrapStatus      OltBootstrapStatus @default(PENDING)
+  bootstrapLastOid     String?
+  bootstrapStartedAt   DateTime?
+  bootstrapCompletedAt DateTime?
+  bootstrapError       String?
+
+  reconciliationEnabled         Boolean @default(true)
+  reconciliationIntervalMinutes Int     @default(180)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  onus             Onu[]
+  provisioningJobs ProvisioningJob[]
+}
+
+enum OnuStatus {
+  UNKNOWN
+  DISCOVERED
+  PROVISIONED
+  ONLINE
+  OFFLINE
+  DOWN
+  BLACKLISTED
+  SIGNAL_DEGRADED
+}
+
+model Onu {
+  id    String @id @default(uuid())
+  oltId String
+  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
+
+  serialNumber  String
+  slotNo        Int
+  portNo        Int
+  logicalPortNo Int
+
+  status     OnuStatus @default(UNKNOWN)
+  lastSeenAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  signalReadings SignalReading[]
+
+  @@unique([oltId, slotNo, portNo, logicalPortNo])
+  @@index([oltId, status])
+}
+
+enum SignalReadingSource {
+  TRAP
+  RECONCILIATION
+  MANUAL
+}
+
+model SignalReading {
+  id    String @id @default(uuid())
+  onuId String
+  onu   Onu    @relation(fields: [onuId], references: [id], onDelete: Cascade)
+
+  rxPowerDbm Float?
+  txPowerDbm Float?
+  source     SignalReadingSource
+
+  recordedAt DateTime @default(now())
+
+  @@index([onuId, recordedAt])
+}
+
+enum ProvisioningJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model ProvisioningJob {
+  id    String @id @default(uuid())
+  oltId String
+  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
+
+  onuId  String?
+  action String
+
+  status       ProvisioningJobStatus @default(PENDING)
+  payload      Json?
+  errorMessage String?
+
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([oltId, status])
+}

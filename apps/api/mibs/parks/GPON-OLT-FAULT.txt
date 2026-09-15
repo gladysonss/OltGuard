@@ -1,0 +1,867 @@
+GPON-OLT-FAULT	DEFINITIONS ::= BEGIN
+	IMPORTS
+			
+		NOTIFICATION-TYPE, Counter32, Unsigned32
+			FROM SNMPv2-SMI 
+		ocsOlt, AlarmSeverity, AlarmCondition, SlotNo, PortNo,
+		LogicalPortNo, PhysicalPortNo
+			FROM GPON-OLT-TC
+		DateAndTime
+			FROM SNMPv2-TC;
+
+	faultGroup	OBJECT IDENTIFIER  ::=  { ocsOlt  3 }
+	indicationObjects OBJECT IDENTIFIER ::= { faultGroup 1 }
+	systemIndication OBJECT IDENTIFIER  ::=  { faultGroup  2 }
+	ponLinkIndication OBJECT IDENTIFIER  ::=  { faultGroup  3 }
+	onuIndication 	OBJECT IDENTIFIER  ::=  { faultGroup  4 }
+	oltAlarmTables	OBJECT IDENTIFIER  ::=  { faultGroup 5 }
+
+	oltSystemAlarmIndication  OBJECT IDENTIFIER  ::=  { systemIndication  1 } 
+	oltSystemAvcIndication  OBJECT IDENTIFIER  ::=  { systemIndication  2 } 
+
+	oltPonLinkAlarmIndication  OBJECT IDENTIFIER  ::=  { ponLinkIndication  1 } 
+	oltPonLinkEventIndication   OBJECT IDENTIFIER  ::=  { ponLinkIndication  2 }
+
+	oltOnuAlarmIndication  OBJECT IDENTIFIER  ::=  { onuIndication  1 }
+	oltOnuEventIndication  OBJECT IDENTIFIER  ::=  { onuIndication  2 }
+
+
+--3.1.1	OLT Fault Objects
+
+oltAlarmSeqNo  OBJECT-TYPE
+	SYNTAX     Counter32
+	MAX-ACCESS accessible-for-notify
+	STATUS     current
+	DESCRIPTION 
+		"Reserved for OAM. Application doesn't care this node at all."
+	::= {  indicationObjects  1  }
+
+oltAlarmOccurrenceTime  OBJECT-TYPE
+	SYNTAX     OCTET STRING(SIZE(0..32))
+	MAX-ACCESS accessible-for-notify
+	STATUS     current
+	DESCRIPTION 
+		"The occurrence time of alarm, which gives the time when the alarm is generated."
+  ::= {  indicationObjects  2  }
+
+oltAlarmSeverity  OBJECT-TYPE
+	SYNTAX     AlarmSeverity
+	MAX-ACCESS accessible-for-notify
+	STATUS     current
+	DESCRIPTION 
+		"The severity of the alarm, that aligned with the ISO Ref.X.733: Cleared, Information, Critical, Major, Minor, and Warning."
+	::= {  indicationObjects  3  }
+
+oltAlarmCondition  OBJECT-TYPE
+	SYNTAX     AlarmCondition
+	MAX-ACCESS accessible-for-notify
+	STATUS     current
+	DESCRIPTION 
+		"The severity of the alarm, that aligned with the ISO Ref.X.733: Cleared, Information, Critical, Major, Minor, and Warning."
+	::= {  indicationObjects  4  }
+
+oltAlarmSlotNo	OBJECT-TYPE
+	SYNTAX		SlotNo 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"slot number."
+	::=  {  indicationObjects  5  }
+
+oltAlarmPortNo	OBJECT-TYPE
+	SYNTAX		PortNo
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"PON link number."
+	::=  {  indicationObjects  6  }
+
+oltAlarmLogicalPortNo	OBJECT-TYPE
+	SYNTAX		LogicalPortNo 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"ONU number."
+	::=  {  indicationObjects  7  }
+
+oltAlarmPhysicalPortNo	OBJECT-TYPE
+	SYNTAX		PhysicalPortNo 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"LAN port number."
+	::=  {  indicationObjects  8  }
+
+oltEventSeqNo  OBJECT-TYPE
+	SYNTAX     Counter32
+	MAX-ACCESS accessible-for-notify
+	STATUS     current
+	DESCRIPTION 
+		""
+	::= {  indicationObjects  9  }
+
+oltEventOccurrenceTime  OBJECT-TYPE
+	SYNTAX     DateAndTime
+	MAX-ACCESS accessible-for-notify
+	STATUS     current
+	DESCRIPTION 
+		""
+  ::= {  indicationObjects  10  }
+
+oltEventSlotNo	OBJECT-TYPE
+	SYNTAX		SlotNo 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"slot number."
+	::=  {  indicationObjects  11  }
+
+oltEventPortNo	OBJECT-TYPE
+	SYNTAX		PortNo
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"PON link number."
+	::=  {  indicationObjects  12  }
+
+oltEventLogicalPortNo	OBJECT-TYPE
+	SYNTAX		LogicalPortNo 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"ONU number."
+	::=  {  indicationObjects  13  }
+
+oltEventPhysicalPortNo	OBJECT-TYPE
+	SYNTAX		PhysicalPortNo 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"LAN port number."
+	::=  {  indicationObjects  14  }
+	
+oltAlarmSystemId	OBJECT-TYPE
+	SYNTAX		Unsigned32 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"system ID (using IP address now)."
+	::=  {  indicationObjects  15  }
+
+oltAvcNewValue	OBJECT-TYPE
+	SYNTAX		INTEGER 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"avc new value."
+	::=  {  indicationObjects  16  }
+			
+oltOnuSerialNumber		OBJECT-TYPE
+	SYNTAX			OCTET STRING(SIZE(16))
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"ONU serial number."
+	::=  {  indicationObjects  17  }
+
+oltOnuBlacklistCause		OBJECT-TYPE
+	SYNTAX			INTEGER
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"Blacklist Cause."
+	::=  {  indicationObjects  18  }
+
+oltEventLinkSetId		OBJECT-TYPE
+	SYNTAX			Unsigned32(1..4)
+	MAX-ACCESS		accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"Link Set Id"
+	::=  {  indicationObjects  19  }
+
+oltOnuConfigBfErrors		OBJECT-TYPE
+	SYNTAX			OCTET STRING(SIZE(128))
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"ONU restriction errors."
+	::=  {  indicationObjects  20  }
+
+oltEventOnuOldPhySlot		OBJECT-TYPE
+	SYNTAX		SlotNo
+	MAX-ACCESS	accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"ONU Old Active Slot."
+	::=  {  indicationObjects  21 }
+
+oltEventOnuOldPhyPort		OBJECT-TYPE
+	SYNTAX		PortNo
+	MAX-ACCESS	accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"ONU Old Active Port."
+	::=  {  indicationObjects  22 }
+
+oltEventOnuNewPhySlot		OBJECT-TYPE
+	SYNTAX		SlotNo
+	MAX-ACCESS	accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"ONU New Active Slot."
+	::=  {  indicationObjects  23 }
+
+oltEventOnuNewPhyPort		OBJECT-TYPE
+	SYNTAX		PortNo
+	MAX-ACCESS	accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"ONU New Active Port."
+	::=  {  indicationObjects  24 }
+
+oltEventOnuPhySlot		OBJECT-TYPE
+	SYNTAX		SlotNo
+	MAX-ACCESS	accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"ONU Current Slot."
+	::=  {  indicationObjects  25 }
+
+oltEventOnuPhyPort		OBJECT-TYPE
+	SYNTAX		PortNo
+	MAX-ACCESS	accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"ONU Current Port."
+	::=  {  indicationObjects  26 }
+
+oltEventOnuPonLink		OBJECT-TYPE
+	SYNTAX		PortNo
+	MAX-ACCESS	accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"ONU Pon Link Identification."
+	::=  {  indicationObjects  27 }
+
+oltAvcOldValue	OBJECT-TYPE
+	SYNTAX		INTEGER 
+	MAX-ACCESS accessible-for-notify
+	STATUS			current
+	DESCRIPTION		"avc old value."
+	::=  {  indicationObjects  28  }
+
+--3.2.1 OLT System Level Alarms
+
+dBCORRUPTION	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSystemId }
+    STATUS		current
+    DESCRIPTION		"System DB corruption. This is a critical Alarm."
+    ::= {  oltSystemAlarmIndication  1  }
+
+dBMISMATCH	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSystemId }
+    STATUS		current
+    DESCRIPTION		"System DB mismatch. This is a critical Alarm."
+    ::= {  oltSystemAlarmIndication  2  }
+
+mEMALLOCATIONFAILURE	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition }
+    STATUS		current
+    DESCRIPTION		"System memory allocation failure. This is a critical Alarm."
+    ::= {  oltSystemAlarmIndication  3  }
+
+tASKNOTRESPONDING	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition }
+    STATUS		current
+    DESCRIPTION		"System task not responding. This is a critical Alarm."
+    ::= {  oltSystemAlarmIndication  4  }
+
+tASKCREATIONFAILURE	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition }
+    STATUS		current
+    DESCRIPTION		"System task creation failure. This is a critical Alarm."
+    ::= {  oltSystemAlarmIndication  5  }
+
+qUEUECREATIONFAILURE	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition }
+    STATUS		current
+    DESCRIPTION		"System queue creation failure. This is a critical Alarm."
+    ::= {  oltSystemAlarmIndication  6  }
+
+sEMCREATIONFAILURE	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition }
+    STATUS		current
+    DESCRIPTION		"System semaphore creation failure. This is a critical Alarm."
+    ::= {  oltSystemAlarmIndication  7  }
+
+
+--3.2.2 OLT System AVC
+
+pRIMARYSTATUS	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmOccurrenceTime, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo, oltAvcNewValue, oltOnuSerialNumber }
+    STATUS		current
+    DESCRIPTION		"OnuCfg table primary status changed."
+    ::= {  oltSystemAvcIndication  1  }
+
+sENSEDTYPE	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmOccurrenceTime, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo, oltAlarmPhysicalPortNo, oltAvcNewValue }
+    STATUS		current
+    DESCRIPTION		"OnuEthUniCfg table sensed type changed."
+    ::= {  oltSystemAvcIndication  2  }
+
+oNUOPERSTATUS	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmOccurrenceTime,
+                          oltAlarmSlotNo, oltAlarmPortNo,
+                          oltAlarmLogicalPortNo, oltEventLinkSetId, oltEventOnuPhySlot, oltEventOnuPhyPort,
+                          oltEventOnuPonLink, oltAvcNewValue }
+    STATUS		current
+    DESCRIPTION		"OnuCfgExt table onuCfgOnuOperStatusPort changed."
+    ::= {  oltSystemAvcIndication  3  }
+
+oNUACTIVEPORT	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmOccurrenceTime,
+                          oltAlarmSlotNo, oltAlarmPortNo,
+                          oltAlarmLogicalPortNo, oltEventLinkSetId, oltEventOnuPhySlot, oltEventOnuPhyPort,
+                          oltAvcOldValue, oltAvcNewValue }
+    STATUS		current
+    DESCRIPTION		"OnuCfgExt table onuCfgOnuActivePort changed."
+    ::= {  oltSystemAvcIndication  4  }
+
+--3.3.1	OLT PON Link Level Alarms
+lOS	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo }
+    STATUS		current
+    DESCRIPTION		"Loss of Signal on a specific link. This is a critical Alarm indicating loss of service on a PON link."
+    ::= {  oltPonLinkAlarmIndication  1  }
+
+tCAPONDSINVALIDPKTS NOTIFICATION-TYPE
+    OBJECTS             { oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo }
+    STATUS              current
+    DESCRIPTION         "PON Link downstream invalid packets TCA. This is an major Alarm."
+    ::=  {  oltPonLinkAlarmIndication 2 }
+
+tCAPONDSRXCRCERRORPKTS NOTIFICATION-TYPE
+    OBJECTS             { oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo }
+    STATUS              current
+    DESCRIPTION         "PON Link downstream Rx CRC error TCA. This is an major Alarm."
+    ::=  {  oltPonLinkAlarmIndication 3 }
+
+pONPMCOLLECTIONFAIL NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo }
+    STATUS		current
+    DESCRIPTION		"PON PM collection failure. This is an major Alarm."
+    ::=  {  oltPonLinkAlarmIndication 4 }
+
+--3.3.2	OLT PON Link Level Events
+
+tF	NOTIFICATION-TYPE
+    OBJECTS 		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo }
+    STATUS		current
+    DESCRIPTION		"Transmitter failed on a specific link. This is a critical event indicating loss of service on a PON link."
+    ::= {  oltPonLinkEventIndication  1  }
+
+pROTECTIONSWITCh	NOTIFICATION-TYPE
+    OBJECTS 		{ oltEventLinkSetId, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo }
+    STATUS		current
+    DESCRIPTION		"Event of protection switch. This event indicates necessity to change link PON."
+    ::= {  oltPonLinkEventIndication  2  }
+
+sETALLONUSTATECOMPLETED		NOTIFICATION-TYPE
+    OBJECTS 		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo }
+    STATUS		current
+    DESCRIPTION		"The operation to set all ONUs state was completed"
+    ::= {  oltPonLinkEventIndication  3  }
+
+
+--3.4.1	ONU Level Alarms
+lOSi	NOTIFICATION-TYPE
+    OBJECTS 		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo, oltOnuSerialNumber }
+    STATUS		current
+    DESCRIPTION		"ONU LOSi Alarm. Will clear after energy is detected from the ONU. This is a critical Alarm as well."
+    ::=  {  oltOnuAlarmIndication  1  }
+
+sFi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Signal Fail on the ONU. This is a critical Alarm as well."
+    ::=  {  oltOnuAlarmIndication 2  }
+
+sDi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Signal degrade on the ONU. This is a major Alarm."
+    ::=  {  oltOnuAlarmIndication 3  }
+
+lCDGi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Loss of GEM channel delineation. This is a major Alarm."
+    ::=  {  oltOnuAlarmIndication 4  }
+
+rDi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Remote Error Detected. This is a minor Alarm."
+    ::=  {  oltOnuAlarmIndication 5 }
+
+sUFi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Startup Failure. This is a critical Alarm."
+    ::=  {  oltOnuAlarmIndication 6  }
+
+dFiAlarm	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU does not react correctly after three Deactivate_ONU-ID or three Disable_Serial_Number messages. This is a critical Alarm."
+    ::=  {  oltOnuAlarmIndication 7  }
+
+lOAi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Loss of Ack. This is a minor Alarm."
+    ::=  {  oltOnuAlarmIndication 8 }
+
+dGi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Dying Gasp Alarm. This is a critical Alarm."
+    ::=  {  oltOnuAlarmIndication 9  }
+
+lOAMi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Loss of PLOAM message. This is a minor Alarm."
+    ::=  {  oltOnuAlarmIndication 10 }
+
+mISi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Link Mismatch of ONUi. This is a major Alarm."
+    ::=  {  oltOnuAlarmIndication 11 }
+
+pEEi	NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Physical Equipment error. This is a major Alarm."
+    ::=  {  oltOnuAlarmIndication 12 }
+
+oNUDNi NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU is DOWN (not opearuional) trap. This is sent whenever a new ONU is shutdown on a PON link. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 13 }
+
+eQUIPMENT NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Equipment failure. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 14 }
+
+pOWERING NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Power failure. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 15 }
+
+bATTERYMISSING NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Battery missing. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 16 }
+
+bATTERYFAILURE NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Battery failure. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 17 }
+
+bATTERYLOW NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Battery low. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 18 }
+
+pHYSICALINTRUSION NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Phical intrusion. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 19 }
+
+sELFTESTFAILURE NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Self testing failure. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 20 }
+
+dYINGGASP NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Dying Gasp. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 21 }
+
+vOLTAGERED NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Voltage red. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 22 }
+
+lANLOS NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo, oltAlarmPhysicalPortNo }
+    STATUS		current
+    DESCRIPTION		"LAN port lose of signal. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 23 }
+      
+eTHPMCOLLECTIONFAILURE NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH PM collection failure. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 24 }
+
+gEMPMCOLLECTIONFAILURE NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU GEM PM collection failure. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 25 }
+    
+tCAONUGEMLOSTPKTS NOTIFICATION-TYPE
+    OBJECTS             { oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS              current
+    DESCRIPTION         "ONU GEM port lost packets TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 26 }
+
+tCAONUGEMMISINSERTEDPKTS NOTIFICATION-TYPE
+    OBJECTS             { oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS              current
+    DESCRIPTION         "ONU GEM port misinserted packets TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 27 }
+
+tCAONUETHFCSERRROR NOTIFICATION-TYPE
+    OBJECTS             { oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS              current
+    DESCRIPTION         "ONU ETH port FEC error TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 28 }
+
+tCAONUETHEXCESSIVECOLLISION NOTIFICATION-TYPE
+    OBJECTS             { oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS              current
+    DESCRIPTION         "ONU ETH port excessive collision TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 29 }
+    
+tCAONUGEMRXPKTS NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU GEM Rx packets TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 30 }
+    
+tCAONUGEMRXBLOCKS NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU GEM Rx blocks TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 31 }
+    
+tCAONUGEMTXBLOCKS NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU GEM Tx blocks TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 32 }
+    
+tCAONUGEMIMPAIREDBLOCK NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU GEM impaired blocks TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 33 }
+    
+tCAONUETHLATECOLLISION NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH late collection TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 34 }
+    
+tCAONUETHFRAMETOOLONGS NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH frame too longs TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 35 }
+    
+tCAONUETHBUFOVERFLOWSRX NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH buffer overflows Rx TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 36 }
+    
+tCAONUETHBUFOVERFLOWSTX NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH buffer overflows Tx TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 37 }
+    
+tCAONUETHSINGLECOLLISIONFRAME NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH single collision frame TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 38 }
+    
+tCAONUETHMULTICOLLISIONS NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH multiple collisions TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 39 }
+    
+tCAONUETHSQECOUNT NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH sqe count TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 40 }  
+       
+tCAONUETHDEFERREDTX NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH deferred Tx TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 41 } 
+     
+tCAONUETHINTMACTX NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH int mac Tx TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 42 }  
+    
+tCAONUETHCARRIERSENSEERRORCOUNT NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH carrier sense error count TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 43 }  
+    
+tCAONUETHALIGNERRORCOUNT NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH align error count TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 44 }  
+    
+tCAONUETHINTMACRX NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH int mac Rx TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 45 }   
+
+pROVFAILURE NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"ONU ETH int mac Rx TCA. This is an major Alarm."
+    ::=  {  oltOnuAlarmIndication 46 }         
+
+--3.4.2	ONU Level Events
+
+lOFi	NOTIFICATION-TYPE
+    OBJECTS 		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltEventLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Loss of Frame of ONUi. This is a critical event as well."
+    ::=  {  oltOnuEventIndication  1  }
+
+dOWi	NOTIFICATION-TYPE
+		OBJECTS 		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltEventLogicalPortNo }
+    STATUS		current
+    DESCRIPTION	" Drift of Window of ONUi. This is a critical event as well."
+    ::=  {  oltOnuEventIndication  2  }
+
+dFiEvent	NOTIFICATION-TYPE
+    OBJECTS		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltEventLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Deactivate Failure. This is a critical event."
+    ::=  {  oltOnuEventIndication 3 }
+
+mEMi	NOTIFICATION-TYPE
+    OBJECTS		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltEventLogicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Memory error. This is a major event."
+    ::=  {  oltOnuEventIndication 4  }
+
+oNUDISCOVERYi NOTIFICATION-TYPE
+    OBJECTS		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltOnuSerialNumber }
+    STATUS		current
+    DESCRIPTION		"Discovered ONU trap. This is sent whenever a new ONU is discovered on a PON link. This is an info Alarm."
+    ::=  {  oltOnuEventIndication 5  }
+
+bLACKLISt NOTIFICATION-TYPE
+    OBJECTS		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltOnuSerialNumber, oltOnuBlacklistCause }
+    STATUS		current
+    DESCRIPTION		"Black List ONU trap. This is sent whenever a new ONU entry in the black list state."
+    ::=  {  oltOnuEventIndication 6  }
+
+pROVISIONED	NOTIFICATION-TYPE
+    OBJECTS 		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltEventLogicalPortNo, oltOnuSerialNumber }
+    STATUS		current
+    DESCRIPTION		"The Onu is provisioned, which means that the OMCI channel is established and the Onu is ready to be configured."
+    ::= {  oltOnuEventIndication  7  }
+
+cONFIGRESTRICTION	NOTIFICATION-TYPE
+    OBJECTS 		{ oltSysMsgSlotNo, oltSysMsgPortNo, oltSysMsgLogicalPortNo, oltOnuConfigBfErrors }
+    STATUS		current
+    DESCRIPTION		"Indicate if there was a restriction blocking the configuration process."
+    ::= {  oltOnuEventIndication  8  }
+
+oNUPROTECTIONSWITCH	NOTIFICATION-TYPE
+    OBJECTS 		{ oltEventSeqNo, oltEventOccurrenceTime,
+                          oltEventLinkSetId, oltEventSlotNo, oltEventPortNo,
+                          oltEventLogicalPortNo, oltEventOnuOldPhySlot,
+                          oltEventOnuOldPhyPort, oltEventOnuNewPhySlot, oltEventOnuNewPhyPort }
+    STATUS		current
+    DESCRIPTION		"Indicates an ONU protection switching event."
+    ::= {  oltOnuEventIndication  9  }
+
+sETONUSTATECOMPLETED		NOTIFICATION-TYPE
+    OBJECTS 		{ oltEventSeqNo, oltEventOccurrenceTime, oltEventSlotNo, oltEventPortNo, oltEventLogicalPortNo, oltOnuSerialNumber }
+    STATUS		current
+    DESCRIPTION		"The operation to set ONU state was completed"
+    ::= {  oltOnuEventIndication  10  }
+
+-- 3.5.1 Alarm Tables
+
+oltActiveAlarmsTable 	OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OltActiveAlarmsEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	  
+		           "This table provides means for an EMS to retrieve the active alarm list from the olt manager."	
+		::=  { oltAlarmTables  1 }
+
+oltActiveAlarmsEntry	OBJECT-TYPE
+		SYNTAX		OltActiveAlarmsEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  oltActiveAlarmSeqNo }
+		::=  { oltActiveAlarmsTable 1 }
+
+OltActiveAlarmsEntry  ::=	SEQUENCE {
+		oltActiveAlarmSeqNo   Counter32,
+		oltActiveAlarmOccurenceTime OCTET STRING,   
+		oltActiveAlarmSeverity  AlarmSeverity,
+		oltActiveAlarmCondition AlarmCondition,
+		oltActiveAlarmSlotNo SlotNo,
+		oltActiveAlarmPortNo PortNo,
+		oltActiveAlarmLogicalPortNo LogicalPortNo,
+		oltActiveAlarmType INTEGER		
+}
+
+oltActiveAlarmSeqNo	OBJECT-TYPE
+		SYNTAX		Counter32
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Index for this table"
+		::=  { oltActiveAlarmsEntry  1 }
+
+oltActiveAlarmOccurenceTime	OBJECT-TYPE
+		SYNTAX		OCTET STRING(SIZE(0..32))
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Alarm Occurence Time"
+		::=  { oltActiveAlarmsEntry  2 }
+
+oltActiveAlarmSeverity	OBJECT-TYPE
+		SYNTAX		AlarmSeverity
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Severity"
+		::=  { oltActiveAlarmsEntry  3 }
+
+oltActiveAlarmCondition	OBJECT-TYPE
+		SYNTAX		AlarmCondition
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Alarm or Clear Condition"
+		::=  { oltActiveAlarmsEntry  4 }
+
+oltActiveAlarmSlotNo	OBJECT-TYPE
+		SYNTAX		SlotNo
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Slot Number"
+		::=  { oltActiveAlarmsEntry  5 }
+
+oltActiveAlarmPortNo	OBJECT-TYPE
+		SYNTAX		PortNo
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Port Number"
+		::=  { oltActiveAlarmsEntry  6 }
+
+oltActiveAlarmLogicalPortNo	OBJECT-TYPE
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"ONU Identifier"
+		::=  { oltActiveAlarmsEntry  7 }
+		
+oltActiveAlarmType	OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Alarm Type"
+		::=  { oltActiveAlarmsEntry  8 }		
+
+oltHistAlarmsTable 	OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OltHistAlarmsEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	  
+		           "This table provides means for an EMS to retrieve the alarm history from the olt manager."	
+		::=  { oltAlarmTables  2 }
+
+oltHistAlarmsEntry	OBJECT-TYPE
+		SYNTAX		OltHistAlarmsEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  oltHistAlarmSeqNo }
+		::=  { oltHistAlarmsTable 1 }
+
+OltHistAlarmsEntry  ::=	SEQUENCE {
+		oltHistAlarmSeqNo   Counter32,
+		oltHistAlarmOccurenceTime OCTET STRING,   
+		oltHistAlarmSeverity  AlarmSeverity,
+		oltHistAlarmCondition AlarmCondition,
+		oltHistAlarmSlotNo SlotNo,
+		oltHistAlarmPortNo PortNo,
+		oltHistAlarmLogicalPortNo LogicalPortNo,
+		oltHistAlarmType INTEGER		
+	}
+
+
+	oltHistAlarmSeqNo	OBJECT-TYPE
+		SYNTAX		Counter32
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Index for this table"
+		::=  { oltHistAlarmsEntry  1 }
+
+	oltHistAlarmOccurenceTime	OBJECT-TYPE
+		SYNTAX		OCTET STRING(SIZE(0..32))
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Alarm Occurence Time"
+		::=  { oltHistAlarmsEntry  2 }
+
+	oltHistAlarmSeverity	OBJECT-TYPE
+		SYNTAX		AlarmSeverity
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Severity"
+		::=  { oltHistAlarmsEntry  3 }
+
+	oltHistAlarmCondition	OBJECT-TYPE
+		SYNTAX		AlarmCondition
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Alarm or Clear Condition"
+		::=  { oltHistAlarmsEntry  4 }
+
+	oltHistAlarmSlotNo	OBJECT-TYPE
+		SYNTAX		SlotNo
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Slot Number"
+		::=  { oltHistAlarmsEntry  5 }
+
+	oltHistAlarmPortNo	OBJECT-TYPE
+		SYNTAX		PortNo
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Port Number"
+		::=  { oltHistAlarmsEntry  6 }
+
+	oltHistAlarmLogicalPortNo	OBJECT-TYPE
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"ONU Identifier"
+		::=  { oltHistAlarmsEntry  7 }
+		
+	oltHistAlarmType	OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Alarm Type"
+		::=  { oltHistAlarmsEntry  8 }		
+
+END  

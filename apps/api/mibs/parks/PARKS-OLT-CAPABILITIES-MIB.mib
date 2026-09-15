@@ -1,0 +1,73 @@
+PARKS-OLT-CAPABILITIES-MIB DEFINITIONS ::= BEGIN
+	IMPORTS
+		OBJECT-TYPE
+			FROM RFC-1212
+		parksOltCapabilities
+			FROM PARKS-SMI;
+
+	pkOltCapabilitiesBf OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE(0..255))
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION	"Bitfield representing the following OLT capabilities:
+				  Bit Capability
+				  0   Sample
+				  1   L2 protocol transparency
+				  2   Protection switching Type B Support
+				  3   ONU distance
+				  4   QoS at ONU
+				  5   CLI multisession support
+				  6   Blacklist (manually add)
+				  7   Mac-filtered rate limit rules support
+				  8   Monitor saving process support
+				  9   VLAN Isolated
+				  10  IPv6 Host configuration support
+				  11  POL (Passive Optical LAN) support
+				  12  802.1x configuration support
+				  13  PortSecurity configuration support
+				  14  GPON oltPonLinkCfgExtTable support
+				  15  GPON Offline configuration support
+				  16  Protection Switching Type C Support
+				  17  GPON Transceiver Detection Support
+				  18  Autosave Configuration Support
+				  19  ONU Firmware Available Support
+				  20  Has Changed Configuration Support
+				  21  DHCP Snooping
+				  22  Serial Number Acquisition new Range (1 - 2147)
+				  23  Fixed, Assured and Maximum Bandwidth new ranges
+				  24  Rogue-detection periodical support with multi-range configuration
+				  25  Rogue-detection destructive support with dummy allocid
+				  26  GPON Onu Reset Config support
+				  27  Flash based on a file system
+				  28  OLT direct mode
+				  29  OLT per-flow mode
+				  30  GPON Logical Distance and Differential Reach support
+				  31  OEM ONU support
+				  32  GPON exceeded bandwidth error report SNMP_INCONSISTENT_VALUE
+				  33  MAC address version 2 support
+				  34  Parks Sensor SNMP Agent support
+				  35  XE Interfaces Autonegotiation Disabled 1000Mbps, 2500Mbps and 10000Mbps Speeds Support
+				  36  Ethernet Ring Protection Switching (ERPS) support
+				  37  Check Duplicate IP host support
+				  38  Default gpon profile (flow/vlan-translation)
+				  39  IPHost Table support
+				  40  VEIP Table support
+				  41  Remote ONU PPPoe configuration support
+				  42  Read RSSI from SNMP
+				  43  GPON ONU TR-069 config support
+				  44  Default GPON profile TR-069
+				  45  Default GPON IPHOST DHCP default
+				  46  GPON ONU update status and life time
+				  47  MAC-ADDRESS-2 Clear Table
+				  48  ONU Provisioned / Distance
+				  49  Unauthorized Join Request command extend in Multicast-operation group
+				  50  Dynamic Access Control list mode in Multicast-operation group
+				  51  Downstream tag control in Multicast-operation group
+				  52  Parks Sensor SNMP Agent extended commands
+				  53  Parks SFP SNMP Agent Extended commands
+				  54  GPON set ONU state support
+				  55  PON FEC configuration support
+				"
+		::=  { parksOltCapabilities 1 }
+
+END

@@ -1,0 +1,1275 @@
+--	PARKS-LACP-MIB
+--	version 1.0.0
+--	PARKS Comunicacoes Digitais
+--	Copyright 2008 by PARKS Comunicacoes Digitais. All Rights Reserved.
+--	This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+--	property.
+--	This module will be extend, as required. The specification and other
+--	information 
+--	contained in this document can be modified without prior notice. The 
+--	user should consult PARKS to determine whether any such changes have 
+--	been done.
+--
+--	MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO 
+--								"Postal: PARKS Comunicacoes Digitais
+--								Cruzeiro 530 ,  Distrito Industrial,
+--								CEP 94930-615   Cachoeirinha, RS, BRAZIL
+--								E-mail: suporte@parks.com.br "
+--
+--		DESCRIPTION
+--						" Mib for configuration of LACP "
+
+PARKS-LACP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Counter32, TimeTicks
+        FROM SNMPv2-SMI
+    DisplayString, PhysAddress, TEXTUAL-CONVENTION, TruthValue
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+    InterfaceIndex
+        FROM IF-MIB
+    parksLacp
+        FROM PARKS-FEATURES-MIB;
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+LacpKey ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "The Actor or Partner Key value."
+    SYNTAX      INTEGER (-1 | 0..65535)
+
+
+LacpState ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The Actor and Partner State values from the LACPDU."
+    SYNTAX     DisplayString
+
+ChurnState ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "The state of the Churn Detection machine."
+    SYNTAX      INTEGER {
+                    noChurn(1),
+                    churn(2),
+                    churnMonitor(3)
+                }
+
+    pkLacp  OBJECT IDENTIFIER
+        ::= { parksLacp  1  }
+    
+-- -------------------------------------------------------------
+-- Scalars Objects
+-- -------------------------------------------------------------
+
+pkLacpAggregationLimit OBJECT-TYPE
+    SYNTAX              INTEGER (-1 | 1..8) 
+    MAX-ACCESS          read-write
+    STATUS              current
+    DESCRIPTION         "Set a limit of ports that will be aggregated. Set -1 for reset
+						this value to default."
+    DEFVAL		{ 8 }
+    ::= { pkLacp 1 }
+
+
+pkLacpRstpCompatibility OBJECT-TYPE
+    SYNTAX              INTEGER { enable(1), disable(2), default(-1) } 
+    MAX-ACCESS          read-write
+    STATUS              current
+    DESCRIPTION         "Enable/Disable the compatibility between Link Aggregation Control Protocol
+						and Rapid Spanning Tree Protocol. Set -1 for reset this value to default."
+	DEFVAL				{ enable }
+    ::= { pkLacp 2 }
+
+-- -------------------------------------------------------------
+-- Interface Table Objects
+-- -------------------------------------------------------------
+
+pkLacpIFTable OBJECT-TYPE
+	SYNTAX              SEQUENCE  OF  PkLacpIFEntry
+	MAX-ACCESS          not-accessible
+	STATUS              current
+	DESCRIPTION         " "
+				::= { parksLacp 2 }
+
+pkLacpIFEntry OBJECT-TYPE
+	SYNTAX              PkLacpIFEntry
+	MAX-ACCESS          not-accessible
+	STATUS              current
+	DESCRIPTION         " "
+	INDEX               { pkLacpAggIndex }
+				::= { pkLacpIFTable 1 }
+
+PkLacpIFEntry ::= SEQUENCE {
+		pkLacpIFName DisplayString,
+		pkaAggDescription DisplayString,
+		pkaAggDataRate INTEGER,
+		pkaAggMACAddress PhysAddress,
+		pkaAggAdminState INTEGER,
+		pkaAggOperState INTEGER,
+		pkaAggTimeOfLastOperChange INTEGER,
+		pkaAggIFInUcastPkts Counter,
+		pkaAggIFOutUcastPkts Counter,
+		pknAggLinkUpNotification INTEGER,
+		pknAggLinkDownNotification INTEGER,
+		pkaAggName DisplayString,
+		pkaAggReset INTEGER
+}
+pkLacpAggIndex OBJECT-TYPE
+    SYNTAX       InterfaceIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "The unique identifier allocated to this Aggregator by the local System.
+        This attribute identifies an Aggregator instance among the subordinate
+        managed objects of the containing object. This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.1"
+    ::= { pkLacpIFEntry 1 }
+pkLacpIFName OBJECT-TYPE
+	SYNTAX              DisplayString
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION         "Interface name"
+				::= { pkLacpIFEntry 2 }
+
+
+pkaAggDescription OBJECT-TYPE
+	SYNTAX              DisplayString
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION			"A human-readable text string containing information about the Aggregator. This string could
+						include information about the distribution algorithm in use on this Aggregator; for example,
+						'Aggregator 1, Dist Alg=Dest MAC address.' This string is read-only. The contents are
+						vendor specific. Size: 255"
+				::= { pkLacpIFEntry 3 }
+
+pkaAggDataRate OBJECT-TYPE
+	SYNTAX              INTEGER
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION			"The current data rate, in bits per second, of the aggregate link. 
+						The value is calculated as N times the data rate of a single link in the 
+						aggregation, where N is the number of active links." 
+				::= { pkLacpIFEntry 4 }
+
+pkaAggMACAddress OBJECT-TYPE
+	SYNTAX              PhysAddress
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION         "A 6-octet read-only value carrying the individual MAC address assigned to the Aggregator."
+				::= { pkLacpIFEntry 5 }
+
+pkaAggAdminState OBJECT-TYPE
+	SYNTAX              INTEGER { up (1), down (2) }
+	MAX-ACCESS          read-write
+	STATUS              current
+	DESCRIPTION         "This read-write value defines the administrative state of the Aggregator. A value of 'up'
+						indicates that the operational state of the Aggregator (aAggOperState) is permitted to be
+						either up or down. A value of 'down' forces the operational state of the Aggregator to be
+						down. Changes to the administrative state affect the operational state of the Aggregator only,
+						not the operational state of the Aggregation Ports that are attached to the Aggregator. A GET
+						operation returns the current administrative state. A SET operation changes the
+						administrative state to a new value."
+	DEFVAL				{ down }
+
+				::= { pkLacpIFEntry 6 }
+
+pkaAggOperState OBJECT-TYPE
+	SYNTAX              INTEGER { up (1), down (2) }
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION         "This read-only value defines the operational state of the Aggregator. The operational state is
+						'up' if one or more of the Aggregation Ports that are attached to the Aggregator are
+						collecting, or both collecting and distributing, and if the value of aAggAdminState for the
+						Aggregator is also 'up'. If none of the Aggregation Ports that are attached to the Aggregator
+						are collecting and/or distributing, or if there are no Aggregation Ports attached to this
+						Aggregator, then the operational state is 'down'. An operational state of 'up' indicates that
+						the Aggregator is available for use by the MAC Client; a value of 'down' indicates that the
+						Aggregator is not available for use by the MAC Client."
+				::= { pkLacpIFEntry 7 }
+
+pkaAggTimeOfLastOperChange OBJECT-TYPE
+	SYNTAX              TimeTicks 
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION         "The value of aTimeSinceSystemReset (See IEEE Std 802.3 Annex F.2.1) at the time the
+						interface entered its current operational state. If the current state was entered prior to the last
+						re-initialization of the local network management subsystem, then this object contains a
+						value of zero. This value is read-only."
+				::= { pkLacpIFEntry 8 }
+
+pkaAggIFInUcastPkts OBJECT-TYPE
+	SYNTAX              Counter
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION         "A count of the data frames received by this Aggregator, from the Aggregation Ports that are
+						(or have been) members of the aggregation. The count does not include frames that carry
+						LACP or Marker PDUs (6.3.3.1.2, 6.3.3.1.3, 6.3.3.1.4), or frames discarded by the Collection
+						function of the Aggregator (6.3.1.1.26). This value is read-only."
+				::= { pkLacpIFEntry 9 }
+
+pkaAggIFOutUcastPkts OBJECT-TYPE
+	SYNTAX              Counter
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION         "A count of the data frames transmitted by this Aggregator on all Aggregation Ports that are
+						(or have been) members of the aggregation. The count does not include frames transmitted by
+						the Aggregator that carry LACP or Marker PDUs (6.3.3.1.7, 6.3.3.1.8, 6.3.3.1.9). However, it
+						includes frames discarded by the Distribution function of the Aggregator (6.3.1.1.25). This
+						value is read-only."
+				::= { pkLacpIFEntry 10 }
+
+pknAggLinkUpNotification OBJECT-TYPE
+	SYNTAX              INTEGER { enable (1), disable (2) }
+	MAX-ACCESS          read-write
+	STATUS              current
+	DESCRIPTION			"When aAggLinkUpDownNotificationEnable is set to 'enabled', a Link Up notification is
+						generated when the Operational State of the Aggregator changes from 'down' to 'up'. When
+						aAggLinkUpDownNotificationEnable is set to 'disabled', no Link Up notifications are
+						generated. The notification carries the identifier of the Aggregator whose state has changed."
+	DEFVAL				{ disable }
+				::= { pkLacpIFEntry 11 }
+
+pknAggLinkDownNotification OBJECT-TYPE
+	SYNTAX              INTEGER { enable (1), disable (2) }
+	MAX-ACCESS          read-write
+	STATUS              current
+	DESCRIPTION			"When aAggLinkUpDownNotificationEnable is set to 'enabled', a Link Up notification is
+						generated when the Operational State of the Aggregator changes from 'up' to 'down'. When
+						aAggLinkUpDownNotificationEnable is set to 'disabled', no Link Up notifications are
+						generated. The notification carries the identifier of the Aggregator whose state has changed."
+	DEFVAL				{ disable }
+
+				::= { pkLacpIFEntry 12 }
+
+pkaAggName OBJECT-TYPE
+	SYNTAX              DisplayString
+	MAX-ACCESS          read-write
+	STATUS              current
+	DESCRIPTION         "A human-readable text string containing a locally significant name for the Aggregator. 
+						This string is read-write. Size allowed: 255 characters."
+				::= { pkLacpIFEntry 13 }
+
+pkaAggReset OBJECT-TYPE
+	SYNTAX              INTEGER { reset(1), nonreset(2) }
+	MAX-ACCESS          read-write
+	STATUS              current
+	DESCRIPTION         "Reset this interface from its agregation. This interface will be reseted to
+						transmission mode PASSIVE, SHORT timeout, INDIVIDUAL link and to its reserved channel-group."
+	DEFVAL				{ nonreset }	
+						::= { pkLacpIFEntry 14 }
+
+-- -------------------------------------------------------------
+-- groups in the LAG MIB
+-- -------------------------------------------------------------
+
+pkLacpAgg OBJECT IDENTIFIER ::= { parksLacp 3 }
+pkLacpAggPort OBJECT IDENTIFIER ::= { parksLacp 4 }
+
+-- -------------------------------------------------------------
+-- The Aggregator Configuration Table
+-- -------------------------------------------------------------
+
+pkLacpAggTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PkLacpAggEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table that contains information about every
+        Aggregator that is associated with this System."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1"
+    ::= { pkLacpAgg 1 }
+
+
+pkLacpAggEntry OBJECT-TYPE
+    SYNTAX      PkLacpAggEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of the Aggregator parameters. This is indexed
+        by the ifIndex of the Aggregator."
+    INDEX { pkLacpAggIndex }
+    ::= { pkLacpAggTable 1 }
+
+
+PkLacpAggEntry ::=
+    SEQUENCE {
+		pkLacpAggIndex
+			InterfaceIndex,
+		pkLacpAggAttachedAggID
+			INTEGER,
+        pkLacpAggMACAddress
+            PhysAddress,
+        pkLacpAggActorSystemPriority
+            INTEGER,
+        pkLacpAggActorSystemID
+            PhysAddress,
+        pkLacpAggAggregateOrIndividual
+            TruthValue,
+        pkLacpAggActorAdminKey
+            LacpKey,
+        pkLacpAggActorOperKey
+            LacpKey,
+        pkLacpAggPartnerSystemID
+            PhysAddress,
+        pkLacpAggPartnerSystemPriority
+            INTEGER,
+        pkLacpAggPartnerOperKey
+            LacpKey,
+        pkLacpAggCollectorMaxDelay
+            INTEGER,
+		pkLacpAggPortList
+	    	DisplayString,
+		pkLacpPortSelectionCriteria
+			INTEGER
+    }
+pkLacpAggAttachedAggID OBJECT-TYPE
+	SYNTAX              INTEGER
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION			"The identifier value of the Aggregator that this Aggregation
+						Port is currently attached to. Zero indicates that the Aggregation
+						Port is not currently attached to an Aggregator. This value is read-only."
+				::= { pkLacpAggEntry 2 }
+
+
+pkLacpAggMACAddress OBJECT-TYPE
+    SYNTAX       PhysAddress
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A 6-octet read-only value carrying the individual
+       MAC address assigned to the Aggregator."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.9"
+    ::= { pkLacpAggEntry 3 }
+
+
+pkLacpAggActorSystemPriority OBJECT-TYPE
+    SYNTAX       INTEGER (0..65535)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "A 2-octet read-write value indicating the priority value
+        associated with the Actor's System ID."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.5"
+    DEFVAL { 32768 }
+
+    ::= { pkLacpAggEntry 4 }
+
+
+pkLacpAggActorSystemID OBJECT-TYPE
+    SYNTAX       PhysAddress
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A 6-octet read-write MAC address value used as a unique
+        identifier for the System that contains this Aggregator.
+        NOTE-From the perspective of the Link Aggregation mechanisms described in Clause 43 [Part 3],
+        only a single combination of Actor's System ID and System Priority are considered, and no
+        distinction is made between the values of these parameters for an Aggregator and the port(s) that
+        are associated with it; i.e., the protocol is described in terms of the operation of aggregation within
+        a single System. However, the managed objects provided for the Aggregator and the port both
+        allow management of these parameters. The result of this is to permit a single piece of equipment
+        to be configured by management to contain more than one System from the point of view of the
+        operation of Link Aggregation. This may be of particular use in the configuration of equipment
+        that has limited aggregation capability (see 43.6 [Part 3])."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.4"
+    ::= { pkLacpAggEntry 5 }
+
+
+pkLacpAggAggregateOrIndividual OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A read-only Boolean value indicating whether the
+        Aggregator represents an Aggregate ('TRUE') or
+        an Individual link ('FALSE')."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.6"
+    ::= { pkLacpAggEntry 6 }
+
+
+pkLacpAggActorAdminKey OBJECT-TYPE
+    SYNTAX       LacpKey
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The current administrative value of the Key for the Aggregator.
+        The administrative Key value may differ from the operational
+        Key value for the reasons discussed in 43.6.2. This is a 16-bit,
+        read-write value. The meaning of particular Key values
+        is of local significance."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.7"
+	DEFVAL { 32768 }
+    ::= { pkLacpAggEntry 7 }
+
+
+pkLacpAggActorOperKey OBJECT-TYPE
+    SYNTAX       LacpKey
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The current operational value of the Key for the Aggregator.
+        The administrative Key value may differ from the operational
+        Key value for the reasons discussed in 43.6.2.
+        This is a 16-bit read-only value. The meaning of particular Key
+        values is of local significance."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.8"
+    ::= { pkLacpAggEntry 8 }
+
+
+pkLacpAggPartnerSystemID OBJECT-TYPE
+    SYNTAX       PhysAddress
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A 6-octet read-only MAC address value consisting
+        of the unique identifier for the current protocol Partner of 
+        this Aggregator. A value of zero indicates that there is no
+        known Partner. If the aggregation is manually configured, this 
+        System ID value will be a value assigned by the local System."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.10"
+    ::= { pkLacpAggEntry 9 }
+
+
+pkLacpAggPartnerSystemPriority OBJECT-TYPE
+    SYNTAX       INTEGER (0..65535)
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A 2-octet read-only value that indicates the priority
+        value associated with the Partner's System ID. If the
+        aggregation is manually configured, this System Priority value
+        will be a value assigned by the local System."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.11"
+    ::= { pkLacpAggEntry 10 }
+
+
+pkLacpAggPartnerOperKey OBJECT-TYPE
+    SYNTAX       LacpKey
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The current operational value of the Key for the
+        Aggregator's current protocol Partner. This is
+        a 16-bit read-only value. If the aggregation is manually
+        configured, this Key value will be a value assigned by the
+        local System."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.12"
+    ::= { pkLacpAggEntry 11 }
+
+
+pkLacpAggCollectorMaxDelay OBJECT-TYPE
+    SYNTAX       INTEGER (0..65535)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The value of this 16-bit read-write attribute defines
+        the maximum delay, in tens of microseconds, that
+        may be imposed by the Frame Collector between
+        receiving a frame from an Aggregator Parser, and
+        either delivering the frame to its MAC Client or discarding
+        the frame (see 43.2.3.1.1 [Part 3])."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.32"
+    ::= { pkLacpAggEntry 12 }
+
+pkLacpAggPortList OBJECT-TYPE
+    SYNTAX       DisplayString 
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A list of the ports associated with a given Aggregator."
+    ::= { pkLacpAggEntry 13 }
+
+pkLacpPortSelectionCriteria OBJECT-TYPE
+    SYNTAX       INTEGER { srcmac(1), dstmac(2), srcdstmac(3), srcip(4), dstip(5), srcdstip(6) }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Select a port selection criteria (Load Balance) for a Aggregator. This criteria is used 
+		for balance the traffic according to the packages types. Set -1 for reset this value to default."
+    DEFVAL { srcmac }
+
+    ::= { pkLacpAggEntry 14 }
+-- -------------------------------------------------------------
+
+-- The Aggregation Port Table
+-- -------------------------------------------------------------
+
+pkLacpAggPortTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PkLacpAggPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table that contains Link Aggregation Control
+        configuration information about every
+        Aggregation Port associated with this device.
+        A row appears in this table for each physical port."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2"
+    ::= { pkLacpAggPort 1 }
+
+
+pkLacpAggPortEntry OBJECT-TYPE
+    SYNTAX      PkLacpAggPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of Link Aggregation Control configuration
+        parameters for each Aggregation Port on this device."
+    INDEX      { pkLacpAggPortIndex }
+    ::= { pkLacpAggPortTable 1 }
+
+
+PkLacpAggPortEntry ::=
+    SEQUENCE {
+		pkLacpAggPortIndex
+			InterfaceIndex,
+		pkLacpAggPortName
+			DisplayString,
+        pkLacpAggPortActorSystemPriority
+            INTEGER,
+        pkLacpAggPortActorSystemID
+            PhysAddress,
+        pkLacpAggPortActorAdminKey
+            LacpKey,
+        pkLacpAggPortActorOperKey
+            LacpKey,
+        pkLacpAggPortPartnerAdminSystemPriority
+            INTEGER,
+        pkLacpAggPortPartnerOperSystemPriority
+            INTEGER,
+        pkLacpAggPortPartnerAdminSystemID
+            PhysAddress,
+        pkLacpAggPortPartnerOperSystemID
+            PhysAddress,
+        pkLacpAggPortPartnerAdminKey
+            LacpKey,
+        pkLacpAggPortPartnerOperKey
+            LacpKey,
+        pkLacpAggPortSelectedAggID
+            InterfaceIndex,
+        pkLacpAggPortAttachedAggID
+            InterfaceIndex,
+        pkLacpAggPortActorPort
+            INTEGER,
+        pkLacpAggPortActorPortPriority
+            INTEGER,
+        pkLacpAggPortPartnerAdminPort
+            INTEGER,
+        pkLacpAggPortPartnerOperPort
+            INTEGER,
+        pkLacpAggPortPartnerAdminPortPriority
+            INTEGER,
+        pkLacpAggPortPartnerOperPortPriority
+            INTEGER,
+        pkLacpAggPortActorAdminState
+            LacpState,
+        pkLacpAggPortActorOperState
+            LacpState,
+        pkLacpAggPortPartnerAdminState
+            LacpState,
+        pkLacpAggPortPartnerOperState
+            LacpState,
+        pkLacpAggPortAggregateOrIndividual
+            TruthValue,
+		pkLacpAggPortChannelGroup
+			INTEGER,
+		pkLacpAggPortChannelMode
+			INTEGER,
+		pkLacpAggPortEnable
+			INTEGER
+
+    }
+
+pkLacpAggPortIndex OBJECT-TYPE
+    SYNTAX       InterfaceIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "The ifIndex of the port"
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.1"
+    ::= { pkLacpAggPortEntry 1 }
+
+
+pkLacpAggPortName OBJECT-TYPE
+	SYNTAX              DisplayString
+	MAX-ACCESS          read-only
+	STATUS              current
+	DESCRIPTION         "Interface name"
+				::= { pkLacpAggPortEntry 2 }
+
+
+pkLacpAggPortActorSystemPriority OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "A 2-octet read-write value used to define the priority
+        value associated with the Actor's System ID. Set -1 for reset
+		this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.2"
+    DEFVAL		{ 32768 }
+    ::= { pkLacpAggPortEntry 3 }
+
+
+pkLacpAggPortActorSystemID OBJECT-TYPE
+    SYNTAX       PhysAddress
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A 6-octet read-only MAC address value that defines
+        the value of the System ID for the System that contains this
+        Aggregation Port."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.3"
+    ::= { pkLacpAggPortEntry 4 }
+
+
+pkLacpAggPortActorAdminKey OBJECT-TYPE
+    SYNTAX       LacpKey
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The current administrative value of the Key for the
+        Aggregation Port. This is a 16-bit read-write value.
+        The meaning of particular Key values is of local significance. Set -1
+		for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.4"
+	DEFVAL		{ 32768 }
+    ::= { pkLacpAggPortEntry 5}
+
+
+pkLacpAggPortActorOperKey OBJECT-TYPE
+    SYNTAX       LacpKey
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The current operational value of the Key for the
+        Aggregation Port. This is a 16-bit read-only value.
+        The meaning of particular Key values is of local significance. Set
+		-1 for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.5"
+	DEFVAL		{ 32768 }
+    ::= { pkLacpAggPortEntry 6 }
+
+
+pkLacpAggPortPartnerAdminSystemPriority OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "A 2-octet read-write value used to define the administrative
+        value of priority associated with the Partner's System ID. The
+        assigned value is used, along with the value of
+        aAggPortPartnerAdminSystemID, aAggPortPartnerAdminKey,
+        aAggPortPartnerAdminPort, and aAggPortPartnerAdminPortPriority,
+        in order to achieve manually configured aggregation. Set -1
+		for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.7"
+	DEFVAL		{ 32768 }
+    ::= { pkLacpAggPortEntry 7 }
+
+
+pkLacpAggPortPartnerOperSystemPriority OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A 2-octet read-only value indicating the operational value
+        of priority associated with the Partner's System ID. The
+        value of this attribute may contain the manually configured value
+        carried in aAggPortPartnerAdminSystemPriority
+        if there is no protocol Partner. Set -1 for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.7"
+    ::= { pkLacpAggPortEntry 8 }
+
+
+pkLacpAggPortPartnerAdminSystemID OBJECT-TYPE
+    SYNTAX       PhysAddress
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "A 6-octet read-write MACAddress value representing
+        the administrative value of the Aggregation Port's protocol
+        Partner's System ID. The assigned value is used, along with
+        the value of aAggPortPartnerAdminSystemPriority,
+        aAggPortPartnerAdminKey, aAggPortPartnerAdminPort,
+        and aAggPortPartnerAdminPortPriority, in order to
+        achieve manually configured aggregation. Set -1 for reset
+		this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.8"
+    ::= { pkLacpAggPortEntry 9 }
+
+
+pkLacpAggPortPartnerOperSystemID OBJECT-TYPE
+    SYNTAX       PhysAddress
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A 6-octet read-only MACAddress value representing
+        the current value of the Aggregation Port's protocol Partner's
+        System ID. A value of zero indicates that there is no known
+        protocol Partner. The value of this attribute may contain the
+        manually configured value carried in
+        aAggPortPartnerAdminSystemID if there is no protocol Partner."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.9"
+    ::= { pkLacpAggPortEntry 10 }
+
+
+pkLacpAggPortPartnerAdminKey OBJECT-TYPE
+    SYNTAX       LacpKey
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The current administrative value of the Key for the
+        protocol Partner. This is a 16-bit read-write value.
+        The assigned value is used, along with the value of
+        aAggPortPartnerAdminSystemPriority, aAggPortPartnerAdminSystemID,
+        aAggPortPartnerAdminPort, and aAggPortPartnerAdminPortPriority,
+        in order to achieve manually configured aggregation. Set -1 for
+		reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.10"
+	DEFVAL		{ 32768 }
+    ::= { pkLacpAggPortEntry 11 }
+
+
+pkLacpAggPortPartnerOperKey OBJECT-TYPE
+    SYNTAX       LacpKey
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The current operational value of the Key for the
+        protocol Partner. The value of this attribute may contain
+        the manually configured value carried in
+        aAggPortPartnerAdminKey if there is no protocol Partner.
+        This is a 16-bit read-only value. Set -1 for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.11"
+    ::= { pkLacpAggPortEntry 12 }
+
+
+pkLacpAggPortSelectedAggID OBJECT-TYPE
+    SYNTAX       InterfaceIndex
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The identifier value of the Aggregator that this Aggregation
+        Port has currently selected. Zero indicates that the Aggregation
+        Port has not selected an Aggregator, either because it is in the
+        process of detaching from an Aggregator or because there is no
+        suitable Aggregator available for it to select. This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.12"
+    ::= { pkLacpAggPortEntry 13 }
+
+
+pkLacpAggPortAttachedAggID OBJECT-TYPE
+    SYNTAX       InterfaceIndex
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The identifier value of the Aggregator that this Aggregation
+        Port is currently attached to. Zero indicates that the Aggregation
+        Port is not currently attached to an Aggregator. This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.13"
+    ::= { pkLacpAggPortEntry 14 }
+
+
+pkLacpAggPortActorPort OBJECT-TYPE
+    SYNTAX       INTEGER (0..65535)
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The port number locally assigned to the Aggregation Port.
+        The port number is communicated in LACPDUs as the
+        Actor_Port. This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.14"
+    ::= { pkLacpAggPortEntry 15 }
+
+
+pkLacpAggPortActorPortPriority OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The priority value assigned to this Aggregation Port.
+        This 16-bit value is read-write. Set -1 for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.15"
+    ::= { pkLacpAggPortEntry 16 }
+
+
+pkLacpAggPortPartnerAdminPort OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+	        "The current administrative value of the port number
+        for the protocol Partner. This is a 16-bit read-write value.
+        The assigned value is used, along with the value of
+        aAggPortPartnerAdminSystemPriority,
+        aAggPortPartnerAdminSystemID, aAggPortPartnerAdminKey,
+        and aAggPortPartnerAdminPortPriority,
+        in order to achieve manually configured aggregation. Set -1 for
+		reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.16"
+	DEFVAL		{ 0 }
+    ::= { pkLacpAggPortEntry 17 }
+
+
+pkLacpAggPortPartnerOperPort OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The operational port number assigned to this Aggregation
+        Port by the Aggregation Ports protocol Partner. The value
+        of this attribute may contain the manually configured value
+        carried in aAggPortPartnerAdminPort if there is no protocol
+        Partner. This 16-bit value is read-only. Set -1 for reset
+		this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.17"
+    ::= { pkLacpAggPortEntry 18 }
+
+
+pkLacpAggPortPartnerAdminPortPriority OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The current administrative value of the port priority
+        for the protocol Partner. This is a 16-bit read-write value.
+        The assigned value is used, along with the value of
+        aAggPortPartnerAdminSystemPriority, aAggPortPartnerAdminSystemID,
+        aAggPortPartnerAdminKey, and aAggPortPartnerAdminPort,
+        in order to achieve manually configured aggregation. Set -1
+		for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.18"
+	DEFVAL		{ 0 }
+    ::= { pkLacpAggPortEntry 19 }
+
+
+pkLacpAggPortPartnerOperPortPriority OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..65535)
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The priority value assigned to this Aggregation Port
+        by the Partner. The value of this attribute may contain the
+        manually configured value carried in
+        aAggPortPartnerAdminPortPriority if there is no
+        protocol Partner. This 16-bit value is read-only. Set -1
+		for reset this value to default."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.19"
+    ::= { pkLacpAggPortEntry 20 }
+
+
+pkLacpAggPortActorAdminState OBJECT-TYPE
+    SYNTAX       LacpState
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "A string of 8 bits, corresponding to the administrative values
+        of Actor_State (43.4.2 [Part 3]) as transmitted by the Actor in LACPDUs.
+        The first bit corresponds to bit 0 of Actor_State (LACP_Activity),
+        the second bit corresponds to bit 1 (LACP_Timeout), the third bit
+        corresponds to bit 2 (Aggregation), the fourth bit corresponds to
+        bit 3 (Synchronization), the fifth bit corresponds to bit 4
+        (Collecting), the sixth bit corresponds to bit 5 (Distributing),
+        the seventh bit corresponds to bit 6 (Defaulted), and the eighth
+        bit corresponds to bit 7 (Expired). These values allow
+        administrative control over the values of LACP_Activity,
+        LACP_Timeout and Aggregation. This attribute value is read-write."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.20"
+    ::= { pkLacpAggPortEntry 21 }
+
+
+pkLacpAggPortActorOperState OBJECT-TYPE
+    SYNTAX       LacpState
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A string of 8 bits, corresponding to the current
+        operational values of Actor_State as transmitted by the
+        Actor in LACPDUs. The bit allocations are as defined in
+        30.7.2.1.20. This attribute value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.21"
+    ::= { pkLacpAggPortEntry 22 }
+
+
+pkLacpAggPortPartnerAdminState OBJECT-TYPE
+    SYNTAX       LacpState
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "A string of 8 bits, corresponding to the current administrative
+        value of Actor_State for the protocol Partner. The bit
+        allocations are as defined in 30.7.2.1.20. This attribute value is
+        read-write. The assigned value is used in order to achieve
+        manually configured aggregation."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.22"
+    ::= { pkLacpAggPortEntry 23 }
+
+
+pkLacpAggPortPartnerOperState OBJECT-TYPE
+    SYNTAX       LacpState
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A string of 8 bits, corresponding to the current values of
+        Actor_State in the most recently received LACPDU transmitted
+        by the protocol Partner. The bit allocations are as defined in
+        30.7.2.1.20. In the absence of an active protocol Partner, this
+        value may reflect the manually configured value
+        aAggPortPartnerAdminState. This attribute value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.2.1.23"
+    ::= { pkLacpAggPortEntry 24 }
+
+
+pkLacpAggPortAggregateOrIndividual OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "A read-only Boolean value indicating whether the
+        Aggregation Port is able to Aggregate ('TRUE') or is
+        only able to operate as an Individual link ('FALSE')."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.1.1.24"
+	DEFVAL	{ false }
+    ::= { pkLacpAggPortEntry 25 }
+
+pkLacpAggPortChannelGroup OBJECT-TYPE
+    SYNTAX       INTEGER (-1 | 0..31)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Configure a channel-group for a specific port. This port specifies a port that can be aggregated with others.
+		Set -1 for set this port to individual."
+    ::= { pkLacpAggPortEntry 26 }
+
+pkLacpAggPortChannelMode OBJECT-TYPE
+    SYNTAX       INTEGER { active(1), passive(2), default(-1) }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Configure a channel-group with PASSIVE mode (channel waits for a negotiation from any System) or 
+		with ACTIVE mode (channel starts the negotiation)."
+	DEFVAL { passive }
+    ::= { pkLacpAggPortEntry 27 }
+
+pkLacpAggPortEnable OBJECT-TYPE
+    SYNTAX       INTEGER { enable(1), disable(2) }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Enable/Disable Link Aggregation Control Protocol."
+	DEFVAL		{ disable }
+   ::= { pkLacpAggPortEntry 28 }
+
+
+-- -------------------------------------------------------------
+-- LACP Debug Table
+-- -------------------------------------------------------------
+pkLacpAggPortDebugTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PkLacpAggPortDebugEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table that contains Link Aggregation debug
+        information about every port that is associated with
+        this device.  A row appears in this table for each
+        physical port."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4"
+    ::= { pkLacpAggPort 3 }
+
+pkLacpAggPortDebugEntry OBJECT-TYPE
+    SYNTAX      PkLacpAggPortDebugEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of the debug parameters for a port."
+    INDEX { pkLacpAggPortIndex }
+    ::= { pkLacpAggPortDebugTable 1 }
+
+PkLacpAggPortDebugEntry ::=
+    SEQUENCE {
+        pkLacpAggPortDebugRxState
+            INTEGER,
+        pkLacpAggPortDebugMuxState
+            INTEGER,
+        pkLacpAggPortDebugMuxReason
+            DisplayString,
+        pkLacpAggPortDebugActorChurnState
+            ChurnState,
+        pkLacpAggPortDebugPartnerChurnState
+            ChurnState,
+        pkLacpAggPortDebugActorChurnCount
+            Counter32,
+        pkLacpAggPortDebugPartnerChurnCount
+            Counter32,
+        pkLacpAggPortDebugActorSyncTransitionCount
+            Counter32,
+        pkLacpAggPortDebugPartnerSyncTransitionCount
+            Counter32,
+        pkLacpAggPortDebugActorChangeCount
+            Counter32,
+        pkLacpAggPortDebugPartnerChangeCount
+            Counter32
+    }
+
+pkLacpAggPortDebugRxState OBJECT-TYPE
+    SYNTAX       INTEGER {
+                    current(1),
+                    expired(2),
+                    defaulted(3),
+                    initialize(4),
+                    lacpDisabled(5),
+                    portDisabled(6)
+                }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "This attribute holds the value 'current' if the Receive
+        state machine for the Aggregation Port is in the 
+        CURRENT state, 'expired' if the Receive state machine
+        is in the EXPIRED state, 'defaulted' if the Receive state
+        machine is in the DEFAULTED state, 'initialize' if the
+        Receive state machine is in the INITIALIZE state,
+        'lacpDisabled' if the Receive state machine is in the
+        LACP_DISABLED state, or 'portDisabled' if the Receive
+        state machine is in the PORT_DISABLED state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.2"
+    ::= { pkLacpAggPortDebugEntry 2 }
+
+
+pkLacpAggPortDebugMuxState OBJECT-TYPE
+    SYNTAX       INTEGER {
+                    detached(1),
+                    waiting(2),
+                    attached(3),
+                    collecting(4),
+                    distributing(5),
+                    collectingdistributing(6)
+             }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "This attribute holds the value 'detached' if the Mux
+        state machine (43.4.14 [Part 3]) for the Aggregation Port is
+        in the DETACHED state, 'waiting' if the Mux state machine
+        is in the WAITING state, 'attached' if the Mux state
+        machine for the Aggregation Port is in the ATTACHED
+        state, 'collecting' if the Mux state machine for the
+        Aggregation Port is in the COLLECTING state, 'distributing'
+        if the Mux state machine for the Aggregation Port is
+        in the DISTRIBUTING state, and 'collecting_distributing'
+        if the Mux state machine for the Aggregation Port is in
+        the COLLECTING_DISTRIBUTING state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.4"
+    ::= { pkLacpAggPortDebugEntry 3 }
+
+
+pkLacpAggPortDebugMuxReason OBJECT-TYPE
+    SYNTAX       DisplayString
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "A human-readable text string indicating the reason
+        for the most recent change of Mux machine state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.5"
+    ::= { pkLacpAggPortDebugEntry 4 }
+
+
+pkLacpAggPortDebugActorChurnState OBJECT-TYPE
+    SYNTAX       ChurnState
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The state of the Actor Churn Detection machine
+        (43.4.17 [Part 3]) for the Aggregation Port. A value of 'noChurn'
+        indicates that the state machine is in either the
+        NO_ACTOR_CHURN or the ACTOR_CHURN_MONITOR
+        state, and 'churn' indicates that the state machine is in the
+        ACTOR_CHURN state. This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.6"
+    ::= { pkLacpAggPortDebugEntry 5 }
+
+
+pkLacpAggPortDebugPartnerChurnState OBJECT-TYPE
+    SYNTAX       ChurnState
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The state of the Partner Churn Detection machine
+        (43.4.17 [Part 3]) for the Aggregation Port. A value of 'noChurn'
+        indicates that the state machine is in either the
+        NO_PARTNER_CHURN or the PARTNER_CHURN_MONITOR
+        state, and 'churn' indicates that the state machine is
+        in the PARTNER_CHURN state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.7"
+    ::= { pkLacpAggPortDebugEntry 6 }
+
+
+pkLacpAggPortDebugActorChurnCount OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Count of the number of times the Actor Churn state
+        machine has entered the ACTOR_CHURN state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.8"
+    ::= { pkLacpAggPortDebugEntry 7 }
+
+
+pkLacpAggPortDebugPartnerChurnCount OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Count of the number of times the Partner Churn
+        state machine has entered the PARTNER_CHURN state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.9"
+    ::= { pkLacpAggPortDebugEntry 8 }
+
+
+pkLacpAggPortDebugActorSyncTransitionCount OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Count of the number of times the Actor's Mux state
+        machine (43.4.15 [Part 3]) has entered the IN_SYNC state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.10"
+    ::= { pkLacpAggPortDebugEntry 9 }
+
+
+pkLacpAggPortDebugPartnerSyncTransitionCount OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Count of the number of times the Partner's Mux
+        state machine (43.4.15 [Part 3]) has entered the IN_SYNC state.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.11"
+    ::= { pkLacpAggPortDebugEntry 10 }
+
+
+pkLacpAggPortDebugActorChangeCount OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Count of the number of times the Actor's perception of
+        the LAG ID for this Aggregation Port has changed.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.12"
+    ::= { pkLacpAggPortDebugEntry 11 }
+
+
+pkLacpAggPortDebugPartnerChangeCount OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Count of the number of times the Partner's perception of
+        the LAG ID (see 43.3.6.1 [Part 3]) for this Aggregation Port has changed.
+        This value is read-only."
+    REFERENCE
+        "IEEE 802.3 Subclause 30.7.4.1.13"
+    ::= { pkLacpAggPortDebugEntry 12 }
+
+-- -------------------------------------------------------------
+-- LACP TRAPS 
+-- -------------------------------------------------------------
+
+pkLacpTraps             OBJECT-IDENTITY
+    STATUS              current
+    DESCRIPTION         "Traps for LACP MIB"
+			    ::=  { parksLacp 5 }
+
+pkLacpnAggLinkUpNotification NOTIFICATION-TYPE
+	OBJECTS             { pkLacpAggIndex }
+	STATUS              current
+	DESCRIPTION         "When aAggLinkUpDownNotificationEnable is set to enabled, a Link Up notification is
+						generated when the Operational State of the Aggregator changes from down to up. When
+						aAggLinkUpDownNotificationEnable is set to disabled, no Link Up notifications are
+						generated. The notification carries the identifier of the Aggregator whose state has changed."
+				::= { pkLacpTraps 1 }
+
+pkLacpnAggLinkDownNotification  NOTIFICATION-TYPE
+	OBJECTS             { pkLacpAggIndex }
+    STATUS              current
+    DESCRIPTION         "When aAggLinkUpDownNotificationEnable is set to enabled, a Link Down notification is
+						generated when the Operational State of the Aggregator changes from up to down. When
+						aAggLinkUpDownNotificationEnable is set to disabled, no Link Down notifications are
+						generated. The notification carries the identifier of the Aggregator whose state has changed."
+				::= { pkLacpTraps 2 }
+
+pkLacpnAggInterfaceNotification  NOTIFICATION-TYPE
+	OBJECTS             { ifIndex, pkaAggDataRate, pkaAggMACAddress, pkaAggTimeofLastOperChange, pkaAggIFInUcastPkts, pkaAggIFOutUcastPkts, pkaAggName}
+    STATUS              current
+    DESCRIPTION         "A notification is generated when the status of the physical link changes. When this action occurs, the pkaAggDataRate, 
+						pkaAggMACAddress, pkaAggTimeofLastOperChange, pkaAggIFInUcastPkts, pkaAggIFOutUcastPkts and pkaAggName changes.
+						The notification carries those informations."
+				::= { pkLacpTraps 3 }
+
+END

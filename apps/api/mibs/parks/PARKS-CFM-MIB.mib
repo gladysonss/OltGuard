@@ -1,0 +1,400 @@
+PARKS-CFM-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+        DisplayString, PhysAddress
+            FROM SNMPv2-TC
+        OBJECT-TYPE, Counter,mib-2, enterprises
+            FROM SNMPv2-SMI
+        ifIndex
+            FROM IF-MIB
+        parksCfm
+            FROM PARKS-FEATURES-MIB;
+
+    pkCfm  OBJECT IDENTIFIER
+        ::=  { parksCfm  1  }
+
+	--CFM Maintenance Domain--
+
+	pkCfmMd OBJECT IDENTIFIER
+		::=  { pkCfm 1 }
+
+	pkCfmMdCreator OBJECT IDENTIFIER
+		::=  { pkCfmMd 1 }
+
+	pkCfmMdCreatorName OBJECT-TYPE
+		SYNTAX          DisplayString (SIZE (0..110))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Domain Name"
+		::=  {  pkCfmMdCreator 1  }
+
+	pkCfmMdCreatorLevel OBJECT-TYPE
+		SYNTAX          INTEGER (0..7)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Integer identifying the Maintenance Domain Level (MD Level).
+						Higher numbers correspond to higher Maintenance Domains,
+						those with the greatest physical reach, with the highest
+						values for customers' CFM PDUs.  Lower numbers correspond
+						to lower Maintenance Domains, those with more limited
+						physical reach, with the lowest values for CFM PDUs
+						protecting single bridges or physical links."
+
+		::=  {  pkCfmMdCreator  2  }
+
+	pkCfmMdCreate OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), create (2), clear (3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkCfmMdCreator 3  }
+
+	--CMF Maintenance Domain Table--
+
+	pkCfmMdTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkCfmMdEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Maintenance Domain Table"
+        ::=  { pkCfmMd 2 }
+
+    pkCfmMdEntry OBJECT-TYPE
+        SYNTAX      PkCfmMdEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Maintenance Domain Table Entry"
+        INDEX       {  pkCfmMdIndex }
+        ::=  { pkCfmMdTable 1 }
+
+	PkCfmMdEntry  ::=  SEQUENCE {
+		pkCfmMdIndex		INTEGER,
+		pkCfmMdName		DisplayString,
+		pkCfmMdLevel		INTEGER,
+		pkCfmMdDelete		INTEGER
+	}
+
+	pkCfmMdIndex    OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Maintenance Domain Index"
+        ::=  {  pkCfmMdEntry 1  }
+
+	pkCfmMdName    OBJECT-TYPE 
+        SYNTAX          DisplayString (SIZE (0..110))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Maintenance Domain Name"
+        ::=  {  pkCfmMdEntry 2  }
+
+	pkCfmMdLevel    OBJECT-TYPE 
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Maintenance Domain Level"
+        ::=  {  pkCfmMdEntry 3  }
+
+	pkCfmMdDelete OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), delete (2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkCfmMdEntry 4  }
+
+
+	--CFM Maintenance Association--
+
+	pkCfmMa OBJECT IDENTIFIER
+		::=  { pkCfm 2 }
+
+	pkCfmMaCreator OBJECT IDENTIFIER
+		::=  { pkCfmMa 1 }
+
+	pkCfmMaCreatorMdIndex OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Domain Index"
+		::=  {  pkCfmMaCreator 1  }
+
+	pkCfmMaCreatorName OBJECT-TYPE
+		SYNTAX          DisplayString (SIZE (0..110))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Association Service Name."
+		::=  {  pkCfmMaCreator 2  }
+
+	pkCfmMaCreatorVlan OBJECT-TYPE
+		SYNTAX          INTEGER (1..4095)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Association Service Vlan."
+		::=  {  pkCfmMaCreator 3  }
+
+	pkCfmMaCreatorCcPeriod OBJECT-TYPE
+		SYNTAX          INTEGER { ccmDisabled(0), ccm300Hz(1), ccm10ms(2), ccm100ms(3), ccm1second(4), ccm10seconds(5), ccm1minute(6), ccm10minnutes(7) }
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Association Continuity Check Messages Interval."
+		::=  {  pkCfmMaCreator 4  }
+
+	pkCfmMaCreate OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), create (2), clear (3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkCfmMaCreator 5  }
+
+	--CMF Maintenance Association Table--
+
+	pkCfmMaTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkCfmMaEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Maintenance Association Table"
+        ::=  { pkCfmMa 2 }
+
+    pkCfmMaEntry OBJECT-TYPE
+        SYNTAX      PkCfmMaEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Maintenance Association Table Entry"
+        INDEX       {  pkCfmMdIndex, pkCfmMaIndex  }
+        ::=  { pkCfmMaTable 1 }
+
+	PkCfmMaEntry  ::=  SEQUENCE {
+		pkCfmMaIndex		INTEGER,
+		pkCfmMaName			DisplayString,
+		pkCfmMaVlan			INTEGER,
+		pkCfmMaCcPeriod		INTEGER,
+		pkCfmMaDelete		INTEGER
+	}
+
+	pkCfmMaIndex OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Association Index."
+		::=  {  pkCfmMaEntry 1  }
+
+	pkCfmMaName    OBJECT-TYPE 
+        SYNTAX          DisplayString (SIZE (0..110))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "CFM Maintenance Association Service Name"
+        ::=  {  pkCfmMaEntry 2  }
+
+	pkCfmMaVlan OBJECT-TYPE
+		SYNTAX          INTEGER (1..4095)
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Association Service Vlan."
+		::=  {  pkCfmMaEntry 3  }
+
+	pkCfmMaCcPeriod OBJECT-TYPE
+		SYNTAX          INTEGER { ccmDisabled(0), ccm300Hz(1), ccm10ms(2), ccm100ms(3), ccm1second(4), ccm10seconds(5), ccm1minute(6), ccm10minnutes(7) }
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Association Continuity Check Messages Interval."
+		::=  {  pkCfmMaEntry 4  }
+
+	pkCfmMaDelete OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), delete(2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkCfmMaEntry 5  }
+
+
+	--Maintenance Point--
+
+	pkCfmMp OBJECT IDENTIFIER
+		::=  { pkCfm 3 }
+
+	pkCfmMpCreator OBJECT IDENTIFIER
+		::=  { pkCfmMp 1 }
+
+	pkCfmMpCreatorMdIndex OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Domain Index."
+		::=  {  pkCfmMpCreator 1  }
+
+	pkCfmMpCreatorMaIndex OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Association Index."
+		::=  {  pkCfmMpCreator 2  }
+
+	pkCfmMpCreatorType OBJECT-TYPE
+		SYNTAX          INTEGER { mip(0), local(1), remote(2) }
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Point Type."
+		::=  {  pkCfmMpCreator 3  }
+
+	pkCfmMpCreatorId OBJECT-TYPE
+		SYNTAX          INTEGER (0..511)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Point Id(1-511 (mep), 0 (mip))."
+		::=  {  pkCfmMpCreator 4  }
+
+	pkCfmMpCreatorIfIndex OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "This object is the interface index of the interface to which the MEP is attached."
+		::=  {  pkCfmMpCreator 5  }
+
+	pkCfmMpCreate OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), create(2), clear(3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkCfmMpCreator 6  }
+
+	--CMF Maintenance Point Table--
+
+	pkCfmMpTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkCfmMpEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Maintenance Point Table"
+        ::=  { pkCfmMp 2 }
+
+    pkCfmMpEntry OBJECT-TYPE
+        SYNTAX      PkCfmMpEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Maintenance Point Table Entry"
+        INDEX       { pkCfmMdIndex, pkCfmMaIndex, pkCfmMpIndex }
+        ::=  { pkCfmMpTable 1 }
+
+	PkCfmMpEntry  ::=  SEQUENCE {
+		pkCfmMpIndex					INTEGER,
+		pkCfmMpId						INTEGER,
+		pkCfmMpType						INTEGER,
+		pkCfmMpIfIndex					INTEGER,
+		pkCfmMpSourceMac				OCTET STRING(SIZE(6)),
+		pkCfmMpDestinationMac			OCTET STRING(SIZE(6)),
+		pkCfmMpCcmFaultType				DisplayString,
+		pkCfmMpCcmErrorsCount			Counter32,
+		pkCfmMpCcmLastErrorOccurence	DisplayString,
+		pkCfmMpCcmLinkUpCount			Counter32,
+		pkCfmMpCcmLinkUpOccurence		DisplayString,
+		pkCfmMpCcmLinkDownCount			Counter32,
+		pkCfmMpCcmLinkDownOccurence		DisplayString,
+		pkCfmMpDelete					INTEGER
+	}
+
+	pkCfmMpIndex OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Point Index."
+		::=  {  pkCfmMpEntry 1  }
+
+	pkCfmMpId OBJECT-TYPE
+		SYNTAX          INTEGER (1..511)
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Point Id."
+		::=  {  pkCfmMpEntry 2  }
+
+	pkCfmMpType OBJECT-TYPE
+		SYNTAX          INTEGER { mip(0), local(1), remote(2) }
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "CFM Maintenance Point Type."
+		::=  {  pkCfmMpEntry  3  }
+
+	pkCfmMpIfIndex OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "Index of the Interface to which the MP is applied."
+		::=  {  pkCfmMpEntry  4  }
+
+	pkCfmMpSourceMac OBJECT-TYPE
+		SYNTAX      OCTET STRING(SIZE(6))
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "Source Mac address of the MP."
+		::= { pkCfmMpEntry 5 }
+
+	pkCfmMpDestinationMac OBJECT-TYPE
+		SYNTAX      OCTET STRING(SIZE(6))
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "Destination Mac address of the MP."
+		::= { pkCfmMpEntry 6 }
+
+	pkCfmMpCcmFaultType OBJECT-TYPE
+		SYNTAX      DisplayString (SIZE (0..100))
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "MP fault type."
+		::= { pkCfmMpEntry 7 }
+
+	pkCfmMpCcmErrorsCount OBJECT-TYPE
+		SYNTAX      Counter32
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "The total number of CCMs errors of the MP."
+		::= { pkCfmMpEntry 8 }
+
+	pkCfmMpCcmLastErrorOccurence OBJECT-TYPE
+		SYNTAX      DisplayString (SIZE (0..10))
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "Time since the last error occurred on the MP."
+		::= { pkCfmMpEntry 9 }
+
+	pkCfmMpCcmLinkUpCount OBJECT-TYPE
+		SYNTAX      Counter32
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "The total number link up events of the MP."
+		::= { pkCfmMpEntry 10 }
+
+	pkCfmMpCcmLinkUpOccurence OBJECT-TYPE
+		SYNTAX      DisplayString (SIZE (0..10))
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "Time since the last link up event occurred on the MP."
+		::= { pkCfmMpEntry 11 }
+
+	pkCfmMpCcmLinkDownCount OBJECT-TYPE
+		SYNTAX      Counter32
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "The total number of link down events of the MP."
+		::= { pkCfmMpEntry 12 }
+
+	pkCfmMpCcmLinkDownOccurence OBJECT-TYPE
+		SYNTAX      DisplayString (SIZE (0..10))
+		MAX-ACCESS  read-only
+		STATUS      current
+		DESCRIPTION "Time since the last link down event occurred on the MP."
+		::= { pkCfmMpEntry 13 }
+
+	pkCfmMpDelete OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), delete(2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkCfmMpEntry 14  }	
+
+	pkCfmNotifications OBJECT IDENTIFIER
+		::=  { pkCfm 4 }
+
+	pkCfmFaultAlarm NOTIFICATION-TYPE
+		OBJECTS	{ pkCfmMdIndex, pkCfmMaIndex, pkCfmMpIndex }
+		STATUS		current
+		DESCRIPTION "A notification (fault alarm) is sent to the
+			management entity with the OID of the MEP that has detected the fault. "
+		::=  { pkCfmNotifications	1 }
+
+END  --PARKS-CFM-MIB

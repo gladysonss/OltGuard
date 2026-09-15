@@ -1,0 +1,148 @@
+-- version 1.0.0
+--
+-- PARKS Comunicacoes Digitais
+--
+-- Copyright 2015 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+--
+-- This module will be extend, as required. The specification and other
+-- information contained in this document can be modified without prior
+-- notice. The user should consult PARKS to determine whether any such
+-- changes have been done.
+--
+-- MODULE-IDENTITY
+--      ORGANIZATION "PARKS Comunicacoes Digitais"
+--      CONTACT-INFO "Postal: PARKS Comunicacoes Digitais
+--                    Cruzeiro 530 ,  Distrito Industrial,
+--                    CEP 94930-615   Cachoeirinha, RS, BRAZIL
+--                    E-mail: suporte@parks.com.br"
+--      DESCRIPTION  "MIB with configuration for DHCP Snooping in PARKS
+--                    devices."
+
+PARKS-DHCPSNOOPING-MIB  DEFINITIONS ::= BEGIN
+	IMPORTS
+		OBJECT-TYPE, Integer32, Counter32
+			FROM SNMPv2-SMI
+		DisplayString
+			FROM SNMPv2-TC
+		parksDhcpSnooping
+			FROM PARKS-FEATURES-MIB
+		parksDhcpSnoopingStats
+			FROM PARKS-STATISTICS-MIB;
+
+	pkDhcpSnooping                  OBJECT-TYPE
+		SYNTAX                  INTEGER { disable(0), enable(1) }
+		MAX-ACCESS              read-write
+		STATUS                  current
+		DESCRIPTION             "Enable/Disable DHCP Snooping service"
+		::= { parksDhcpSnooping 1 }
+
+	parksDhcpSnoopingIfTable           OBJECT-TYPE
+		SYNTAX                  SEQUENCE OF PkDhcpSnoopingIfEntry
+		MAX-ACCESS              not-accessible
+		STATUS                  current
+		DESCRIPTION             "DHCP Snooping interface table."
+		::= { parksDhcpSnooping 2 }
+
+------------------------------------------------------------------------------
+-- IfTable
+------------------------------------------------------------------------------
+	pkDhcpSnoopingIfEntry           OBJECT-TYPE
+		SYNTAX                  PkDhcpSnoopingIfEntry
+		MAX-ACCESS              not-accessible
+		STATUS                  current
+		DESCRIPTION             "DHCP Snooping entries."
+		INDEX                   { pkDhcpSnoopingIfIndex }
+		::= { parksDhcpSnoopingIfTable 1 }
+
+	PkDhcpSnoopingIfEntry ::= SEQUENCE {
+		pkDhcpSnoopingIfIndex           INTEGER,
+		pkDhcpSnoopingIfName            DisplayString,
+		pkDhcpSnoopingIfState           INTEGER
+	}
+
+	pkDhcpSnoopingIfIndex           OBJECT-TYPE
+		SYNTAX                  INTEGER
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Index of each interface, its constant until
+		                         destruction of an interface or reset of the
+		                         equipment."
+		::= { pkDhcpSnoopingIfEntry 1 }
+
+	pkDhcpSnoopingIfName            OBJECT-TYPE
+		SYNTAX                  DisplayString (SIZE (0..63))
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Name of the interface."
+		::= { pkDhcpSnoopingIfEntry 2 }
+
+	pkDhcpSnoopingIfState           OBJECT-TYPE
+		SYNTAX                  INTEGER { disable(0), untrust(1), trust(2) }
+		MAX-ACCESS              read-write
+		STATUS                  current
+		DESCRIPTION             "Interface's DHCP Snooping state"
+		::= { pkDhcpSnoopingIfEntry 3 }
+
+------------------------------------------------------------------------------
+-- Statistics
+------------------------------------------------------------------------------
+	pkDhcpSnoopingForwardedPackets  OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Number of DHCP packets forwarded"
+		::= { parksDhcpSnoopingStats 1 }
+
+	pkDhcpSnoopingDroppedPackets    OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Number of packets dropped"
+		::= { parksDhcpSnoopingStats 2 }
+
+	pkDhcpSnoopingUntrustedPorts    OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "DHCP server packets received on untrusted ports"
+		::= { parksDhcpSnoopingStats 3 }
+
+	pkDhcpSnoopingNonZeroGiaddr     OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Non-zero giaddr received on untrusted ports"
+		::= { parksDhcpSnoopingStats 4 }
+
+	pkDhcpSnoopingMalformedPackets  OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Non-DHCP or malformed reveived packets"
+		::= { parksDhcpSnoopingStats 5 }
+
+	pkDhcpSnoopingInvalidSize       OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "DHCP packets received with invalid size"
+		::= { parksDhcpSnoopingStats 6 }
+
+	pkDhcpSnoopingInterfaceErrors OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Interface input/output errors"
+		::= { parksDhcpSnoopingStats 7 }
+
+	pkDhcpSnoopingUnknownInterface  OBJECT-TYPE
+		SYNTAX                  Counter32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Output interface can't be determined"
+		::= { parksDhcpSnoopingStats 8 }
+
+END
+

@@ -1,0 +1,130 @@
+GPON-OLT-TC DEFINITIONS ::= BEGIN
+ IMPORTS
+  TEXTUAL-CONVENTION,DisplayString
+   FROM SNMPv2-TC
+  enterprises
+   FROM SNMPv2-SMI;
+
+   
+
+ ocsOlt		OBJECT IDENTIFIER
+	::=  {  enterprises  6771  10 }
+
+   
+ AdminState ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the Adminstrative State of a resource"
+     SYNTAX INTEGER { unlock(1), lock(2) }
+
+ OperState ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the Operational State of a resource"
+     SYNTAX INTEGER { enabled(1), disabled(2), unknown(3) }
+
+ SlotNo  ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the Slot ID of the GPON Interface on the OLT System."
+     SYNTAX Unsigned32 (1..12)
+     
+ PortNo ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the Port ID of the GPON Interface on the OLT System."
+     SYNTAX Unsigned32 (1..16)
+     
+ LogicalPortNo ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the LogicalPort ID of the GPON Interface on the OLT System."
+     SYNTAX Unsigned32 (1..128)
+     
+ PhysicalPortNo ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the PhysicalPort ID of the GPON Interface on the OLT System."
+     SYNTAX Unsigned32 (1..128)
+     
+ VirtualPortNo ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the VirtualPort ID of the GPON Interface on the OLT System."
+     SYNTAX INTEGER (1..40)
+     
+ ProfileName ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the Profile Name of the GPON Interface on the OLT System."
+     SYNTAX DisplayString(SIZE(0..48)) 
+     
+ MacAddress ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the Mac Address of the GPON Interface on the OLT System."
+     SYNTAX OCTET STRING(SIZE(6)) 
+     
+ VlanID ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the Vlan ID of the GPON Interface on the OLT System."
+     SYNTAX Unsigned32
+
+AlarmSeverity ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION 
+		"The textual convention for alarm severity level:
+		
+		alarmLevelClear       - The Cleared severity level indicates that 
+		                        the fault has been cleared.
+		alarmLevelCritical    - The Critical severity level indicates the most 
+		                        severe service affecting condition has occurred, 
+		                        and the whole system may not be functioning properly. 
+		                        Urgent and immediate corrective action is required.
+		alarmLevelMajor       - The Major severity level indicates service 
+		                        affecting condition has occurred. Immediate 
+		                        corrective action is required.
+		alarmLevelMinor       - The Minor severity level indicates service 
+		                        not affecting condition has occurred. Corrective 
+		                        action should be taken to avoid more serious 
+		                        service affecting fault.
+		alarmLevelTca     	  - . 
+		alarmLevelInfo     		- ."
+	SYNTAX  INTEGER {
+		alarmLevelClear (0),
+		alarmLevelTca (1),
+		alarmLevelInfo (2),
+		alarmLevelMinor (3),
+		alarmLevelMajor (4),
+		alarmLevelCritical (5),
+		alarmLevelIndeterminate (6)
+	}
+
+AlarmCondition ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION 
+		"The textual convention for alarm condition level:
+		
+		alarmConditionClear    - .
+		alarmConditionAlarm    - ."
+	SYNTAX  INTEGER {
+		alarmConditionClear (0),
+		alarmConditionAlarm (1),
+		alarmConditionIndeterminate (2)
+	}
+
+ SystemModule ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Indicates the system facility from OLT System."
+     SYNTAX DisplayString(SIZE(0..48)) 
+
+ SysMsgDescription ::= TEXTUAL-CONVENTION
+     STATUS       current
+     DESCRIPTION
+         "Message indicating the system notification."
+     SYNTAX DisplayString(SIZE(0..512)) 
+
+
+END 

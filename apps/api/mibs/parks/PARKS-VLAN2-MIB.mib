@@ -1,0 +1,507 @@
+-- PARKS-VLAN2-MIB
+-- version 1.0.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2008 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO
+--		"Postal: PARKS Comunicacoes Digitais
+--		Cruzeiro 530 ,  Distrito Industrial,
+--		94930-615   Cachoeirinha, RS, BRAZIL
+--		E-mail: suporte@parks.com.br "
+--
+-- DESCRIPTION
+--		" Mib within statistics and configuration VLAN in Parks equipments. "
+
+PARKS-VLAN2-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		RowStatus, TruthValue, MacAddress
+			FROM SNMPv2-TC
+		InterfaceIndex, ifIndex
+			FROM IF-MIB
+		OBJECT-TYPE, Counter, mib-2, enterprises
+			FROM SNMPv2-SMI
+		parksVlan2
+			FROM PARKS-FEATURES-MIB;
+
+	pkVlanDataBase	OBJECT IDENTIFIER
+		::=  { parksVlan2  1  }
+
+	pkVlanIf	OBJECT IDENTIFIER
+		::=  { parksVlan2  2  }
+
+	pkVlanMapping	OBJECT IDENTIFIER
+		::=  { parksVlan2  3  }
+
+	pkVlanInBand	OBJECT IDENTIFIER
+		::=  { parksVlan2  4  }
+
+--========== pkVlanDataBase =================
+
+-- Scalar VLAN Database Options
+	pkVlanTagBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A bitmap VLAN position to mark VLAN IDs."
+		::= { pkVlanDataBase 1 }
+
+	pkVlanTagRegularBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A bitmap VLAN position to mark regular (commum) VLAN IDs."
+		::= { pkVlanDataBase 2 }
+
+	pkVlanTagl2TransBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A bitmap VLAN position to mark VLAN IDs using L2 transparency feature."
+		::= { pkVlanDataBase 3 }
+
+	pkVlanTagIsolatedBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A bitmap VLAN position to mark regular VLAN IDs using isolated feature.
+		    To change between features, VLAN IDs must be set back to regular."
+		::= { pkVlanDataBase 4 }
+
+	pkVlanTagTpid8100BitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A bitmap VLAN position to mark VLAN IDs with TPID 0x8100."
+		::= { pkVlanDataBase 5 }
+
+	pkVlanTagTpid88a8BitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A bitmap VLAN position to mark VLAN IDs with TPID 0x88a8."
+		::= { pkVlanDataBase 6 }
+
+	pkVlanTagTpid9100BitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A bitmap VLAN position to mark VLAN IDs with TPID 0x9100."
+		::= { pkVlanDataBase 7 }
+
+
+
+--
+--
+--========== pkVlanIf ======================
+
+--pkVlanIfTable
+	pkVlanIfTable OBJECT-TYPE
+		SYNTAX SEQUENCE  OF  PkVlanIfEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Table containing the VLAN configuration on equipment ports."
+		::=  { pkVlanIf  1 }
+
+	pkVlanIfEntry OBJECT-TYPE
+		SYNTAX PkVlanIfEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "List of VLAN configuration on interfaces."
+		INDEX {  pkVlanIfIndex  }
+		::=  { pkVlanIfTable 1 }
+
+	PkVlanIfEntry  ::=  SEQUENCE {
+		pkVlanIfIndex InterfaceIndex,
+		pkVlanIfMode INTEGER,
+		pkVlanIfMemberBitMap OCTET STRING,
+		pkVlanIfExceptionBitMap OCTET STRING,
+		pkVlanIfUplinkBitMap OCTET STRING,
+		pkVlanIfPortBridging TruthValue,
+		pkVlanIfEtherType INTEGER,
+		pkVlanIfEtherTypeAllowed INTEGER,
+		pkVlanIfTpidSelection INTEGER
+	}
+
+	pkVlanIfIndex OBJECT-TYPE
+		SYNTAX InterfaceIndex
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "The index value that uniquely identifies the interface with
+		     VLAN configuration. The interface identified by a particular
+		     value of this index is the same interface as identified by 
+		     the same value of the IF-MIB's ifIndex."
+		::= { pkVlanIfEntry 1 }
+
+	pkVlanIfMode OBJECT-TYPE
+		SYNTAX INTEGER {none(1), trunk(2), access(3), dot1q(4)}
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Interface switchport mode."
+		::=  { pkVlanIfEntry 2 }
+
+	pkVlanIfMemberBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "VLAN bitmap whose the interface is member."
+		::= { pkVlanIfEntry 3 }
+
+	pkVlanIfExceptionBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "VLAN bitmap contents VLAN blocked on interface."
+		::= { pkVlanIfEntry 4 }
+
+	pkVlanIfUplinkBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Uplink interface for the isolated VLANs in the bitmap.
+					When the bitmap is set the actual bitmap is reseted.
+					In the new bitmap the Default VLAN (VLAN 1), uncreated VLANs
+					and VLANs not of the pkVlanTagType isolated are ignored.
+					The rule is only applied for the isolated VLANs which the
+					interface is a member and if there is at least one interface that
+					is a member of the isolated VLAN and is not set as uplink."
+		::= { pkVlanIfEntry 5 }
+
+	pkVlanIfPortBridging OBJECT-TYPE
+		SYNTAX TruthValue
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Enable/disable Port Bridging feature."
+		::= { pkVlanIfEntry 6 }
+
+	pkVlanIfEtherType OBJECT-TYPE
+		SYNTAX INTEGER { 0x8100(1), 0x88a8(2), 0x9100(3) }
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Set standard VLAN TPID to the interface."
+		::=  {  pkVlanIfEntry 7 }
+	
+	pkVlanIfEtherTypeAllowed OBJECT-TYPE
+		SYNTAX INTEGER
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "A mask giving the current VLAN TPID allowed to incoming packets to interface.
+				Bit 1  - Allow 0x8100
+				Bit 2  - Allow 0x88a8
+				Bit 3  - Allow 0x9100"
+		::=  {  pkVlanIfEntry  8  }
+
+	pkVlanIfTpidSelection OBJECT-TYPE
+		SYNTAX INTEGER { portBased(1), vlanBased(2) }
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Set the TPID selection mode to outgoing packets."
+		::=  {  pkVlanIfEntry 9 }
+
+--========== pkVlanMapping ======================
+
+--pkDot1QMapping
+	pkDot1QMappingTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF PkDot1QMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Table of vlan mapping caracteristics of the interface."
+		::=  { pkVlanMapping  1 }
+
+	pkDot1QMappingEntry OBJECT-TYPE
+		SYNTAX PkDot1QMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "List of mapped vlan IDs on the interface."
+		INDEX { pkDot1QMapVlanTagID, pkDot1QMapIfIndex }
+		::=  { pkDot1QMappingTable 1 }
+
+	PkDot1QMappingEntry  ::=  SEQUENCE {
+		pkDot1QMapVlanTagID Unsigned32,
+		pkDot1QMapIfIndex InterfaceIndex,
+		pkDot1QMapVlanBitMap OCTET STRING,
+		pkDot1QMapRowStatus	RowStatus
+	}
+
+	pkDot1QMapVlanTagID OBJECT-TYPE
+		SYNTAX Unsigned32 (1..4095)
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "This is the vlan id which is mapped to VLAN Database."
+		::= { pkDot1QMappingEntry 1 }
+
+	pkDot1QMapIfIndex OBJECT-TYPE
+		SYNTAX InterfaceIndex
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "The index value that uniquely identifies the interface with
+			VLAN configuration. The interface identified by a particular
+			value of this index is the same interface as identified by
+			the same value of the IF-MIB's ifIndex."
+		::= { pkDot1QMappingEntry 2 }
+
+	pkDot1QMapVlanBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION " List of VLANs to be mapped to a new VLAN tag."
+		::= { pkDot1QMappingEntry 3 }
+
+	pkDot1QMapRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION "Row status for pkDot1QMapping entry."
+		::= { pkDot1QMappingEntry 4 }
+
+
+--pkProtocolMapping
+	pkProtocolMappingTable	OBJECT-TYPE
+		SYNTAX SEQUENCE OF PkProtocolMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Table containing the VLAN configuration on equipment ports."
+		::=  { pkVlanMapping  2 }
+
+	pkProtocolMappingEntry OBJECT-TYPE
+		SYNTAX PkProtocolMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "List of VLAN configuration on interfaces."
+		INDEX {  pkProtoMapIndex  }
+		::=  { pkProtocolMappingTable 1 }
+
+	PkProtocolMappingEntry  ::=  SEQUENCE {
+		pkProtoMapIndex 	INTEGER,
+		pkProtoMapVlanId 	Unsigned32,
+		pkProtoMapRowStatus	RowStatus
+	}
+
+	pkProtoMapIndex OBJECT-TYPE SYNTAX INTEGER { apppletalk (1),
+						  apppletalkArp (2),
+						  arp (3),
+						  ataOverEthernet(4),
+						  cesOverEth (5),
+						  cobraNet (6),
+						  etherCATProtocol (7),
+						  ethernetPowerlink (8),
+						  fcoEInitializationProtocol (9),
+						  fiberChanneloverEthernet (10),
+						  homeplug (11),
+						  ieee1588 (12),
+						  vlanTaggedFrame (13),
+						  ipv4 (14),
+						  ipv6 (15),
+						  jumboFrames (16),
+						  lldp (17),
+						  lowLatencyTransport (18),
+						  macControl (19),
+						  macSecurity (20),
+						  microsoftNLBheartbeat (21),
+						  mplsMulticast (22),
+						  mplsUnicast (23),
+						  novell (24),
+						  novellIPX (25),
+						  oam (26),
+						  pppoEDiscoveryStage (27),
+						  pppoESessionStage (28),
+						  providerBridging (29),
+						  qinq (30), 
+						  rarp (31),
+						  scsioverEthernet (32),
+						  sercosiii (33),
+						  syn-3heartbeatProtocol (34),
+						  iee8021x (35),
+						  wakeOnVLANMagicPacket (36)
+						}
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "The uniquely Protocol identifier used on protocol mapping configuration."
+		::=  { pkProtocolMappingEntry  1 }
+
+	pkProtoMapVlanId OBJECT-TYPE
+		SYNTAX Unsigned32 (1..4095)
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "This is the vlan id which is mapped to VLAN Database."
+		::= { pkProtocolMappingEntry 2 }
+
+	pkProtoMapRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION "Row status for pkVlanProtocolMapping entry."
+		::= { pkProtocolMappingEntry 3 }
+
+
+--pkMacMapping
+
+	pkMacMappingTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF PkMacMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Table containing the VLAN configuration on equipment ports."
+		::=  { pkVlanMapping  3 }
+
+	pkMacMappingEntry OBJECT-TYPE
+		SYNTAX PkMacMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "List of VLAN configuration on interfaces."
+		INDEX {  pkMacMapIndex  }
+		::=  { pkMacMappingTable 1 }
+
+	PkMacMappingEntry  ::=  SEQUENCE {
+		pkMacMapIndex 		MacAddress,
+		pkMacMapVlanId 		Unsigned32,
+		pkMacMapRowStatus	RowStatus
+	}
+
+	pkMacMapIndex OBJECT-TYPE
+		SYNTAX MacAddress
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "This object indicates the uniquely MAC adress with identification to the entry."
+		::= { pkMacMappingEntry 1 }
+
+	pkMacMapVlanId OBJECT-TYPE
+		SYNTAX Unsigned32 (1..4095)
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "This is the vlan id which is mapped to VLAN Database."
+		::= { pkMacMappingEntry 2 }
+
+	pkMacMapRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION "Row status for pkVlanProtocolMapping entry."
+		::= { pkMacMappingEntry 3 }
+
+--pkQinQMapping
+	pkQinQMappingTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF PkQinQMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Table of vlan mapping caracteristics of the interface."
+		::=  { pkVlanMapping  4 }
+
+	pkQinQMappingEntry OBJECT-TYPE
+		SYNTAX PkQinQMappingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "List of mapped vlan IDs on the interface."
+		INDEX { pkQinQMapVlanTagID, pkQinQMapIfIndex }
+		::=  { pkQinQMappingTable 1 }
+
+	PkQinQMappingEntry  ::=  SEQUENCE {
+		pkQinQMapVlanTagID Unsigned32,
+		pkQinQMapIfIndex InterfaceIndex,
+		pkQinQMapSVlanPriority Unsigned32,
+		pkQinQMapCVlanBitMap OCTET STRING,
+		pkQinQMapRowStatus	RowStatus
+	}
+
+	pkQinQMapVlanTagID OBJECT-TYPE
+		SYNTAX Unsigned32 (1..4095)
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "This is the vlan id which is mapped to VLAN Database."
+		::= { pkQinQMappingEntry 1 }
+
+	pkQinQMapIfIndex OBJECT-TYPE
+		SYNTAX InterfaceIndex
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "The index value that uniquely identifies the interface with
+			VLAN configuration. The interface identified by a particular
+			value of this index is the same interface as identified by
+			the same value of the IF-MIB's ifIndex."
+		::= { pkQinQMappingEntry 2 }
+
+	pkQinQMapSVlanPriority OBJECT-TYPE
+		SYNTAX Unsigned32 (0..7)
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION " Service (Outer) Tag Vlan Priority (IEEE 802.1p)."
+		::= { pkQinQMappingEntry 3 }
+
+	pkQinQMapCVlanBitMap OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE (0..512))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION " List of cvlans to be encapsulated with the Service Vlan tag"
+		::= { pkQinQMappingEntry 4 }
+
+	pkQinQMapRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION "Row status for pkQinQMapping entry."
+		::= { pkQinQMappingEntry 5 }
+
+--========== pkVlanInBand ======================
+
+--pkVlanInBandTable
+	pkVlanInBandTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF PkVlanInBandEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Table containing all the configured In-band VLANs."
+		::=  { pkVlanInBand  1 }
+
+	pkVlanInBandEntry OBJECT-TYPE
+		SYNTAX PkVlanInBandEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "List of in-band VLAN IDs."
+		INDEX { pkVlanInBandTagId }
+		::=  { pkVlanInBandTable 1 }
+
+	PkVlanInBandEntry  ::=  SEQUENCE {
+		pkVlanInBandTagId Unsigned32,
+		pkVlanInBandIfIndex InterfaceIndex,
+		pkVlanInBandPriority Unsigned32,
+		pkVlanInBandRowStatus RowStatus
+	}
+
+	pkVlanInBandTagId OBJECT-TYPE
+		SYNTAX Unsigned32 (1..4095)
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "This is the VLAN id which is mapped to VLAN Database."
+		::= { pkVlanInBandEntry 1 }
+
+	pkVlanInBandIfIndex OBJECT-TYPE
+		SYNTAX InterfaceIndex
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION "The index value that uniquely identifies the interface with
+			VLAN configuration. The interface identified by a particular
+			value of this index is the same interface as identified by
+			the same value of the IF-MIB's ifIndex."
+		::= { pkVlanInBandEntry 2 }
+
+	pkVlanInBandPriority OBJECT-TYPE
+		SYNTAX Unsigned32 (0..7)
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "VLAN Tag Priority (IEEE 802.1p)."
+		::= { pkVlanInBandEntry 3 }
+
+	pkVlanInBandRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION "Row status for pkVlanInBand entry."
+		::= { pkVlanInBandEntry 4 }
+
+END

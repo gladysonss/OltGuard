@@ -1,0 +1,284 @@
+-- PARKS-IGMP-SNOOPING-MIB
+-- version 1.0.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2008 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--  ORGANIZATION "PARKS Comunicacoes Digitais"
+--  CONTACT-INFO 
+--                           "Postal: PARKS Comunicacoes Digitais
+--                                        Cruzeiro 530 ,  Distrito Industrial,
+--                                       CEP 94930-615   Cachoeirinha, RS, BRAZIL
+--                               E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " Mib for statistics and configuration o vlan interfaces in 
+--                      parks equipments. "
+
+PARKS-IGMP-SNOOPING-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+        DisplayString, PhysAddress
+            FROM SNMPv2-TC
+        OBJECT-TYPE, Counter,mib-2, enterprises
+            FROM SNMPv2-SMI
+        ifIndex 
+            FROM IF-MIB 
+        parksIgmpSnooping
+            FROM PARKS-FEATURES-MIB;
+
+    pkIgmpSnooping  OBJECT IDENTIFIER
+        ::=  { parksIgmpSnooping  1  }
+    
+    pkIgmpSnoopingStatus    OBJECT-TYPE
+        SYNTAX          INTEGER { enable(1) , disable(2)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Enable/Disable IGMP Snooping"
+        ::=  {  pkIgmpSnooping  1  }
+
+    pkIgmpSnoopingImmediateLeave  OBJECT-TYPE
+        SYNTAX          INTEGER { enable(1) , disable(2)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Remove last host in group before specific queries being sent"
+        ::=  {  pkIgmpSnooping  2  }    
+
+    pkIgmpSnoopingmaxSimultaneousGroups OBJECT-TYPE
+        SYNTAX          INTEGER  (1..1000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Configure max number of groups to be simultaneously handled"
+        ::=  {  pkIgmpSnooping  3  }
+
+    pkigmpSnoopingReportSupression OBJECT-TYPE
+        SYNTAX          INTEGER { enable(1) , disable(2)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Enable suppression of IGMP Reports (IGMP Proxy)"
+        ::=  {  pkIgmpSnooping  4  }    
+
+    
+    ------ pkIgmpSnoopingIFTable ------
+
+    pkIgmpSnoopingIFTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkIgmpSnoopingIFEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Interface and IGMP Mode of each interface"
+        ::=  { parksIgmpSnooping  2 }
+
+    pkIgmpSnoopingIFEntry   OBJECT-TYPE
+        SYNTAX      PkIgmpSnoopingIFEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  ifIndex  }
+        ::=  { pkIgmpSnoopingIFTable 1 }
+
+    PkIgmpSnoopingIFEntry  ::=  SEQUENCE {
+        pkIgmpSnoopingIFName    DisplayString,
+        pkIgmpSnoopingMode      INTEGER
+    }
+    
+    pkIgmpSnoopingIFName    OBJECT-TYPE 
+        SYNTAX          DisplayString
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Interface name"
+        ::=  {  pkIgmpSnoopingIFEntry  2  }
+
+    pkIgmpSnoopingMode  OBJECT-TYPE
+        SYNTAX          INTEGER {Disable (1), MultiCastHost (2), MultiCastRouter (3)}   
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Current IGMP Snooping interface mode"
+        ::=  {  pkIgmpSnoopingIFEntry  3  }
+
+
+    ------ pkIgmpSnoopingV2GroupTable ------
+
+    pkIgmpSnoopingV2GroupTable     OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkIgmpSnoopingV2GroupEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        ::=  { parksIgmpSnooping  3 }
+
+    pkIgmpSnoopingV2GroupEntry    OBJECT-TYPE
+        SYNTAX      PkIgmpSnoopingV2GroupEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Table that represents the groups and the clients that is connected to it"
+        INDEX       {  pkIgmpSnoopingV2GroupAddress, pkIgmpSnoopingV2GroupVlanID }
+        ::=  {  pkIgmpSnoopingV2GroupTable    1   }
+    
+    PkIgmpSnoopingV2GroupEntry  ::=  SEQUENCE {
+        pkIgmpSnoopingV2GroupAddress  IpAddress,
+        pkIgmpSnoopingV2GroupVlanID   INTEGER,
+        pkIgmpSnoopingV2GroupClients  DisplayString
+    }
+
+    pkIgmpSnoopingV2GroupAddress  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "IGMP Group address"
+        ::=  {  pkIgmpSnoopingV2GroupEntry  1  }
+
+    pkIgmpSnoopingV2GroupVlanID   OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "VlanID bound to an IGMP Group"
+        ::=  {  pkIgmpSnoopingV2GroupEntry  2  }
+
+    pkIgmpSnoopingV2GroupClients  OBJECT-TYPE 
+        SYNTAX          DisplayString
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Clients list bound to a IGMP Group"
+        ::=  {  pkIgmpSnoopingV2GroupEntry  3  }
+
+
+    ------ pkIgmpSnoopingV3GroupTable ------
+
+    pkIgmpSnoopingV3GroupTable    OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkIgmpSnoopingV3GroupEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Table that represents the groups and the clients that is connected to it"
+        ::=  { parksIgmpSnooping  4 }
+
+    pkIgmpSnoopingV3GroupEntry    OBJECT-TYPE
+        SYNTAX      PkIgmpSnoopingV3GroupEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkIgmpSnoopingV3GroupAddress, pkIgmpSnoopingV3GroupVlanID, pkIgmpSnoopingV3SourceAddress }
+        ::=  { pkIgmpSnoopingV3GroupTable 1 }
+    
+    PkIgmpSnoopingV3GroupEntry  ::=  SEQUENCE {
+        pkIgmpSnoopingV3GroupAddress  IpAddress,
+        pkIgmpSnoopingV3GroupVlanID   INTEGER,
+        pkIgmpSnoopingV3SourceAddress IpAddress,
+        pkIgmpSnoopingV3GroupClients  DisplayString
+    }
+
+    pkIgmpSnoopingV3GroupAddress  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "IGMP Group Address"
+        ::=  {  pkIgmpSnoopingV3GroupEntry  1  }
+
+    pkIgmpSnoopingV3GroupVlanID   OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "VlanID bound to an IGMP Group"
+        ::=  {  pkIgmpSnoopingV3GroupEntry  2  }
+
+    pkIgmpSnoopingV3SourceAddress  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "IP Address of a source bound to an IGMP Group"
+        ::=  {  pkIgmpSnoopingV3GroupEntry  3  }
+
+    pkIgmpSnoopingV3GroupClients  OBJECT-TYPE 
+        SYNTAX          DisplayString
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Clients list bound to this Group and Source"
+        ::=  {  pkIgmpSnoopingV3GroupEntry  4  }
+
+    ------ pkIgmpSnoopingClientTable ------
+
+    pkIgmpSnoopingClientTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkIgmpSnoopingClientEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Table that represents the clients and the interface that is connected to it"
+        ::=  { parksIgmpSnooping  5 }
+
+    pkIgmpSnoopingClientEntry   OBJECT-TYPE
+        SYNTAX      PkIgmpSnoopingClientEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkIgmpSnoopingClientAddress, ifIndex  }
+        ::=  { pkIgmpSnoopingClientTable 1 }
+    
+    PkIgmpSnoopingClientEntry  ::=  SEQUENCE {
+        pkIgmpSnoopingClientAddress IpAddress,
+		pkIgmpSnoopingClientIFName  DisplayString
+    }
+
+    pkIgmpSnoopingClientAddress OBJECT-TYPE 
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "IP Address of a client"
+        ::=  {  pkIgmpSnoopingClientEntry  1  }
+
+    pkIgmpSnoopingClientIFName  OBJECT-TYPE 
+        SYNTAX          DisplayString
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Interface name bound to a client"
+        ::=  {  pkIgmpSnoopingClientEntry  2  }
+
+    
+    ------ pkIgmpSnoopingMemberTable ------
+
+    pkIgmpSnoopingMemberTable               OBJECT-TYPE
+        SYNTAX                              SEQUENCE  OF  PkIgmpSnoopingMemberEntry
+        MAX-ACCESS                          not-accessible
+        STATUS                              current
+        DESCRIPTION                         "Table that shows the number of clients connected to this interface and group"
+        ::=  { parksIgmpSnooping  6 }
+
+    pkIgmpSnoopingMemberEntry   OBJECT-TYPE
+        SYNTAX      PkIgmpSnoopingMemberEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkIgmpSnoopingGroupAddress, pkIgmpSnoopingGroupVlanID, ifIndex }
+        ::=  { pkIgmpSnoopingMemberTable 1 }
+    
+    PkIgmpSnoopingMemberEntry  ::=  SEQUENCE {
+        pkIgmpSnoopingGroupAddress  IpAddress,
+        pkIgmpSnoopingGroupVlanID   INTEGER,
+        pkIgmpSnoopingMembers       INTEGER
+    }
+
+    pkIgmpSnoopingGroupAddress  OBJECT-TYPE 
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "IGMP Group address"
+        ::=  {  pkIgmpSnoopingMemberEntry  1  }
+
+    pkIgmpSnoopingGroupVlanID   OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "VlanID bound to a IGMP Group"
+        ::=  {  pkIgmpSnoopingMemberEntry  2  }
+
+    
+    pkIgmpSnoopingMembers OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Number of clients connected to this interface"
+        ::=  {  pkIgmpSnoopingMemberEntry 3  }
+
+    END

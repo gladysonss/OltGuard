@@ -1,0 +1,220 @@
+-- PARKS-SENSOR-MIB
+-- version 1.0.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2018 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO
+--		"Postal: PARKS Comunicacoes Digitais
+--		Cruzeiro 530 ,  Distrito Industrial,
+--		94930-615   Cachoeirinha, RS, BRAZIL
+--		E-mail: suporte@parks.com.br "
+--
+-- DESCRIPTION
+--	" Parks Sensor MIB "
+
+PARKS-SENSOR-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		DisplayString
+			FROM SNMPv2-TC
+		parksSensor
+			FROM PARKS-FEATURES-MIB
+		Unsigned32,
+		OBJECT-TYPE,
+		OBJECT-IDENTITY,
+		NOTIFICATION-TYPE,
+		MODULE-IDENTITY
+			FROM SNMPv2-SMI
+		TimeStamp
+			FROM SNMPv2-TC;
+
+-- pkSensorTable
+
+	pkSensorTable OBJECT-TYPE
+		SYNTAX		SEQUENCE OF PkSensorEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"This table contains one
+		    row per physical sensor "
+		::=  { parksSensor  1 }
+
+	pkSensorEntry	OBJECT-TYPE
+		SYNTAX		PkSensorEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Information about a physical sensor"
+		INDEX		{  pkSensorIndex  }
+		::=  { pkSensorTable 1 }
+
+	PkSensorEntry  ::=   SEQUENCE {
+		pkSensorIndex            INTEGER,
+		pkSensorLabel            DisplayString,
+		pkSensorValue            INTEGER,
+		pkSensorValueScale       INTEGER,
+		pkSensorValueType        INTEGER,
+		pkSensorStatus           INTEGER,
+		pkSensorValueTypeDisplay DisplayString,
+		pkSensorValueTimeStamp   TimeStamp,
+		pkSensorValueUpdateRate  Unsigned32
+	}
+
+	pkSensorIndex OBJECT-TYPE
+		SYNTAX		INTEGER (1..2147483647)
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Sensor Index."
+		::=  {  pkSensorEntry  1  }
+
+	pkSensorLabel OBJECT-TYPE
+		SYNTAX		DisplayString  ( SIZE ( 255  ) )
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Sensor Label."
+		::=  {  pkSensorEntry  2  }
+
+	pkSensorValue OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Most recent value. To correctly interpret this
+		    value the related pkSensorValueType and pkSensorValueScale
+		    objects must also be examined."
+		::=  {  pkSensorEntry  3  }
+
+	pkSensorValueScale OBJECT-TYPE
+		SYNTAX INTEGER {
+			yocto(1), -- 10^-24
+			zepto(2), -- 10^-21
+			atto(3),  -- 10^-18
+			femto(4), -- 10^-15
+			pico(5),  -- 10^-12
+			nano(6),  -- 10^-9
+			micro(7), -- 10^-6
+			milli(8), -- 10^-3
+			units(9), -- 10^0
+			kilo(10), -- 10^3
+			mega(11), -- 10^6
+			giga(12), -- 10^9
+			tera(13), -- 10^12
+			exa(14),  -- 10^15
+			peta(15), -- 10^18
+			zetta(16),-- 10^21
+			yotta(17) -- 10^24
+		}
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Power of 10 scaling factor associated with the
+		     Sensor value."
+		::=  {  pkSensorEntry  4  }
+
+	pkSensorValueType OBJECT-TYPE
+		SYNTAX INTEGER {
+			other(1),
+			unknown(2),
+			percentage(3),
+			celsius(4),
+			truthvalue(5)
+		}
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Type of data units associated with the Sensor
+		    value. Valid values are:
+		    other(1) - a type other than those listed
+		    unknown(2) - Unknown, arbitrary or relative
+		    percentage(3) - Percentage
+		    celsius(4) - temperature
+		    truthvalue(5) - { true(1), false(2) }"
+		::=  {  pkSensorEntry  5  }
+
+	pkSensorStatus OBJECT-TYPE
+		SYNTAX INTEGER {
+			ok(1),
+			alarm(2),
+			unavailable(3)
+		}
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Sensor Operational Status:
+		    ok(1) - Agent can obtain sensor value and it is ok.
+		    alarm(2) - Agent can obtain sensor value and it is anomalous.
+		    unavailable(3) - Agent cannot obtain sensor value.
+		    "
+		::=  {  pkSensorEntry  6  }
+
+	pkSensorValueTypeDisplay OBJECT-TYPE
+		SYNTAX		DisplayString  ( SIZE ( 255  ) )
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"The textual description of the data units to
+		    the related pkSensorValueType."
+		::=  {  pkSensorEntry  7  }
+
+	pkSensorValueTimeStamp OBJECT-TYPE
+		SYNTAX		TimeStamp
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"The value of sysUpTime at the time the status
+		    and/or value of this sensor was last obtained by the agent."
+		::= {  pkSensorEntry 8  }
+
+	pkSensorValueUpdateRate OBJECT-TYPE
+		SYNTAX		Unsigned32
+		UNITS		"milliseconds"
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"An indication of the frequency that the agent
+		    updates the related pkSensorValueValue, in milliseconds.
+		    The value zero indicates:
+		     - the sensor value is updated on demand
+		         (e.g., when polled by the agent for a get-request)
+		     - the sensor value is updated when the sensor value changes
+		     - the agent does not know the update rate."
+		::= {  pkSensorEntry 9  }
+
+-- pkSensorTemperatureThreshold
+        
+        pkSensorTemperatureThreshold OBJECT-TYPE
+		SYNTAX          INTEGER  (0..70)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Temperature threshold value configuration. The type 
+                                being used is Celcius. Where 0C is the minimum and 
+                                70C is the maximum value that can be set."
+		::=  {  parksSensor  2  }
+
+-- pkSensorFanDutyCycle 
+        
+        pkSensorFanDutyCycle OBJECT-TYPE
+		SYNTAX          INTEGER  (0 | 30..100)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Fan duty cycle percentage configuration. Where 30%
+                                is the minimum and 100% is the maximum percentage
+                                that can be set. When duty cycle is set to 0% the 
+                                autocontrol mode is enabled."
+		::=  {  parksSensor  3  }
+
+-- Traps
+
+	pkSensorTraps		OBJECT-IDENTITY
+		STATUS			current
+		DESCRIPTION		"Traps for PARKS Sensor MIB module."
+		::=  {  parksSensor 4 }
+
+	pkSensorStatusChanged	NOTIFICATION-TYPE
+		OBJECTS {
+			pkSensorIndex,
+			pkSensorStatus
+			}
+		STATUS			current
+		DESCRIPTION		"Indication that a sensor has had its status changed."
+		::=  {  pkSensorTraps 1  }
+END

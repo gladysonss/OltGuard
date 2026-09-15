@@ -1,0 +1,295 @@
+-- PARKS-FLASHFS-MIB
+-- version 1.1.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+--
+-- MODULE-IDENTITY
+-- ORGANIZATION "PARKS Comunicacoes Digitais"
+-- CONTACT-INFO
+--            "Postal: PARKS Comunicacoes Digitais
+--            Cruzeiro 530 ,  Distrito Industrial,
+--            CEP 94930-615   Cachoeirinha, RS, BRAZIL
+--            E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--            " Information of flash file systems for PARKS devices. "
+--
+
+PARKS-FLASHFS-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		DisplayString
+			FROM SNMPv2-TC
+		OBJECT-TYPE
+			FROM RFC-1212
+		enterprises
+			FROM RFC1155-SMI
+		pkEquipmentDataindex
+			FROM PARKS-EQUIPMENT-MIB
+		TimeTicks
+			FROM SNMPv2-SMI
+		parksFlashFS
+			FROM PARKS-SMI;
+
+	-- operations
+	pkFlashFSOperationsDataTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkFlashFSOperationsDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"Table that contains file system operations for each
+				managed equipment."
+		::=  { parksFlashFS 1 }
+
+	pkFlashFSOperationsDataEntry	OBJECT-TYPE
+		SYNTAX		PkFlashFSOperationsDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"List of operations for each
+				managed equipment."
+		INDEX		{  pkEquipmentDataindex  }
+		::=  { pkFlashFSOperationsDataTable 1 }
+
+	PkFlashFSOperationsDataEntry  ::=  SEQUENCE {
+		pkFlashFSCurrentFirmware	INTEGER,
+		pkFlashFSCurrentConfiguration	INTEGER,
+		pkFlashFSSelectFirmware		INTEGER,
+		pkFlashFSDeleteFirmware		INTEGER,
+		pkFlashFSSelectConfiguration	INTEGER,
+		pkFlashFSDeleteConfiguration	INTEGER
+	}
+
+	pkFlashFSCurrentFirmware	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Points to the current firmware file."
+		::=  { pkFlashFSOperationsDataEntry 1 }
+
+	pkFlashFSCurrentConfiguration	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION	"Points to the current configuration file."
+		::=  { pkFlashFSOperationsDataEntry 2 }
+
+	pkFlashFSSelectFirmware		OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-write
+		STATUS			mandatory
+		DESCRIPTION	"Selects the new firmware file."
+		::=  { pkFlashFSOperationsDataEntry 3 }
+
+	pkFlashFSDeleteFirmware		OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-write
+		STATUS			mandatory
+		DESCRIPTION	"Deletes the firmware file."
+		::=  { pkFlashFSOperationsDataEntry 4 }
+
+	pkFlashFSSelectConfiguration	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-write
+		STATUS			mandatory
+		DESCRIPTION	"Selects the new configuration file."
+		::=  { pkFlashFSOperationsDataEntry 5 }
+
+	pkFlashFSDeleteConfiguration	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-write
+		STATUS			mandatory
+		DESCRIPTION	"Deletes the configuration file."
+		::=  { pkFlashFSOperationsDataEntry 6 }
+
+	-- firmware table
+	pkFlashFSFirmwareDataTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkFlashFSFirmwareDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"Table that contains informations for each
+				firmware on the managed equipment."
+		::=  { parksFlashFS 2 }
+
+	pkFlashFSFirmwareDataEntry	OBJECT-TYPE
+		SYNTAX		PkFlashFSFirmwareDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"List of informations for each
+				firmware of the managed equipment."
+		INDEX		{  pkEquipmentDataindex, pkFlashFSFirmwareIndex  }
+		::=  { pkFlashFSFirmwareDataTable 1 }
+
+	PkFlashFSFirmwareDataEntry  ::=  SEQUENCE {
+		pkFlashFSFirmwareIndex		INTEGER,
+		pkFlashFSFirmwareName		DisplayString,
+		pkFlashFSFirmwareSize		INTEGER,
+		pkFlashFSFirmwareDate		TimeTicks,
+		pkFlashFSFirmwareVersion	DisplayString
+	}
+
+	pkFlashFSFirmwareIndex		OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Index of the file system object."
+		::=  { pkFlashFSFirmwareDataEntry 1 }
+
+	pkFlashFSFirmwareName		OBJECT-TYPE
+		SYNTAX			DisplayString(SIZE(255))
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Firmware name."
+		::=  { pkFlashFSFirmwareDataEntry 2 }
+
+	pkFlashFSFirmwareSize		OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Firmware size in bytes."
+		::=  { pkFlashFSFirmwareDataEntry 3 }
+
+	pkFlashFSFirmwareDate		OBJECT-TYPE
+		SYNTAX			TimeTicks
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"The time of the file creation at the file system."
+		::=  { pkFlashFSFirmwareDataEntry 4 }
+
+	pkFlashFSFirmwareVersion	OBJECT-TYPE
+		SYNTAX			DisplayString(SIZE(255))
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Firmware Version."
+		::=  { pkFlashFSFirmwareDataEntry 5 }
+
+	-- configuration table
+	pkFlashFSConfigurationDataTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkFlashFSConfigurationDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"Table that contains informations for each
+				configuration on the managed equipment."
+		::=  { parksFlashFS 3 }
+
+	pkFlashFSConfigurationDataEntry	OBJECT-TYPE
+		SYNTAX		PkFlashFSConfigurationDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"List of informations for each
+				configuration of the managed equipment."
+		INDEX		{  pkEquipmentDataindex, pkFlashFSConfigurationIndex  }
+		::=  { pkFlashFSConfigurationDataTable 1 }
+
+	PkFlashFSConfigurationDataEntry  ::=  SEQUENCE {
+		pkFlashFSConfigurationIndex		INTEGER,
+		pkFlashFSConfigurationName		DisplayString,
+		pkFlashFSConfigurationSize		INTEGER,
+		pkFlashFSConfigurationDate		TimeTicks
+	}
+
+	pkFlashFSConfigurationIndex	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Index of the file system object."
+		::=  { pkFlashFSConfigurationDataEntry 1 }
+
+	pkFlashFSConfigurationName	OBJECT-TYPE
+		SYNTAX			DisplayString(SIZE(255))
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Configuration name."
+		::=  { pkFlashFSConfigurationDataEntry 2 }
+
+	pkFlashFSConfigurationSize	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Configuration size in bytes."
+		::=  { pkFlashFSConfigurationDataEntry 3 }
+
+	pkFlashFSConfigurationDate	OBJECT-TYPE
+		SYNTAX			TimeTicks
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"The time of the file creation at the file system."
+		::=  { pkFlashFSConfigurationDataEntry 4 }
+
+	---details table
+	pkFlashFSConfigDetailsDataTable		OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkFlashFSConfigDetailsDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"Table that contains the details foreach
+				configuration file on the managed equipment."
+		::=  { parksFlashFS 4 }
+
+	pkFlashFSConfigDetailsDataEntry	OBJECT-TYPE
+		SYNTAX		PkFlashFSConfigDetailsDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"List of details for each
+				configuration of the managed equipment."
+		INDEX		{ pkEquipmentDataindex, pkFlashFSConfigurationIndex }
+		::=  { pkFlashFSConfigDetailsDataTable 1 }
+
+	PkFlashFSConfigDetailsDataEntry  ::=  SEQUENCE {
+		pkFlashFSConfigDetailsVersion		INTEGER,
+		pkFlashFSConfigDetailsProductCode	DisplayString,
+		pkFlashFSConfigDetailsSn		DisplayString,
+		pkFlashFSConfigDetailsFwVersion		DisplayString,
+		pkFlashFSConfigDetailsPayloadType	INTEGER,
+		pkFlashFSConfigDetailsDate		TimeTicks
+	}
+
+	pkFlashFSConfigDetailsVersion	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Configuration version."
+		::=  { pkFlashFSConfigDetailsDataEntry 1 }
+
+	pkFlashFSConfigDetailsProductCode	OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE(255))
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Product code that built this configuration."
+		::=  { pkFlashFSConfigDetailsDataEntry 2 }
+
+	pkFlashFSConfigDetailsSn		OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE(255))
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Serial number that built this configuration."
+		::=  { pkFlashFSConfigDetailsDataEntry 3 }
+
+	pkFlashFSConfigDetailsFwVersion		OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE(255))
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Firmware version that was related to this configuration."
+		::=  { pkFlashFSConfigDetailsDataEntry 4 }
+
+	pkFlashFSConfigDetailsPayloadType	OBJECT-TYPE
+		SYNTAX				INTEGER {
+						targz(0),
+						tarbz2(1),
+						zip(2),
+						binary(3) }
+		ACCESS				read-only
+		STATUS				mandatory
+		DESCRIPTION			"Payload type."
+		::=  { pkFlashFSConfigDetailsDataEntry 5 }
+
+	pkFlashFSConfigDetailsDate		OBJECT-TYPE
+		SYNTAX			TimeTicks
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"The time of the file creation at the file system."
+		::=  { pkFlashFSConfigDetailsDataEntry 6 }
+END

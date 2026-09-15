@@ -1,0 +1,1302 @@
+GPON-OLT-PM	DEFINITIONS ::= BEGIN
+	IMPORTS
+		  OBJECT-TYPE, Unsigned32, Counter64
+			FROM SNMPv2-SMI
+			ocsOlt, SlotNo, PortNo, LogicalPortNo, PhysicalPortNo
+			FROM GPON-OLT-TC;
+
+	gponOltPerformanceGroup	OBJECT IDENTIFIER  ::=  { ocsOlt  4 }
+
+
+--OLT PON Link PM Table (3.5.1)--
+
+	oltPonLinkPmTable OBJECT-TYPE
+		SYNTAX          SEQUENCE OF OltPonLinkPmEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION      "This table displays performance statistics for the PON Link."
+		::=  { gponOltPerformanceGroup  1 }
+
+	oltPonLinkPmEntry OBJECT-TYPE
+		SYNTAX          OltPonLinkPmEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           {  oltPonLinkPmSlotNo, oltPonLinkPmPortNo, oltPonLinkPmIntervalID  }
+		::=  { oltPonLinkPmTable 1 }
+
+	OltPonLinkPmEntry  ::=    SEQUENCE {
+		oltPonLinkPmSlotNo  SlotNo,
+		oltPonLinkPmPortNo  PortNo,
+		oltPonLinkPmIntervalID Unsigned32,
+		oltPonLinkPmDsGetPonCounterValidEthPackets Unsigned32,
+		oltPonLinkPmDsGetPonCounterCpuPackets Unsigned32,
+		oltPonLinkPmUsGetPonCounterPackets Unsigned32,
+		oltPonLinkPmDsGetPonCounterPloams  Unsigned32,
+		oltPonLinkPmDsGetPonCounterInvalidPackets  Unsigned32,
+		oltPonLinkPmUsGetPonCounterInactivePortId  Unsigned32,
+		oltPonLinkPmDsGetTmCounterRxValidPackets Unsigned32,
+		oltPonLinkPmDsGetTmCounterRxCrcErrorPackets Unsigned32,
+		oltPonLinkPmDsGetPonCounterMacLookupMissPackets Unsigned32
+	}
+
+		oltPonLinkPmSlotNo        OBJECT-TYPE    
+		SYNTAX                  SlotNo
+		MAX-ACCESS              not-accessible
+		STATUS                  current
+		DESCRIPTION             "Serves as an index for this table"
+		::=  {  oltPonLinkPmEntry  1  }  
+
+		oltPonLinkPmPortNo        OBJECT-TYPE    
+		SYNTAX                  PortNo
+		MAX-ACCESS              not-accessible
+		STATUS                  current
+		DESCRIPTION             "Serves as an index for this table"
+		::=  {  oltPonLinkPmEntry  2  }
+
+	oltPonLinkPmIntervalID    OBJECT-TYPE    
+		SYNTAX                  Unsigned32(0..96)
+		MAX-ACCESS              not-accessible
+		STATUS                  current
+		DESCRIPTION             "Serves as an index for this table. Identifies the 15
+					interval in which PM was collected. The value
+					0 identifies the current interval. Value 1 identifies
+					the latest 15 minute interval and value 96
+					identifies the last 15 minute interval in a a 24 hour period."
+		::=  {  oltPonLinkPmEntry  3  }
+
+	oltPonLinkPmDsGetPonCounterValidEthPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of transmitted Ethernet packets originated
+					either by the Hi-SGMII interface."
+		::=  {  oltPonLinkPmEntry  4  }
+
+	oltPonLinkPmDsGetPonCounterCpuPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of transmitted Ethernet packets originated
+					either by local CPU interface."
+		::=  {  oltPonLinkPmEntry  5  }
+
+	oltPonLinkPmUsGetPonCounterPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of packets received by the PON.
+					This counter doesn't include packet destined to the CPU."
+		::=  {  oltPonLinkPmEntry  6  }
+
+	oltPonLinkPmDsGetPonCounterPloams        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of transmitted PLOAM packets."
+		::=  {  oltPonLinkPmEntry  7  }
+
+	oltPonLinkPmDsGetPonCounterInvalidPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of assembled packets discarded
+					due to the invalid length."
+		::=  {  oltPonLinkPmEntry  8  }
+
+	oltPonLinkPmUsGetPonCounterInactivePortId        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of packets that were dropped due to
+					not configured GEM Port ID."
+		::=  {  oltPonLinkPmEntry  9  }
+
+	oltPonLinkPmDsGetTmCounterRxValidPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of valid packets from
+					the Hi-SGMII interface."
+		::=  {  oltPonLinkPmEntry  10  }
+
+	oltPonLinkPmDsGetTmCounterRxCrcErrorPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of packets with CRC error from
+					the Hi-SGMII interface."
+		::=  {  oltPonLinkPmEntry  11  }
+
+	oltPonLinkPmDsGetPonCounterMacLookupMissPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of MAC lookup miss events."
+		::=  {  oltPonLinkPmEntry  12  }
+
+
+--ONU GEM Port PM Table (3.5.2)--
+
+	onuGemPortPmTable OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OnuGemPortPmEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	 "This table displays performance statistics for the
+				GEM Ports on the ONU. Some columns in this 
+				table are not supported by the underlying hardware or OMCI.
+				GET requests on these columns will return 0."	
+		::=  { gponOltPerformanceGroup  2 }
+		
+	onuGemPortPmEntry	OBJECT-TYPE
+		SYNTAX		OnuGemPortPmEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  onuGemPortPmSlotNo, onuGemPortPmPortNo,
+				onuGemPortPmLogicalPortNo, onuGemPortPmOltGEMPortNo,
+                                onuGemPortPmIntervalID  }
+		::=  { onuGemPortPmTable 1 }
+		
+	OnuGemPortPmEntry  ::=	SEQUENCE {
+		onuGemPortPmSlotNo  SlotNo,
+		onuGemPortPmPortNo  PortNo,
+		onuGemPortPmLogicalPortNo LogicalPortNo,
+		onuGemPortPmOltGEMPortNo Unsigned32,
+		onuGemPortPmIntervalID Unsigned32,
+		onuGemPortPmRxTotalFrames Counter64,
+		onuGemPortPmRxLostPackets Counter64,
+		onuGemPortPmRxMisinsertedPackets Counter64,
+		onuGemPortPmRxTotalPackets  Counter64,
+		onuGemPortPmRxTotalBlocks  Counter64,
+		onuGemPortPmTxTotalBlocks  Counter64,
+		onuGemPortPmRxImpairedBlocks  Counter64
+	}  
+
+	onuGemPortPmSlotNo 	OBJECT-TYPE	
+		SYNTAX			SlotNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuGemPortPmEntry  1  } 
+		
+	onuGemPortPmPortNo 	OBJECT-TYPE	
+		SYNTAX			PortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuGemPortPmEntry  2  } 
+		
+	onuGemPortPmLogicalPortNo 	OBJECT-TYPE	
+		SYNTAX			LogicalPortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuGemPortPmEntry  3  } 
+
+        onuGemPortPmOltGEMPortNo        OBJECT-TYPE
+                SYNTAX                  Unsigned32
+                MAX-ACCESS              not-accessible
+                STATUS                  current
+                DESCRIPTION             "Dynamic GEM port no assigned by OLT.
+                                         Serves as an index for this table"
+                ::=  {  onuGemPortPmEntry  4  }
+
+	onuGemPortPmIntervalID 	OBJECT-TYPE	
+		SYNTAX			Unsigned32(0..96)
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table. Identifies the
+					15 interval in which PM was collected. The value
+					0 identifies the current interval. Value 1 identifies
+					the latest 15 minute interval and value 96
+					identifies the last 15 minute interval in a a 24 hour period."
+		::=  {  onuGemPortPmEntry  5  } 
+		
+	onuGemPortPmRxTotalFrames 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Received frames"
+		::=  {  onuGemPortPmEntry  6  }
+		
+	onuGemPortPmRxLostPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts background GEM frame loss.
+					It does not distinguish between packets 
+					lost because of header bit errors or buffer overflows;
+					it records only loss of information. "
+		::=  {  onuGemPortPmEntry  7  }
+		
+	onuGemPortPmRxMisinsertedPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM frames misrouted to this GEM port. "
+		::=  {  onuGemPortPmEntry  8  }
+		
+	onuGemPortPmRxTotalPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM frames that were received
+					correctly at the monitored GEM port."
+		::=  {  onuGemPortPmEntry  9  }
+		
+	onuGemPortPmRxTotalBlocks 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM blocks that were received
+					correctly at the monitored GEM port. "
+		::=  {  onuGemPortPmEntry  10  }
+		
+	onuGemPortPmTxTotalBlocks 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM blocks originated by the
+					transmitting end point (i.e., backward 
+					reporting is assumed). "
+		::=  {  onuGemPortPmEntry  11  }
+		
+	onuGemPortPmRxImpairedBlocks 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This severely errored data block counter is
+					incremented whenever one of the following events 
+					takes place: the number of misinserted packets
+					reaches its threshold, the number of bipolar violations
+					reaches its threshold, or the number of lost packets
+					reaches its threshold. Threshold values are based on 
+					vendor operator negotiation. "
+		::=  {  onuGemPortPmEntry  12  }
+		
+
+--ONU Ethernet Port PM Table (3.5.3)--
+
+	onuEthPortPmTable OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OnuEthPortPmEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	 "This table displays performance statistics for the Ethernet
+				Ports on the ONU. Some columns in 
+				this table are not supported by the underlying hardware or OMCI.
+				GET requests on these columns will return 0." 
+		::=  { gponOltPerformanceGroup  3 }
+		
+	onuEthPortPmEntry	OBJECT-TYPE
+		SYNTAX		OnuEthPortPmEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  onuEthPortPmSlotNo, onuEthPortPmPortNo, onuEthPortPmLogicalPortNo,
+				onuEthPortPmPhysicalPortNo, onuEthPortPmIntervalID  }
+		::=  { onuEthPortPmTable 1 }
+		
+	OnuEthPortPmEntry  ::=	SEQUENCE {
+		onuEthPortPmSlotNo  SlotNo,
+		onuEthPortPmPortNo  PortNo,
+		onuEthPortPmLogicalPortNo LogicalPortNo,
+		onuEthPortPmPhysicalPortNo PhysicalPortNo,
+		onuEthPortPmIntervalID Unsigned32,
+		onuEthPortPmRxTotalPackets Counter64,
+		onuEthPortPmRxUnicastPackets Counter64,
+		onuEthPortPmRxMulticastPackets Counter64,
+		onuEthPortPmRxBroadcastPackets   Counter64,
+		onuEthPortPmRxDiscardedPackets  Counter64,
+		onuEthPortPmTxTotalPackets  Counter64,
+		onuEthPortPmTxUnicastPackets  Counter64,		
+		onuEthPortPmTxMulticastPackets  Counter64,
+		onuEthPortPmTxBroadcastPackets  Counter64,
+		onuEthPortPmTxDiscardedPackets  Counter64,
+		onuEthPortPmRxUndersizePackets  Counter64,
+		onuEthPortPmRxFragments  Counter64,
+		onuEthPortPmRxJabbers  Counter64,
+		onuEthPortPmRxPackets64Octets  Counter64,
+		onuEthPortPmRxPackets65to127Octets  Counter64,
+		onuEthPortPmRxPackets128to255Octets  Counter64,
+		onuEthPortPmRxPackets256to511Octets   Counter64,
+		onuEthPortPmRxPackets512to1023Octets  Counter64,
+		onuEthPortPmRxPackets1024to1518Octets  Counter64,
+		onuEthPortPmRxFcsErrors   Counter64,
+		onuEthPortPmTxExcessiveCollisions  Counter64,
+		onuEthPortPmTxLateCollisions   Counter64,
+		onuEthPortPmRxPacketsTooLong   Counter64,
+		onuEthPortPmRxBufferOverflows  Counter64,
+		onuEthPortPmTxBufferOverflows  Counter64,
+		onuEthPortPmTxSingleCollisionPackets  Counter64,
+		onuEthPortPmTxMultipleCollisionsPackets  Counter64,
+		onuEthPortPmSQEs  Counter64,
+		onuEthPortPmTxDeferredTransmissio  Counter64,
+		onuEthPortPmTxInternalMACTransmitError  Counter64,
+		onuEthPortPmCarrierSenseError   Counter64,
+		onuEthPortPmRxAlignmentError   Counter64,
+		onuEthPortPmRxInternalMACReceiveError  Counter64,
+		onuEthPortPmRxOctets  Counter64
+	}  
+
+	onuEthPortPmSlotNo 	OBJECT-TYPE	
+		SYNTAX			SlotNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmEntry  1  } 
+		
+	onuEthPortPmPortNo 	OBJECT-TYPE	
+		SYNTAX			PortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmEntry  2  } 
+		
+	onuEthPortPmLogicalPortNo 	OBJECT-TYPE	
+		SYNTAX			LogicalPortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmEntry 3  } 
+		
+	onuEthPortPmPhysicalPortNo 	OBJECT-TYPE	
+		SYNTAX			PhysicalPortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmEntry  4  } 
+
+	onuEthPortPmIntervalID 	OBJECT-TYPE	
+		SYNTAX			Unsigned32(0..96)
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table. Identifies 
+					the 15 interval in which PM was collected. The value
+					0 identifies the current interval. Value 1 identifies
+					the latest 15 minute interval and value 96
+					identifies the last 15 minute interval in a a 24 hour period."
+		::=  {  onuEthPortPmEntry  5  } 
+		
+	onuEthPortPmRxTotalPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received, including bad
+					packets, broadcast packets and multicast packets."
+		::=  {  onuEthPortPmEntry  6  }
+		
+	onuEthPortPmRxUnicastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Unicast received Packets."
+		::=  {  onuEthPortPmEntry  7  }
+		
+	onuEthPortPmRxMulticastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received good packets directed
+					to a multicast address. This does not 
+					include broadcast packets."
+		::=  {  onuEthPortPmEntry  8  }
+		
+	onuEthPortPmRxBroadcastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received good packets directed
+					to the broadcast address. This does 
+					not include multicast packets. "
+		::=  {  onuEthPortPmEntry  9  }
+		
+	onuEthPortPmRxDiscardedPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Rx Discarded Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmEntry  10  }
+		
+	onuEthPortPmTxTotalPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmEntry  11  }
+		
+	onuEthPortPmTxUnicastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Unicast Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmEntry  12  }
+		
+	onuEthPortPmTxMulticastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Multicast Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmEntry  13  }
+		
+	onuEthPortPmTxBroadcastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Broadcast Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmEntry  14  }
+		
+	onuEthPortPmTxDiscardedPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Tx Discarded Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmEntry  15  }
+		
+	onuEthPortPmRxUndersizePackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received that were
+					less than 64 octets long but were otherwise 
+					well formed (excluding framing bits, but including FCS octets)."
+		::=  {  onuEthPortPmEntry  16  }
+		
+	onuEthPortPmRxFragments 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received that were less than
+					64 octets long, excluding framing 
+					bits but including FCS octets, and had either a bad
+					Packet check sequence (FCS) with an integral 
+					number of octets (FCS error) or a bad FCS with a non-integral
+					number of octets (alignment error). 
+					It is entirely normal for this attribute to increment.
+					This is because it counts both runts (which are normal 
+					occurrences due to collisions) and noise hits. "
+		::=  {  onuEthPortPmEntry  17  }
+		
+	onuEthPortPmRxJabbers 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received that were longer than
+					1518 octets, excluding framing bits but including FCS octets, 
+					and had either a bad Packet check sequence (FCS) with an integral 
+					number of octets (FCS error) or a bad FCS with a non-integral
+					number of octets (alignment error). 
+					The range to detect jabber is between 20 ms and 150 ms."
+		::=  {  onuEthPortPmEntry  18  }
+		
+	onuEthPortPmRxPackets64Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received packets (including bad packets)
+					that were 64 octets long, excluding framing bitsbut including FCS. "
+		::=  {  onuEthPortPmEntry  19  }
+		
+	onuEthPortPmRxPackets65to127Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received packets (including bad packets)
+					that were 65..127 octets long,
+					excluding framing bits but including FCS. "
+		::=  {  onuEthPortPmEntry  20  }
+		
+	onuEthPortPmRxPackets128to255Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 128..255 octets long,
+					excluding framing bits but including FCS. "
+		::=  {  onuEthPortPmEntry  21  }
+		
+	onuEthPortPmRxPackets256to511Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 256..511 octetslong, 
+					excluding framing bits but including FCS."
+		::=  {  onuEthPortPmEntry  22  }
+		
+	onuEthPortPmRxPackets512to1023Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 512..1023 octets long,
+					excluding framing bits but including FCS. "
+		::=  {  onuEthPortPmEntry  23  }
+		
+	onuEthPortPmRxPackets1024to1518Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 1024..1518 octets long, 
+					excluding framing bits but including FCS."
+		::=  {  onuEthPortPmEntry  24  }
+		
+	onuEthPortPmRxFcsErrors 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Rx FCS error Packets."
+		::=  {  onuEthPortPmEntry  25  }
+		
+	onuEthPortPmTxExcessiveCollisions 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose transmission
+					failed due to excessive collisions. "
+		::=  {  onuEthPortPmEntry  26  }
+		
+	onuEthPortPmTxLateCollisions 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					a collision was detected later than 512 bit 
+					times into the transmission of a packet."
+		::=  {  onuEthPortPmEntry  27  }
+		
+	onuEthPortPmRxPacketsTooLong 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					a collision was detected later than 512 bit 
+					times into the transmission of a packet."
+		::=  {  onuEthPortPmEntry  28  }
+		
+	onuEthPortPmRxBufferOverflows 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					the receive buffer overflowed. "
+		::=  {  onuEthPortPmEntry  29  }
+		
+	onuEthPortPmTxBufferOverflows 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					the transmit buffer overflowed."
+		::=  {  onuEthPortPmEntry  30  }
+		
+	onuEthPortPmTxSingleCollisionPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts successfully transmitted
+					Packets whose transmission was delayed by 
+					exactly one collision. "
+		::=  {  onuEthPortPmEntry  31  }
+		
+	onuEthPortPmTxMultipleCollisionsPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts successfully transmitted
+					Packets whose transmission was delayed by 
+					more than one collision."
+		::=  {  onuEthPortPmEntry  32  }
+		
+	onuEthPortPmSQEs 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					the SQE test error message was generated by 
+					the PLS sublayer."
+		::=  {  onuEthPortPmEntry  33  }
+		
+	onuEthPortPmTxDeferredTransmissio 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose first
+					transmission attempt was delayed because the medium 
+					was busy. The count does not include Packets
+					involved in collisions."
+		::=  {  onuEthPortPmEntry  34  }
+		
+	onuEthPortPmTxInternalMACTransmitError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose transmission
+					failed due to an internal MAC sublayer transmit error."
+		::=  {  onuEthPortPmEntry  35 }
+		
+	onuEthPortPmCarrierSenseError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					carrier sense was lost or never asserted when 
+					attempting to transmit a Packet."
+		::=  {  onuEthPortPmEntry  36  }
+		
+	onuEthPortPmRxAlignmentError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts received Packets that were
+					not an integral number of octets in length 
+					and did not pass the FCS check."
+		::=  {  onuEthPortPmEntry  37  }
+		
+	onuEthPortPmRxInternalMACReceiveError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose reception
+					failed due to an internal MAC sublayer receive error "
+		::=  {  onuEthPortPmEntry  38  }
+		
+	onuEthPortPmRxOctets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of octets received from the CPE,
+					including those in bad packets, excluding 
+					framing bits, but including FCS."
+		::=  {  onuEthPortPmEntry  39  }
+
+--OLT PON Link PM Table (3.5.4)--
+
+	oltPonLinkPmCurrentTable OBJECT-TYPE
+		SYNTAX          SEQUENCE OF OltPonLinkPmCurrentEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION      "This table displays performance statistics for the PON Link."
+		::=  { gponOltPerformanceGroup  4 }
+
+	oltPonLinkPmCurrentEntry OBJECT-TYPE
+		SYNTAX          OltPonLinkPmCurrentEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           {  oltPonLinkCurPmSlotNo, oltPonLinkCurPmPortNo }
+		::=  { oltPonLinkPmCurrentTable 1 }
+
+	OltPonLinkPmCurrentEntry  ::=    SEQUENCE {
+		oltPonLinkCurPmSlotNo  SlotNo,
+		oltPonLinkCurPmPortNo  PortNo,
+		oltPonLinkCurPmDsGetPonCounterValidEthPackets Unsigned32,
+		oltPonLinkCurPmDsGetPonCounterCpuPackets Unsigned32,
+		oltPonLinkCurPmUsGetPonCounterPackets Unsigned32,
+		oltPonLinkCurPmDsGetPonCounterPloams  Unsigned32,
+		oltPonLinkCurPmDsGetPonCounterInvalidPackets  Unsigned32,
+		oltPonLinkCurPmUsGetPonCounterInactivePortId  Unsigned32,
+		oltPonLinkCurPmDsGetTmCounterRxValidPackets Unsigned32,
+		oltPonLinkCurPmDsGetTmCounterRxCrcErrorPackets Unsigned32,
+		oltPonLinkCurPmDsGetPonCounterMacLookupMissPackets Unsigned32
+	}
+
+	oltPonLinkCurPmSlotNo        OBJECT-TYPE    
+		SYNTAX                  SlotNo
+		MAX-ACCESS              not-accessible
+		STATUS                  current
+		DESCRIPTION             "Serves as an index for this table"
+		::=  {  oltPonLinkPmCurrentEntry  1  }  
+
+	oltPonLinkCurPmPortNo        OBJECT-TYPE    
+		SYNTAX                  PortNo
+		MAX-ACCESS              not-accessible
+		STATUS                  current
+		DESCRIPTION             "Serves as an index for this table"
+		::=  {  oltPonLinkPmCurrentEntry  2  }
+
+	oltPonLinkCurPmDsGetPonCounterValidEthPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of transmitted Ethernet packets originated
+					either by the Hi-SGMII interface."
+		::=  {  oltPonLinkPmCurrentEntry  3  }
+
+	oltPonLinkCurPmDsGetPonCounterCpuPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of transmitted Ethernet packets originated
+					either by local CPU interface."
+		::=  {  oltPonLinkPmCurrentEntry  4  }
+
+	oltPonLinkCurPmUsGetPonCounterPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of packets received by the PON.
+					This counter doesn't include packet destined to the CPU."
+		::=  {  oltPonLinkPmCurrentEntry  5  }
+
+	oltPonLinkCurPmDsGetPonCounterPloams        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of transmitted PLOAM packets."
+		::=  {  oltPonLinkPmCurrentEntry  6  }
+
+	oltPonLinkCurPmDsGetPonCounterInvalidPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of assembled packets discarded
+					due to the invalid length."
+		::=  {  oltPonLinkPmCurrentEntry  7  }
+
+	oltPonLinkCurPmUsGetPonCounterInactivePortId        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of packets that were dropped due to
+					not configured GEM Port ID."
+		::=  {  oltPonLinkPmCurrentEntry  8  }
+
+	oltPonLinkCurPmDsGetTmCounterRxValidPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of valid packets from
+					the Hi-SGMII interface."
+		::=  {  oltPonLinkPmCurrentEntry  9  }
+
+	oltPonLinkCurPmDsGetTmCounterRxCrcErrorPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of packets with CRC error from
+					the Hi-SGMII interface."
+		::=  {  oltPonLinkPmCurrentEntry  10  }
+
+	oltPonLinkCurPmDsGetPonCounterMacLookupMissPackets        OBJECT-TYPE
+		SYNTAX                  Unsigned32
+		MAX-ACCESS              read-only
+		STATUS                  current
+		DESCRIPTION             "Total number of MAC lookup miss events."
+		::=  {  oltPonLinkPmCurrentEntry  11  }
+
+
+--ONU GEM Port PM Table (3.5.5)--
+
+	onuGemPortPmCurrentTable OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OnuGemPortPmCurrentEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	 "This table displays performance statistics for the
+				GEM Ports on the ONU. Some columns in this 
+				table are not supported by the underlying hardware or OMCI.
+				GET requests on these columns will return 0."	
+		::=  { gponOltPerformanceGroup  5 }
+		
+	onuGemPortPmCurrentEntry	OBJECT-TYPE
+		SYNTAX		OnuGemPortPmCurrentEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  onuGemPortCurPmSlotNo, onuGemPortCurPmPortNo,
+				onuGemPortCurPmLogicalPortNo, onuGemPortCurPmOltGEMPortNo }
+		::=  { onuGemPortPmCurrentTable 1 }
+		
+	OnuGemPortPmCurrentEntry  ::=	SEQUENCE {
+		onuGemPortCurPmSlotNo  SlotNo,
+		onuGemPortCurPmPortNo  PortNo,
+		onuGemPortCurPmLogicalPortNo LogicalPortNo,
+		onuGemPortCurPmOltGEMPortNo Unsigned32,
+		onuGemPortPmRxTotalFrames Counter64,
+		onuGemPortCurPmRxLostPackets Counter64,
+		onuGemPortCurPmRxMisinsertedPackets Counter64,
+		onuGemPortCurPmRxTotalPackets  Counter64,
+		onuGemPortCurPmRxTotalBlocks  Counter64,
+		onuGemPortCurPmTxTotalBlocks  Counter64,
+		onuGemPortCurPmRxImpairedBlocks  Counter64
+	}  
+
+	onuGemPortCurPmSlotNo 	OBJECT-TYPE	
+		SYNTAX			SlotNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuGemPortPmCurrentEntry  1  } 
+		
+	onuGemPortCurPmPortNo 	OBJECT-TYPE	
+		SYNTAX			PortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuGemPortPmCurrentEntry  2  } 
+		
+	onuGemPortCurPmLogicalPortNo 	OBJECT-TYPE	
+		SYNTAX			LogicalPortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuGemPortPmCurrentEntry  3  } 
+
+        onuGemPortCurPmOltGEMPortNo        OBJECT-TYPE
+                SYNTAX                  Unsigned32
+                MAX-ACCESS              not-accessible
+                STATUS                  current
+                DESCRIPTION             "Dynamic GEM port no assigned by OLT.
+                                         Serves as an index for this table"
+                ::=  {  onuGemPortPmCurrentEntry  4  }
+
+	onuGemPortPmCurRxTotalFrames 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Received frames"
+		::=  {  onuGemPortPmCurrentEntry  5  }
+
+	onuGemPortCurPmRxLostPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts background GEM frame loss.
+					It does not distinguish between packets 
+					lost because of header bit errors or buffer overflows;
+					it records only loss of information. "
+		::=  {  onuGemPortPmCurrentEntry  6  }
+		
+	onuGemPortCurPmRxMisinsertedPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM frames misrouted to this GEM port. "
+		::=  {  onuGemPortPmCurrentEntry  7  }
+		
+	onuGemPortCurPmRxTotalPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM frames that were received
+					correctly at the monitored GEM port."
+		::=  {  onuGemPortPmCurrentEntry  8  }
+		
+	onuGemPortCurPmRxTotalBlocks 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM blocks that were received
+					correctly at the monitored GEM port. "
+		::=  {  onuGemPortPmCurrentEntry  9  }
+		
+	onuGemPortCurPmTxTotalBlocks 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts GEM blocks originated by the
+					transmitting end point (i.e., backward 
+					reporting is assumed). "
+		::=  {  onuGemPortPmCurrentEntry  10  }
+		
+	onuGemPortCurPmRxImpairedBlocks 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This severely errored data block counter is
+					incremented whenever one of the following events 
+					takes place: the number of misinserted packets
+					reaches its threshold, the number of bipolar violations
+					reaches its threshold, or the number of lost packets
+					reaches its threshold. Threshold values are based on 
+					vendor operator negotiation. "
+		::=  {  onuGemPortPmCurrentEntry  11  }
+
+
+--ONU Ethernet Port PM Table (3.5.6)--
+
+	onuEthPortPmCurrentTable OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OnuEthPortPmCurrentEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	 "This table displays performance statistics for the Ethernet
+				Ports on the ONU. Some columns in 
+				this table are not supported by the underlying hardware or OMCI.
+				GET requests on these columns will return 0." 
+		::=  { gponOltPerformanceGroup  6 }
+		
+	onuEthPortPmCurrentEntry	OBJECT-TYPE
+		SYNTAX		OnuEthPortPmCurrentEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  onuEthPortCurPmSlotNo, onuEthPortCurPmPortNo, onuEthPortCurPmLogicalPortNo,
+				onuEthPortCurPmPhysicalPortNo}
+		::=  { onuEthPortPmCurrentTable 1 }
+		
+	OnuEthPortPmCurrentEntry  ::=	SEQUENCE {
+		onuEthPortCurPmSlotNo  SlotNo,
+		onuEthPortCurPmPortNo  PortNo,
+		onuEthPortCurPmLogicalPortNo LogicalPortNo,
+		onuEthPortCurPmPhysicalPortNo PhysicalPortNo,
+		onuEthPortCurPmRxTotalPackets Counter64,
+		onuEthPortCurPmRxUnicastPackets Counter64,
+		onuEthPortCurPmRxMulticastPackets Counter64,
+		onuEthPortCurPmRxBroadcastPackets   Counter64,
+		onuEthPortCurPmRxDiscardedPackets  Counter64,
+		onuEthPortCurPmTxTotalPackets  Counter64,
+		onuEthPortCurPmTxUnicastPackets  Counter64,		
+		onuEthPortCurPmTxMulticastPackets  Counter64,
+		onuEthPortCurPmTxBroadcastPackets  Counter64,
+		onuEthPortCurPmTxDiscardedPackets  Counter64,
+		onuEthPortCurPmRxUndersizePackets  Counter64,
+		onuEthPortCurPmRxFragments  Counter64,
+		onuEthPortCurPmRxJabbers  Counter64,
+		onuEthPortCurPmRxPackets64Octets  Counter64,
+		onuEthPortCurPmRxPackets65to127Octets  Counter64,
+		onuEthPortCurPmRxPackets128to255Octets  Counter64,
+		onuEthPortCurPmRxPackets256to511Octets   Counter64,
+		onuEthPortCurPmRxPackets512to1023Octets  Counter64,
+		onuEthPortCurPmRxPackets1024to1518Octets  Counter64,
+		onuEthPortCurPmRxFcsErrors   Counter64,
+		onuEthPortCurPmTxExcessiveCollisions  Counter64,
+		onuEthPortCurPmTxLateCollisions   Counter64,
+		onuEthPortCurPmRxPacketsTooLong   Counter64,
+		onuEthPortCurPmRxBufferOverflows  Counter64,
+		onuEthPortCurPmTxBufferOverflows  Counter64,
+		onuEthPortCurPmTxSingleCollisionPackets  Counter64,
+		onuEthPortCurPmTxMultipleCollisionsPackets  Counter64,
+		onuEthPortCurPmSQEs  Counter64,
+		onuEthPortCurPmTxDeferredTransmissio  Counter64,
+		onuEthPortCurPmTxInternalMACTransmitError  Counter64,
+		onuEthPortCurPmCarrierSenseError   Counter64,
+		onuEthPortCurPmRxAlignmentError   Counter64,
+		onuEthPortCurPmRxInternalMACReceiveError  Counter64,
+		onuEthPortCurPmRxOctets  Counter64
+	}  
+
+	onuEthPortCurPmSlotNo 	OBJECT-TYPE	
+		SYNTAX			SlotNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmCurrentEntry  1  } 
+		
+	onuEthPortCurPmPortNo 	OBJECT-TYPE	
+		SYNTAX			PortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmCurrentEntry  2  } 
+		
+	onuEthPortCurPmLogicalPortNo 	OBJECT-TYPE	
+		SYNTAX			LogicalPortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmCurrentEntry 3  } 
+		
+	onuEthPortCurPmPhysicalPortNo 	OBJECT-TYPE	
+		SYNTAX			PhysicalPortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table"
+		::=  {  onuEthPortPmCurrentEntry  4  } 
+
+	onuEthPortCurPmRxTotalPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received, including bad
+					packets, broadcast packets and multicast packets."
+		::=  {  onuEthPortPmCurrentEntry  5  }
+		
+	onuEthPortCurPmRxUnicastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Unicast received Packets."
+		::=  {  onuEthPortPmCurrentEntry  6  }
+		
+	onuEthPortCurPmRxMulticastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received good packets directed
+					to a multicast address. This does not 
+					include broadcast packets."
+		::=  {  onuEthPortPmCurrentEntry  7  }
+		
+	onuEthPortCurPmRxBroadcastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received good packets directed
+					to the broadcast address. This does 
+					not include multicast packets. "
+		::=  {  onuEthPortPmCurrentEntry  8  }
+		
+	onuEthPortCurPmRxDiscardedPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Rx Discarded Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmCurrentEntry  9  }
+		
+	onuEthPortCurPmTxTotalPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmCurrentEntry  10  }
+		
+	onuEthPortCurPmTxUnicastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Unicast Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmCurrentEntry  11  }
+		
+	onuEthPortCurPmTxMulticastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Multicast Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmCurrentEntry  12  }
+		
+	onuEthPortCurPmTxBroadcastPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Broadcast Tx Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmCurrentEntry  13  }
+		
+	onuEthPortCurPmTxDiscardedPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Tx Discarded Packets. NOT SUPPORTED"
+		::=  {  onuEthPortPmCurrentEntry  14  }
+		
+	onuEthPortCurPmRxUndersizePackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received that were
+					less than 64 octets long but were otherwise 
+					well formed (excluding framing bits, but including FCS octets)."
+		::=  {  onuEthPortPmCurrentEntry  15  }
+		
+	onuEthPortCurPmRxFragments 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received that were less than
+					64 octets long, excluding framing 
+					bits but including FCS octets, and had either a bad
+					Packet check sequence (FCS) with an integral 
+					number of octets (FCS error) or a bad FCS with a non-integral
+					number of octets (alignment error). 
+					It is entirely normal for this attribute to increment.
+					This is because it counts both runts (which are normal 
+					occurrences due to collisions) and noise hits. "
+		::=  {  onuEthPortPmCurrentEntry  16  }
+		
+	onuEthPortCurPmRxJabbers 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets received that were longer than
+					1518 octets, excluding framing bits but including FCS octets, 
+					and had either a bad Packet check sequence (FCS) with an integral 
+					number of octets (FCS error) or a bad FCS with a non-integral
+					number of octets (alignment error). 
+					The range to detect jabber is between 20 ms and 150 ms."
+		::=  {  onuEthPortPmCurrentEntry  17  }
+		
+	onuEthPortCurPmRxPackets64Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received packets (including bad packets)
+					that were 64 octets long, excluding framing bitsbut including FCS. "
+		::=  {  onuEthPortPmCurrentEntry  18  }
+		
+	onuEthPortCurPmRxPackets65to127Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of received packets (including bad packets)
+					that were 65..127 octets long,
+					excluding framing bits but including FCS. "
+		::=  {  onuEthPortPmCurrentEntry  19  }
+		
+	onuEthPortCurPmRxPackets128to255Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 128..255 octets long,
+					excluding framing bits but including FCS. "
+		::=  {  onuEthPortPmCurrentEntry  20  }
+		
+	onuEthPortCurPmRxPackets256to511Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 256..511 octetslong, 
+					excluding framing bits but including FCS."
+		::=  {  onuEthPortPmCurrentEntry  21  }
+		
+	onuEthPortCurPmRxPackets512to1023Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 512..1023 octets long,
+					excluding framing bits but including FCS. "
+		::=  {  onuEthPortPmCurrentEntry  22  }
+		
+	onuEthPortCurPmRxPackets1024to1518Octets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of packets (including bad packets)
+					received that were 1024..1518 octets long, 
+					excluding framing bits but including FCS."
+		::=  {  onuEthPortPmCurrentEntry  23  }
+		
+	onuEthPortCurPmRxFcsErrors 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Total Rx FCS error Packets."
+		::=  {  onuEthPortPmCurrentEntry  24  }
+		
+	onuEthPortCurPmTxExcessiveCollisions 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose transmission
+					failed due to excessive collisions. "
+		::=  {  onuEthPortPmCurrentEntry  25  }
+		
+	onuEthPortCurPmTxLateCollisions 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					a collision was detected later than 512 bit 
+					times into the transmission of a packet."
+		::=  {  onuEthPortPmCurrentEntry  26  }
+		
+	onuEthPortCurPmRxPacketsTooLong 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					a collision was detected later than 512 bit 
+					times into the transmission of a packet."
+		::=  {  onuEthPortPmCurrentEntry  27  }
+		
+	onuEthPortCurPmRxBufferOverflows 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					the receive buffer overflowed. "
+		::=  {  onuEthPortPmCurrentEntry  28  }
+		
+	onuEthPortCurPmTxBufferOverflows 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					the transmit buffer overflowed."
+		::=  {  onuEthPortPmCurrentEntry  29  }
+		
+	onuEthPortCurPmTxSingleCollisionPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts successfully transmitted
+					Packets whose transmission was delayed by 
+					exactly one collision. "
+		::=  {  onuEthPortPmCurrentEntry  30  }
+		
+	onuEthPortCurPmTxMultipleCollisionsPackets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts successfully transmitted
+					Packets whose transmission was delayed by 
+					more than one collision."
+		::=  {  onuEthPortPmCurrentEntry  31  }
+		
+	onuEthPortCurPmSQEs 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					the SQE test error message was generated by 
+					the PLS sublayer."
+		::=  {  onuEthPortPmCurrentEntry  32  }
+		
+	onuEthPortCurPmTxDeferredTransmissio 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose first
+					transmission attempt was delayed because the medium 
+					was busy. The count does not include Packets
+					involved in collisions."
+		::=  {  onuEthPortPmCurrentEntry  33  }
+		
+	onuEthPortCurPmTxInternalMACTransmitError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose transmission
+					failed due to an internal MAC sublayer transmit error."
+		::=  {  onuEthPortPmCurrentEntry  34 }
+		
+	onuEthPortCurPmCarrierSenseError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts the number of times that
+					carrier sense was lost or never asserted when 
+					attempting to transmit a Packet."
+		::=  {  onuEthPortPmCurrentEntry  35  }
+		
+	onuEthPortCurPmRxAlignmentError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts received Packets that were
+					not an integral number of octets in length 
+					and did not pass the FCS check."
+		::=  {  onuEthPortPmCurrentEntry  36  }
+		
+	onuEthPortCurPmRxInternalMACReceiveError 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"This attribute counts Packets whose reception
+					failed due to an internal MAC sublayer receive error "
+		::=  {  onuEthPortPmCurrentEntry  37  }
+		
+	onuEthPortCurPmRxOctets 	OBJECT-TYPE	
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"The total number of octets received from the CPE,
+					including those in bad packets, excluding 
+					framing bits, but including FCS."
+		::=  {  onuEthPortPmCurrentEntry  38  }
+
+
+
+END --GPON-OLT-PM--

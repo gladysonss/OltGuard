@@ -1,0 +1,1995 @@
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+
+--    MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--    CONTACT-INFO
+--	"Postal: PARKS Comunicacoes Digitais Cruzeiro 530,
+--	 Distrito Industrial, CEP 94930-615
+--	 Cachoeirinha, RS, BRAZIL E-mail: suporte@parks.com.br"
+--    DESCRIPTION
+--	"MIB with configuration for GPON in PARKS devices. "
+
+PARKS-GPON-EXT-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+	OBJECT-TYPE, Unsigned32
+		FROM SNMPv2-SMI
+	onuVPortSvcProfileIndex
+		FROM GPON-OLT-SVC
+	parksGponExt
+		FROM PARKS-FEATURES-MIB
+	RowStatus,TruthValue
+		FROM SNMPv2-TC
+	VirtualPortServiceProfileNo,SchedulerProfileNo,SlotNo,PortNo,LogicalPortNo,MacAddress,PhysicalPortNo,ProfileName
+		FROM GPON-TC
+	Ipv6Address,Ipv6AddressPrefix
+		FROM IPV6-TC
+	SystemModule, SysMsgDescription
+		FROM GPON-OLT-TC
+	ProtectionType
+		FROM GPON-TC;
+
+	gponOnuVPortSvcProfExtTable      OBJECT IDENTIFIER ::= { parksGponExt 1 }
+	gponOnuBlackListExtTable         OBJECT IDENTIFIER ::= { parksGponExt 2 }
+	gponOnuIpv6HostTable             OBJECT IDENTIFIER ::= { parksGponExt 3 }
+	gponOltSystemMessages            OBJECT IDENTIFIER ::= { parksGponExt 4 }
+	gponOltSystemDictionary          OBJECT IDENTIFIER ::= { parksGponExt 5 }
+	gponOnuDot1xTable                OBJECT IDENTIFIER ::= { parksGponExt 6 }
+	gponOnuCfgExtTable               OBJECT IDENTIFIER ::= { parksGponExt 7 }
+	gponOnuAlarmIndication           OBJECT IDENTIFIER ::= { parksGponExt 8 }
+	gponOltPonLinkCfgExtTable        OBJECT IDENTIFIER ::= { parksGponExt 9 }
+	gponOnuCfgResetConfigExtTable    OBJECT IDENTIFIER ::= { parksGponExt 10 }
+	gponOltSysCfg                    OBJECT IDENTIFIER ::= { parksGponExt 11 }
+	gponOltProtectionLinkSetExtTable OBJECT IDENTIFIER ::= { parksGponExt 12 }
+	gponOnuIpHostTable               OBJECT IDENTIFIER ::= { parksGponExt 13 }
+	gponOnuVeipTable                 OBJECT IDENTIFIER ::= { parksGponExt 14 }
+	gponOnuPppoeConfigTable          OBJECT IDENTIFIER ::= { parksGponExt 15 }
+	gponOnuTr069ProfTable            OBJECT IDENTIFIER ::= { parksGponExt 16 }
+	gponOnuTr069ConfigTable          OBJECT IDENTIFIER ::= { parksGponExt 17 }
+	gponOnuMulticastOperProfExtTable OBJECT IDENTIFIER ::= { parksGponExt 18 }
+
+--==========================================================================
+	onuVPortSvcProfExtTable 	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuVPortSvcProfExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	  "Parks GPON OnuVPortSvcProfTable Extension "
+		::=  { gponOnuVPortSvcProfExtTable  1 }
+
+	onuVPortSvcProfExtEntry	OBJECT-TYPE
+		SYNTAX		OnuVPortSvcProfExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{ onuVPortSvcProfileIndex }
+		::=  { onuVPortSvcProfExtTable 1 }
+		
+	OnuVPortSvcProfExtEntry  ::=  SEQUENCE {
+		onuVPortSvcProfileIndex Unsigned32,
+		onuVPortSvcProfUSRateControlSchedulerProfileIndex Unsigned32,
+		onuVPortSvcProfUpstreamPriorityQueueProfileIndex Unsigned32,
+		onuVPortSvcProfDownstreamPriorityQueueProfileIndex Unsigned32,
+		onuVportSvcProfUpstreamQosMethod INTEGER
+	}
+
+	onuVPortSvcProfileIndex	OBJECT-TYPE	
+		SYNTAX			VirtualPortServiceProfileNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table.2-7680"
+		::=  { onuVPortSvcProfExtEntry  1 }
+		
+	onuVPortSvcProfUSRateControlSchedulerProfileIndex	OBJECT-TYPE	
+		SYNTAX			SchedulerProfileNo
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION	  "It points to the associated ONU upstream rate-control scheduler profile.0 - 7680
+				   Set to 0 to remove profile configuration."
+		DEFVAL			{ 1 }
+		::=  {  onuVPortSvcProfExtEntry  2  }
+		
+	onuVPortSvcProfUpstreamPriorityQueueProfileIndex	OBJECT-TYPE	
+		SYNTAX			Unsigned32(1..128)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION	  "It points to the associated ONU upstream priority queue profile.1 - 128"
+		DEFVAL			{ 1 }
+		::=  {  onuVPortSvcProfExtEntry  3  }
+
+	onuVPortSvcProfDownstreamPriorityQueueProfileIndex	OBJECT-TYPE	
+		SYNTAX			Unsigned32(1..128)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION	  "It points to the associated ONU downstream priority queue profile.1 - 128"
+		DEFVAL			{ 1 }
+		::=  {  onuVPortSvcProfExtEntry  4  }
+
+	onuVportSvcProfUpstreamQosMethod	OBJECT-TYPE	
+		SYNTAX			INTEGER{flow-based(1), tci-based(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION	  "Upstream QoS Method
+						1- flow-based
+						2- tci-based "
+		DEFVAL			{ 1 }
+		::=  {  onuVPortSvcProfExtEntry  5  }
+
+--==========================================================================
+
+--ONU Black List NG Table--
+
+	onuBlackListExtTable OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuBlackListExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Parks GPON onuBlackListTable Extension "
+		::=  { gponOnuBlackListExtTable 1 }
+
+	onuBlackListExtEntry OBJECT-TYPE
+		SYNTAX		OnuBlackListExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{ onuBlackListSerialNumber }
+		::=  { onuBlackListExtTable 1 }
+
+	OnuBlackListExtEntry  ::=  SEQUENCE {
+		onuBlackListSerialNumber	OCTET STRING,
+		onuBlackListRowStatus		RowStatus
+	}
+
+	onuBlackListSerialNumber	OBJECT-TYPE
+		SYNTAX		OCTET STRING(SIZE(16))
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"The serial number. Index for this table.
+				 The serial number is unique for each ONT.
+
+				 It is defined in ITU-T G.984.3 and contains
+				  the vendor id and version number. The first
+				  four bytes are an ASCII encoded vendor ID
+				  four letter mnemonic. The second four bytes
+				  are a binary encoded serial number, under the
+				  control of the ONT vendor. (R) (mandatory) (8 bytes).
+				 When a ONT added, all it's configurations are removed."
+		::=  {  onuBlackListExtEntry  1  }
+
+	onuBlackListRowStatus	OBJECT-TYPE
+		SYNTAX		RowStatus
+                MAX-ACCESS	read-write
+                STATUS		current
+		DESCRIPTION	"For row creation/deletion."
+		::=  {  onuBlackListExtEntry  2  }
+
+--==========================================================================
+--  ONU IPV6 HOST TABLE --
+	onuIpv6HostTable OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuIpv6HostEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	  "Parks GPON Ipv6 Host Table"
+		::=  { gponOnuIpv6HostTable  1 }
+
+	onuIpv6HostEntry OBJECT-TYPE
+		SYNTAX		OnuIpv6HostEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{   onuIpv6HostSlotNo, onuIpv6HostPortNo, onuIpv6HostLogicalPortNo }
+		::=  { onuIpv6HostTable 1 }
+
+	OnuIpv6HostEntry ::= SEQUENCE {
+		onuIpv6HostSlotNo SlotNo,
+		onuIpv6HostPortNo PortNo,
+		onuIpv6HostLogicalPortNo LogicalPortNo,
+		onuIpv6HostAdministrativeState INTEGER,
+		onuIpv6HostRSMode TruthValue,
+		onuIpv6HostDHCPv6Mode TruthValue,
+		onuIpv6HostRespond2PingsMode TruthValue,
+		onuIpv6HostOnuID OCTET STRING,
+		onuIpv6HostIpv6Address Ipv6Address,
+		onuIpv6HostDefaultRouter Ipv6Address,
+		onuIpv6HostPrimaryDNS OCTET STRING,
+		onuIpv6HostSecondaryDNS OCTET STRING,
+		onuIpv6HostOnLinkPrefix Ipv6Address,
+		onuIpv6HostOnLinkPrefixLength Unsigned32,
+		onuIpv6HostMacAddress MacAddress,
+		onuIpv6HostIpv6LinkLocalAddress Ipv6Address,
+		onuIpv6HostDUID OCTET STRING,
+		onuIpv6HostRowStatus RowStatus
+	}
+
+	onuIpv6HostSlotNo OBJECT-TYPE	
+		SYNTAX		SlotNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuIpv6HostEntry  1  }  
+
+	onuIpv6HostPortNo OBJECT-TYPE	
+		SYNTAX		PortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuIpv6HostEntry  2  }  
+		
+	onuIpv6HostLogicalPortNo OBJECT-TYPE	
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table. 
+                                         It should be identical to ONU ID assigned by OLT. "
+		::=  {  onuIpv6HostEntry  3  } 
+
+	onuIpv6HostAdministrativeState OBJECT-TYPE	
+		SYNTAX		INTEGER {lock(0), unlock(1)}
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"IPv6 stack administrative unlock: 
+				 0- Lock
+                                         1- Unlock"
+		DEFVAL		{lock}
+		::=  {  onuIpv6HostEntry  4  } 
+
+	onuIpv6HostRSMode OBJECT-TYPE	
+		SYNTAX		TruthValue
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Enable RS. The host generates router solicitation (RS)  
+				messages, if necessary, and responds to router advertisements."
+		DEFVAL		{ false }
+		::=  {  onuIpv6HostEntry  5  } 
+
+	onuIpv6HostDHCPv6Mode OBJECT-TYPE	
+		SYNTAX		TruthValue
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Enable DHCPv6."
+		DEFVAL		{ false }
+		::=  {  onuIpv6HostEntry  6  } 
+
+	onuIpv6HostRespond2PingsMode OBJECT-TYPE	
+		SYNTAX		TruthValue
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Respond to pings (ICMPv6 echo replies)."
+		DEFVAL		{ false }
+		::=  {  onuIpv6HostEntry  7  } 
+
+	onuIpv6HostOnuID OBJECT-TYPE	
+		SYNTAX		OCTET STRING(SIZE(25))
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"A unique ONU identifier string. 
+                                         If set to a non-null value, his string is used instead of 
+                                         the MAC address in retrieving DHCPv6 parameters."
+		::=  {  onuIpv6HostEntry  8  } 
+
+	onuIpv6HostIpv6Address OBJECT-TYPE	
+		SYNTAX		Ipv6Address
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The manually provisioned IPv6 address used for routed IPv6 host services."
+		::=  {  onuIpv6HostEntry  9  } 
+
+	onuIpv6HostDefaultRouter OBJECT-TYPE	
+		SYNTAX		Ipv6Address
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The manually provisioned IPv6 address of the default router."
+		::=  {  onuIpv6HostEntry  10  } 
+
+	onuIpv6HostPrimaryDNS OBJECT-TYPE	
+		SYNTAX		OCTET STRING (SIZE(16))
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The manually provisioned IPv6 address of the primary DNS server."
+		::=  {  onuIpv6HostEntry  11  } 
+
+	onuIpv6HostSecondaryDNS OBJECT-TYPE	
+		SYNTAX		OCTET STRING (SIZE(16))
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The manually provisioned IPv6 address of the secondary DNS server."
+		::=  {  onuIpv6HostEntry  12  } 
+
+	onuIpv6HostOnLinkPrefix OBJECT-TYPE
+		SYNTAX		Ipv6Address
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"This attribute is the manually provisioned on-link prefix used for  
+                                         destination IPv6 addresses of IPv6 host services."
+		::=  {  onuIpv6HostEntry  13  }
+
+	onuIpv6HostOnLinkPrefixLength OBJECT-TYPE
+		SYNTAX		Unsigned32
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Prefix length, number of leading bits in the prefix that are valid (1 byte)"
+		::=  {  onuIpv6HostEntry  14  } 
+ 
+
+	onuIpv6HostMacAddress OBJECT-TYPE	
+		SYNTAX		MacAddress
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"This attribute indicates the MAC address used by the IP node."
+		::=  {  onuIpv6HostEntry  15  } 
+
+	onuIpv6HostIpv6LinkLocalAddress OBJECT-TYPE	
+		SYNTAX		Ipv6Address
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"The address used for on-link IP host services, such as router  
+                                         solicitation and DHCPv6. [b-IETF RFC 4862] specifies how to automatically 
+                                         establish a link-local address."
+		::=  {  onuIpv6HostEntry  16  } 
+
+	onuIpv6HostDUID OBJECT-TYPE	
+		SYNTAX		OCTET STRING (SIZE(25))
+		MAX-ACCESS	read-only 
+		STATUS		current
+		DESCRIPTION	"This attribute is the DHCPv6 unique identifier. It is an octet string that must  
+                                         be globally unique and must remain stable over the lifetime of the ONU. If 
+                                         the string is shorter than 25 bytes, it must be null terminated. Its derivation is 
+                                         beyond the scope of this recommendation; see [b-IETF RFC 3315] for further 
+                                         definition"
+		::=  {  onuIpv6HostEntry  17  } 
+
+	onuIpv6HostRowStatus OBJECT-TYPE	
+		SYNTAX		RowStatus
+		MAX-ACCESS	read-create
+		STATUS		current
+		DESCRIPTION	"For row creation/deletion."
+		::=  {  onuIpv6HostEntry  18  }
+
+--==========================================================================
+	onuDot1xTable           OBJECT-TYPE
+		SYNTAX          SEQUENCE OF OnuDot1xEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Parks GPON Dot1x Extension"
+		::=  { gponOnuDot1xTable  1 }
+
+	onuDot1xEntry           OBJECT-TYPE
+		SYNTAX          OnuDot1xEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           { onuDot1xSlotNo, onuDot1xPortNo,
+		                  onuDot1xLogicalPortNo }
+		::=  { onuDot1xTable 1 }
+
+	OnuDot1xEntry  ::=  SEQUENCE {
+		onuDot1xSlotNo                SlotNo,
+		onuDot1xPortNo                PortNo,
+		onuDot1xLogicalPortNo         LogicalPortNo,
+		onuDot1xProfileIndex          Unsigned32,
+		onuDot1xPortBitmap            INTEGER,
+		onuPortSecurityProfileIndex   Unsigned32
+	}
+
+	onuDot1xSlotNo          OBJECT-TYPE
+		SYNTAX          SlotNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuDot1xEntry 1 }
+
+	onuDot1xPortNo          OBJECT-TYPE
+		SYNTAX          PortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuDot1xEntry 2 }
+		
+	onuDot1xLogicalPortNo   OBJECT-TYPE
+		SYNTAX          LogicalPortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table.
+                                 It should be identical to ONU ID assigned by OLT."
+		::=  { onuDot1xEntry 3 }
+
+	onuDot1xProfileIndex    OBJECT-TYPE
+		SYNTAX          Unsigned32(0..128)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "It points to the associated 802.1x configuration profile index."
+		::=  { onuDot1xEntry 4 }
+
+	onuDot1xPortBitmap      OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "For ONU 802.1x port configuration."
+		DEFVAL          { 0 }
+		::=  { onuDot1xEntry 5 }
+
+	onuPortSecurityProfileIndex OBJECT-TYPE
+		SYNTAX          Unsigned32(0..1024)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "It points to the associated Port-Security configuration profile index."
+		::=  { onuDot1xEntry 6 }
+
+	onuDot1xStatsTable      OBJECT-TYPE
+		SYNTAX          SEQUENCE OF OnuDot1xStatsEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Parks GPON Dot1x Statistics"
+		::=  { gponOnuDot1xTable 2 }
+
+	onuDot1xStatsEntry      OBJECT-TYPE
+		SYNTAX          OnuDot1xStatsEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           { onuDot1xStatsSlotNo, onuDot1xStatsPortNo,
+		                  onuDot1xStatsLogicalPortNo, onuDot1xStatsIndex}
+		::=  { onuDot1xStatsTable 1 }
+		
+	OnuDot1xStatsEntry  ::=  SEQUENCE {
+		onuDot1xStatsSlotNo           SlotNo,
+		onuDot1xStatsPortNo           PortNo,
+		onuDot1xStatsLogicalPortNo    LogicalPortNo,
+		onuDot1xStatsIndex            Unsigned32,
+		onuDot1xAuthorizedMacAddress  MacAddress,
+		onuDot1xConnectedPort         INTEGER,
+		onuDot1xConnectedTime         Unsigned32
+	}
+
+	onuDot1xStatsSlotNo     OBJECT-TYPE
+		SYNTAX          SlotNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuDot1xStatsEntry 1 }
+
+	onuDot1xStatsPortNo     OBJECT-TYPE
+		SYNTAX          PortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuDot1xStatsEntry 2 }
+
+	onuDot1xStatsLogicalPortNo OBJECT-TYPE
+		SYNTAX          LogicalPortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table.
+                                 It should be identical to ONU ID assigned by OLT."
+		::=  { onuDot1xStatsEntry 3 }
+
+	onuDot1xStatsIndex      OBJECT-TYPE
+		SYNTAX          Unsigned32(1..1024)
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuDot1xStatsEntry 4 }
+
+	onuDot1xAuthorizedMacAddress OBJECT-TYPE
+		SYNTAX          MacAddress
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "802.1x Authorized MAC Address"
+		::=  { onuDot1xStatsEntry 5 }
+
+	onuDot1xConnectedPort   OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "LAN Port assigned"
+		::=  { onuDot1xStatsEntry 6 }
+
+	onuDot1xConnectedTime   OBJECT-TYPE
+		SYNTAX          Unsigned32
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "Connected Time measured in time ticks.
+                            Count 10ms since the client is connected."
+		::=  { onuDot1xStatsEntry 7 }
+
+--==========================================================================
+--  OLT SYSTEM MESSAGES --
+oltSysMsgTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OltSysMsgEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION
+		           "This table provides system status messages. "
+		::=  { gponOltSystemMessages  1 }
+
+oltSysMsgEntry	OBJECT-TYPE
+		SYNTAX		OltSysMsgEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  oltSysMsgSlotNo, oltSysMsgPortNo, oltSysMsgLogicalPortNo }
+		::=  { oltSysMsgTable 1 }
+
+OltSysMsgEntry  ::=	SEQUENCE {
+		oltSysMsgSlotNo SlotNo,
+		oltSysMsgPortNo PortNo,
+		oltSysMsgLogicalPortNo LogicalPortNo,
+		oltSysMsgCodeBf OCTET STRING,
+		oltSysMsgRunTimeCode INTEGER
+	}
+
+oltSysMsgSlotNo	OBJECT-TYPE
+		SYNTAX		SlotNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  { oltSysMsgEntry 1 }
+
+oltSysMsgPortNo	OBJECT-TYPE
+		SYNTAX		PortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  { oltSysMsgEntry 2 }
+
+oltSysMsgLogicalPortNo		OBJECT-TYPE
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table. It should be identical to 
+				ONU ID assigned by OLT. "
+		::=  { oltSysMsgEntry 3 }
+
+oltSysMsgCodeBf			OBJECT-TYPE
+		SYNTAX		OCTET STRING (SIZE(0..128))
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Bitfield representing codes according to the Dictionary Table."
+		::=  { oltSysMsgEntry 4 }
+
+oltSysMsgRunTimeCode		OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Code signed at runtime."
+		::=  { oltSysMsgEntry 5 }
+
+--==========================================================================
+--  OLT SYSTEM DICTIONARY --
+oltSysDicTable			OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OltSysDicEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION
+		           "This table provides the description for system messages. "
+		::=  { gponOltSystemDictionary  1 }
+
+oltSysDicEntry			OBJECT-TYPE
+		SYNTAX		OltSysDicEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  oltSysDicIdx }
+		::=  { oltSysDicTable 1 }
+
+OltSysDicEntry  ::=	SEQUENCE {
+		oltSysDicIdx Unsigned32,
+		oltSysDicFacility SystemModule,
+		oltSysDicSeverity INTEGER,
+		oltSysDicDesc SysMsgDescription
+	}
+
+oltSysDicIdx			OBJECT-TYPE
+		SYNTAX		Unsigned32(1..128)
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  { oltSysDicEntry 1 }
+
+oltSysDicFacility		OBJECT-TYPE
+		SYNTAX		SystemModule
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Module generating the system message."
+		::=  { oltSysDicEntry 2 }
+
+oltSysDicSeverity		OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates the message's severity:
+				 0  emergency         System unusable
+				 1  alert             Immediate action needed
+				 2  critical          Critical condition
+				 3  error             Error condition
+				 4  warning           Warning condition
+				 5  notification      Normal but significant condition
+				 6  informational     Informational message only
+				 7  debugging         Appears during debugging only"
+		::=  { oltSysDicEntry 3 }
+
+oltSysDicDesc			OBJECT-TYPE
+		SYNTAX		SysMsgDescription
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Message description."
+		::=  { oltSysDicEntry 4 }
+
+--==========================================================================
+-- OnuCfgTable Extended
+	onuCfgExtTable 	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuCfgExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	  "Parks GPON OnuCfgTable Extension "
+		::=  { gponOnuCfgExtTable  1 }
+
+	onuCfgExtEntry	OBJECT-TYPE
+		SYNTAX		OnuCfgExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  onuCfgSlotNo, onuCfgPortNo, onuCfgLogicalPortNo }
+		::=  { onuCfgExtTable 1 }
+		
+
+	OnuCfgExtEntry  ::=  SEQUENCE {
+		onuCfgSlotNo SlotNo,
+		onuCfgPortNo PortNo,
+		onuCfgLogicalPortNo LogicalPortNo,
+		onuCfgIpHostv4Options Unsigned32,
+		onuCfgWaitToRestoreTime Unsigned32,
+		onuCfgSwitchGuardTime Unsigned32,
+		onuCfgRevertiveInd TruthValue,
+		onuCfgForceSwitch TruthValue,
+		onuCfgOltActiveSlot SlotNo,
+		onuCfgOltActivePort PortNo,
+		onuCfgOnuActivePort PortNo,
+		onuCfgOnuOperStatusPort1 INTEGER,
+		onuCfgOnuOperStatusPort2 INTEGER,
+		onuCfgOnuRssi INTEGER,
+		onuCfgUpdateStatus INTEGER,
+		onuCfgStatusLifeTime Unsigned32,
+		onuCfgProvisioned INTEGER,
+		onuCfgDistance INTEGER,
+		onuCfgSetOnuState INTEGER
+	}
+
+	onuCfgSlotNo		OBJECT-TYPE
+		SYNTAX		SlotNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  { onuCfgExtEntry 1 }
+
+	onuCfgPortNo		OBJECT-TYPE
+		SYNTAX		PortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  { onuCfgExtEntry 2 }
+
+	onuCfgLogicalPortNo	OBJECT-TYPE
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table. It should be identical to 
+				ONU ID assigned by OLT. "
+		::=  { onuCfgExtEntry 3 }
+
+	onuCfgIpHostv4Options	OBJECT-TYPE
+		SYNTAX		Unsigned32(2..128)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"BitField indicating the config options for IP Host v4 (1: enable, 0:disable):
+				   0x1 - Unused
+				   0x2 - Respond to Pings
+				   0x4 - Respond to Traceroute messages."
+		::=  { onuCfgExtEntry 4 }
+
+	onuCfgWaitToRestoreTime	OBJECT-TYPE
+		SYNTAX		Unsigned32(0..3600)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Time in seconds to wait after a fault clears
+				before switching back to the working path."
+		DEFVAL		{ 3 }
+		::=  { onuCfgExtEntry 5 }
+
+	onuCfgSwitchGuardTime	OBJECT-TYPE
+		SYNTAX		Unsigned32(0..1000)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Time in milliseconds to wait after a
+				fault detection before performing a
+				protection switch."
+		::=  { onuCfgExtEntry 6 }
+
+	onuCfgRevertiveInd	OBJECT-TYPE
+		SYNTAX		TruthValue
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Indicates whether protection is
+				revertive (true) or non-revertive (false)."
+		DEFVAL		{ true }
+		::=  { onuCfgExtEntry 7 }
+
+	onuCfgForceSwitch	OBJECT-TYPE
+		SYNTAX		TruthValue
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Set this OID to True to Force ONU switching to the backup port."
+		DEFVAL		{ false }
+		::=  { onuCfgExtEntry 8 }
+
+	onuCfgOltActiveSlot	OBJECT-TYPE
+		SYNTAX		SlotNo
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates in which OLT Slot from the Linkset
+				the ONU is currently active."
+		::=  { onuCfgExtEntry 9 }
+
+	onuCfgOltActivePort	OBJECT-TYPE
+		SYNTAX		PortNo
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates in which OLT Link from the Linkset
+				the ONU is currently active."
+		::=  { onuCfgExtEntry 10 }
+
+	onuCfgOnuActivePort	OBJECT-TYPE
+		SYNTAX		PortNo
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates in which ONU PON Link
+				the ONU is currently active."
+		::=  { onuCfgExtEntry 11 }
+
+	onuCfgOnuOperStatusPort1	OBJECT-TYPE
+		SYNTAX  INTEGER {
+			up(1),        -- ready to pass packets
+			down(2),
+			testing(3),   -- in some test mode
+			unknown(4),   -- status can not be determined
+			              -- for some reason.
+			dormant(5),
+			notPresent(6),    -- some component is missing
+			lowerLayerDown(7) -- down due to state of
+			              -- lower-layer interface(s)
+		}
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates the current operational status 
+				for ONU PON Link 1."
+		::=  { onuCfgExtEntry 12 }
+
+	onuCfgOnuOperStatusPort2	OBJECT-TYPE
+		SYNTAX  INTEGER {
+			up(1),        -- ready to pass packets
+			down(2),
+			testing(3),   -- in some test mode
+			unknown(4),   -- status can not be determined
+			              -- for some reason.
+			dormant(5),
+			notPresent(6),    -- some component is missing
+			lowerLayerDown(7) -- down due to state of
+			              -- lower-layer interface(s)
+		}
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates the current operational status 
+				for ONU PON Link 2."
+		::=  { onuCfgExtEntry 13 }
+
+	onuCfgOnuRssi	OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates the signal power
+				from ONU PON to OLT."
+		::=  { onuCfgExtEntry 14 }
+
+	onuCfgUpdateStatus OBJECT-TYPE
+		SYNTAX		TruthValue
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Update status"
+		::=  { onuCfgExtEntry 15 }
+
+	onuCfgStatusLifeTime	OBJECT-TYPE
+		SYNTAX		Unsigned32
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Status life time in seconds"
+		::=  { onuCfgExtEntry 16 }
+
+	onuCfgOnuProvisioned	OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates the onu status"
+		::=  { onuCfgExtEntry 17 }
+
+	onuCfgOnuDistance	OBJECT-TYPE
+		SYNTAX		INTEGER
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicates the onu distance meters"
+		::=  { onuCfgExtEntry 18 }
+
+	onuCfgSetOnuState OBJECT-TYPE
+		SYNTAX                  INTEGER{idle(0),processing(1),enable(2),disable(3), inactive(4),active(5),success(6),error(7)}
+		MAX-ACCESS              read-write
+		STATUS                  current
+		DESCRIPTION             "Set the state of the ONU"
+		::=  { onuCfgExtEntry 19 }
+
+
+--==========================================================================
+-- OltPonLinkCfgTable Extended
+	oltPonLinkCfgExtTable OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OltPonLinkCfgExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Parks GPON OltPonLinkCfgTable Extension "
+		::=  { gponOltPonLinkCfgExtTable 1 }
+
+	oltPonLinkCfgExtEntry OBJECT-TYPE
+		SYNTAX		OltPonLinkCfgExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{ oltPonLinkCfgSlotNo, oltPonLinkCfgPortNo }
+		::= { oltPonLinkCfgExtTable 1 }
+		
+
+	OltPonLinkCfgExtEntry ::= SEQUENCE {
+		oltPonLinkCfgSlotNo  SlotNo,
+		oltPonLinkCfgPortNo  PortNo,
+		oltPonLinkMacLearningMode Unsigned32,
+		oltPonLinkLogicalDistance Unsigned32,
+		oltPonLinkDifferentialDistance Unsigned32,
+		oltPonLinkCfgSetAllOnuState INTEGER,
+		oltPonLinkCfgDownstreamFec INTEGER,
+		oltPonLinkCfgOnuDefaultUpstreamFec INTEGER
+	}
+
+	oltPonLinkCfgSlotNo OBJECT-TYPE
+		SYNTAX			SlotNo(1..12)
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Index for this table."
+		::=  { oltPonLinkCfgExtEntry 1 }
+
+	oltPonLinkCfgPortNo OBJECT-TYPE
+		SYNTAX			PortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Index for this table."
+		::=  { oltPonLinkCfgExtEntry 2 }
+
+	oltPonLinkMacLearningMode OBJECT-TYPE
+		SYNTAX			Unsigned32(0..1)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"GPON Interface MAC Learning MODE:
+					 0 - NORMAL
+					 1 - MOVE"
+		::=  { oltPonLinkCfgExtEntry 3 }
+
+        oltPonLinkLogicalDistance OBJECT-TYPE
+                SYNTAX                  Unsigned32(1..100)
+                MAX-ACCESS              read-write
+                STATUS                  current
+                DESCRIPTION             "Maximum Distance in Kilometers
+                                         of an ONU on the PON Link"
+                ::=  { oltPonLinkCfgExtEntry 4 }
+
+
+        oltPonLinkDifferentialDistance OBJECT-TYPE
+                SYNTAX                  Unsigned32(1..60)
+                MAX-ACCESS              read-write
+                STATUS                  current
+                DESCRIPTION             "Maximum Distance in Kilometers
+                                         between the closest and the farthest
+                                         ONU on the PON Link"
+                ::=  { oltPonLinkCfgExtEntry 5 }
+
+        oltPonLinkCfgSetAllOnuState OBJECT-TYPE
+               SYNTAX                  INTEGER{idle(0),processing(1),enable(2),disable(3), inactive(4),active(5),success(6),error(7)}
+               MAX-ACCESS              read-write
+               STATUS                  current
+               DESCRIPTION             "Set the state of all ONUs on the
+                                        PON Interface"
+                ::=  { oltPonLinkCfgExtEntry 6 }
+
+        oltPonLinkCfgDownstreamFec     OBJECT-TYPE
+               SYNTAX                  INTEGER{enabled(1),disabled(2)}
+               MAX-ACCESS              read-write
+               STATUS                  current
+               DESCRIPTION             "Configure the downstream FEC mode.
+                                        Using the FEC decreases the amount of available
+                                        bandwidth for data transmission on the PON Interface."
+
+                ::=  { oltPonLinkCfgExtEntry 7 }
+
+        oltPonLinkCfgOnuDefaultUpstreamFec  OBJECT-TYPE
+               SYNTAX                       INTEGER{enabled(1),disabled(2)}
+               MAX-ACCESS                   read-write
+               STATUS                       current
+               DESCRIPTION                  "Configure the default upstream FEC for the new ONUs.
+                                             Using the FEC decreases the amount of available
+                                             bandwidth for data transmission on the PON Interface."
+
+                ::=  { oltPonLinkCfgExtEntry 8 }
+
+
+--==========================================================================
+--1.23.8 ONU Level Alarms
+
+dOT1XSERVERNOTACCESSIBLE NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo, oltAlarmPhysicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Dot1x Authentication Server not accessible. This is an major Alarm."
+    ::=  {  gponOnuAlarmIndication 1 }
+
+dOT1XAUTHERROR NOTIFICATION-TYPE
+    OBJECTS		{ oltAlarmSeqNo, oltAlarmOccurrenceTime, oltAlarmSeverity, oltAlarmCondition, oltAlarmSlotNo, oltAlarmPortNo, oltAlarmLogicalPortNo, oltAlarmPhysicalPortNo }
+    STATUS		current
+    DESCRIPTION		"Dot1x Authentication Error. This is an minor Alarm."
+    ::=  {  gponOnuAlarmIndication 2 }
+
+--==========================================================================
+-- OnuCfgTable Extended
+	onuCfgResetConfigExtTable 	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuCfgResetConfigExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	  "Parks GPON OnuCfgTable Extension "
+		::=  { gponOnuCfgResetConfigExtTable  1 }
+
+	onuCfgResetConfigExtEntry	OBJECT-TYPE
+		SYNTAX		OnuCfgResetConfigExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  onuCfgResetSlotNo, onuCfgResetPortNo, onuCfgResetLogicalPortNo }
+		::=  { onuCfgResetConfigExtTable 1 }
+		
+
+	OnuCfgResetConfigExtEntry  ::=  SEQUENCE {
+		onuCfgResetSlotNo SlotNo,
+		onuCfgResetPortNo PortNo,
+		onuCfgResetLogicalPortNo LogicalPortNo,
+		onuCfgResetConfig TruthValue
+	}
+
+	onuCfgResetSlotNo	OBJECT-TYPE
+		SYNTAX		SlotNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  { onuCfgResetConfigExtEntry 1 }
+
+	onuCfgResetPortNo		OBJECT-TYPE
+		SYNTAX		PortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  { onuCfgResetConfigExtEntry 2 }
+
+	onuCfgResetLogicalPortNo	OBJECT-TYPE
+		SYNTAX			LogicalPortNo
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Serves as an index for this table. It should be identical to
+					ONU ID assigned by OLT. "
+		::=  { onuCfgResetConfigExtEntry 3 }
+
+	onuCfgResetConfig	OBJECT-TYPE
+		SYNTAX		TruthValue
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Set this option to -true- to initiate the reset
+		configuration action on the ONU."
+		DEFVAL		{ false }
+		::=  { onuCfgResetConfigExtEntry 4 }
+
+--==========================================================================
+
+--OLT System Configuration--
+
+	gponOltSysCfgProtectionType	OBJECT-TYPE
+		SYNTAX			ProtectionType
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"OLT Protection Type:
+					1 - Protection Type B
+					2 - Protection Type C"
+		DEFVAL			{ 1 }
+		::=  { gponOltSysCfg  1 }
+
+	gponOltSysCfgSupportedSFFBf OBJECT-TYPE
+		SYNTAX OCTET STRING (SIZE(0..255))
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION	"Bitfield representing the transceiver types supported by OLT:
+				  Bit            Transceiver
+				  ligent             (0),
+				  sourcephotonics    (1),
+				  fiberxon           (2),
+				  fujitsu            (3),
+				  ligent-a           (4),
+				  ligent-b           (5),
+				  sourcephotonics-a  (6),
+				  sourcephotonics-b  (7),
+				  fiberxon-a         (8),
+				  fujitsu-a          (9),
+				  nec                (10),
+				  neoptec            (11),
+				  ligent-c           (12),
+				  fiberxon-b         (13),
+				  fujitsu-30537      (14),
+				  neophotonics-a     (15),
+				  neophotonics-b     (16),
+				  superxon           (17),
+				  transceiver-1      (18),
+				  transceiver-2      (19),
+				  auto               (20),
+				  wtd                (21),
+				  neophotonics-c     (22),
+				  delta              (23),
+				  wtd-a              (24),
+				  mentek             (25),
+				  any                (26),
+				  any-reset-guard    (27),
+				  any-reset-preamble (28),
+				  sourcephotonics-c  (29),
+				  superxon-a         (30),
+				  ligent-d           (31),
+				  ligent-e           (32),
+				  ligent-f           (33),
+				  wtd-b              (34),
+				  superxon-b         (35),
+				  gpon-general-7     (36)
+				"
+		::=  { gponOltSysCfg 2 }
+
+	gponOltSysCfgCheckDuplicatedIpHost OBJECT-TYPE
+		SYNTAX			INTEGER{enabled(1),disabled(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Check duplicate IP host:
+						1 Enabled
+						2 Disabled "
+		DEFVAL			{ 1 }
+		::=  { gponOltSysCfg  3 }
+
+	gponOltSysCfgProfFlowDefault	OBJECT-TYPE
+		SYNTAX			Unsigned32
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Gpon default flow profile"
+		DEFVAL			{ 0 }
+		::=  { gponOltSysCfg  4 }
+
+	gponOltSysCfgProfVlanTranslationDefault	OBJECT-TYPE
+		SYNTAX			Unsigned32
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Gpon default vlan translation profile"
+		DEFVAL			{ 0 }
+		::=  { gponOltSysCfg  5 }
+
+	gponOltSysCfgProfTr069Default	OBJECT-TYPE
+		SYNTAX			Unsigned32
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Gpon default TR-069 profile"
+		DEFVAL			{ 0 }
+		::=  { gponOltSysCfg  6 }
+
+	gponOltSysCfgIpHostDhcpDefault	OBJECT-TYPE
+		SYNTAX			INTEGER{enabled(1),disabled(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Gpon IP HOst DHCP default :
+						1 Enabled
+						2 Disabled "
+		DEFVAL			{ 1 }
+		::=  { gponOltSysCfg  7 }
+
+--==========================================================================
+-- OltProtectionLinkSetTable Extended
+	oltProtectionLinkSetExtTable OBJECT-TYPE
+		SYNTAX		SEQUENCE OF OltProtectionLinkSetExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Parks GPON OltProtectionLinkSet Extension "
+		::=  { gponOltProtectionLinkSetExtTable 1 }
+
+	oltProtectionLinkSetExtEntry OBJECT-TYPE
+		SYNTAX		OltProtectionLinkSetExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{ oltProtectionLinkSetNo }
+		::= { oltProtectionLinkSetExtTable 1 }
+		
+
+	OltProtectionLinkSetExtEntry ::= SEQUENCE {
+		oltProtectionLinkSetNo             Unsigned32,
+		oltProtectionLinkSetOperationMode  Unsigned32
+	}
+
+	oltProtectionLinkSetNo OBJECT-TYPE
+		SYNTAX			Unsigned32(1..4)
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"Index for this table."
+		::=  { oltProtectionLinkSetExtEntry 1 }
+
+	oltProtectionLinkSetOperationMode OBJECT-TYPE
+		SYNTAX			Unsigned32(1..2)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Linkset Operation Mode:
+					 1 - NORMAL
+					 2 - MAINTENANCE"
+		::=  { oltProtectionLinkSetExtEntry 2 }
+
+--==========================================================================
+--OnuIpHostTable
+	onuIpHostTable OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuIpHostEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	  "Parks GPON Ip Host Table"
+		::=  { gponOnuIpHostTable  1 }
+
+	onuIpHostEntry OBJECT-TYPE
+		SYNTAX		OnuIpHostEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{   onuIpHostSlotNo, onuIpHostPortNo, onuIpHostLogicalPortNo,  onuIpHostPhysicalPortNo}
+		::=  { onuIpHostTable 1 }
+
+	OnuIpHostEntry ::= SEQUENCE {
+		onuIpHostSlotNo SlotNo,
+		onuIpHostPortNo PortNo,
+		onuIpHostLogicalPortNo LogicalPortNo,
+		onuIpHostPhysicalPortNo Unsigned32,
+		onuIpHostMeId Unsigned32,
+		onuIpHostIpOptions Unsigned32,
+		onuIpHostMacAddress MacAddress,
+		onuIpHostOnuIdentifier OCTET STRING,
+		onuIpHostIpAddress IpAddress,
+		onuIpHostMask IpAddress,
+		onuIpHostGateway IpAddress,
+		onuIpHostPrimaryDNS IpAddress,
+		onuIpHostSecondaryDNS IpAddress,
+		onuIpHostCurrentAddress IpAddress, 
+		onuIpHostCurrentMask IpAddress,
+		onuIpHostCurrentGateway IpAddress,
+		onuIpHostCurrentPrimaryDNS IpAddress,
+		onuIpHostCurrentSecondaryDNS IpAddress,
+		onuIpHostDomainName OCTET STRING,
+		onuIpHostHostName OCTET STRING,
+		onuIpHostRelayAgentOptionsIndex Unsigned32,
+		onuIpHostOnuVLANTranslationProfileIndex Unsigned32,
+		onuIpHostOnuPppoeIndex Unsigned32,
+		onuIpHostRowStatus RowStatus
+	}
+
+	onuIpHostSlotNo OBJECT-TYPE	
+		SYNTAX		SlotNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuIpHostEntry  1  }  
+
+	onuIpHostPortNo OBJECT-TYPE	
+		SYNTAX		PortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuIpHostEntry  2  }  
+		
+	onuIpHostLogicalPortNo OBJECT-TYPE	
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table. 
+                                         It should be identical to ONU ID assigned by OLT. "
+		::=  {  onuIpHostEntry  3  } 
+
+	onuIpHostPhysicalPortNo OBJECT-TYPE	
+		SYNTAX		Unsigned32 (1..32)
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Physical port id."
+		::=  {  onuIpHostEntry  4  } 
+
+	onuIpHostMeId OBJECT-TYPE	
+		SYNTAX		Unsigned32 (0..65535)
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Managed entity Id."
+		::=  {  onuIpHostEntry  5  } 
+
+	onuIpHostIpOptions OBJECT-TYPE	
+		SYNTAX		Unsigned32 (0..128)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"BitField indicating the config options for IP Host v4 (1: enable, 0:disable):
+				   0x01 - Enable DHCP
+				   0x02 - Respond to Pings
+				   0x04 - Respond to Traceroute messages
+				   0x08- Enable IP Stack
+				   0x10..0x80 reserved."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  6  } 
+
+	onuIpHostMacAddress OBJECT-TYPE	
+		SYNTAX		MacAddress
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"The MAC address of the ONU in hexadecimal format."
+		::=  {  onuIpHostEntry  7  } 
+
+	onuIpHostOnuIdentifier OBJECT-TYPE	
+		SYNTAX		OCTET STRING(SIZE(25))
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"A unique ONU identifier string.
+                                         If set to a non-null value, this string is used instead of 
+                                         the MAC address in retrieving DHCPv6 parameters."
+		::=  {  onuIpHostEntry  8  } 
+
+	onuIpHostIpAddress OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The current IP address of the ONU. This column can be written only if the DHCP mode
+                                         is not set. If the DHCP mode is set, this column can NOT be written." 
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  9  } 
+
+	onuIpHostMask OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The current IP Mask of the ONU. This column can be written only if the DHCP mode
+                                         is not set. If the DHCP mode is set, this column can NOT be written."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  10  } 
+
+	onuIpHostGateway OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The current default gateway of the ONU. This column can be written only if the DHCP mode
+                                         is not set. If the DHCP mode is set, this column can NOT be written."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  11  } 
+
+	onuIpHostPrimaryDNS OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The manually provisioned IPv4 address of the primary DNS server."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  12 } 
+
+	onuIpHostSecondaryDNS OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"The address of the secondary DNS server."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  13  } 
+
+	onuIpHostCurrentAddress OBJECT-TYPE
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Current address of the IP host service."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  14  }
+
+	onuIpHostCurrentMask OBJECT-TYPE
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Current subnet mask for the IP host service."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  15 } 
+ 
+
+	onuIpHostCurrentGateway OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Current default gateway address for the IP host service."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  16  } 
+
+	onuIpHostCurrentPrimaryDNS OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Current primary DNS server address."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  17  } 
+
+	onuIpHostCurrentSecondaryDNS OBJECT-TYPE	
+		SYNTAX		IpAddress
+		MAX-ACCESS	read-only 
+		STATUS		current
+		DESCRIPTION	"Current secondary DNS server address."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  18  } 
+
+	onuIpHostDomainName OBJECT-TYPE	
+		SYNTAX		OCTET STRING (SIZE(25))
+		MAX-ACCESS	read-only 
+		STATUS		current
+		DESCRIPTION	"If DHCP indicates a domain name, it is presented here."
+		::=  {  onuIpHostEntry  19  } 
+
+	onuIpHostHostName OBJECT-TYPE	
+		SYNTAX		OCTET STRING (SIZE(25))
+		MAX-ACCESS	read-only 
+		STATUS		current
+		DESCRIPTION	"If DHCP indicates a host name, it is presented here."
+		::=  {  onuIpHostEntry  20  } 
+
+	onuIpHostRelayAgentOptionsIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32(1..128)
+		MAX-ACCESS	read-write 
+		STATUS		current
+		DESCRIPTION	"This attribute is a pointer to a large string managed entity whose
+                                         content specifies one or more DHCP relay agent options.(optional)"
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  21  } 
+		
+	onuIpHostOnuVLANTranslationProfileIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..1280)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"It stores the index of the associated Onu VLAN translation profile.
+				 Set to 0 to remove profile configuration."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  22  } 
+
+	onuIpHostOnuPppoeIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..4096)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"It stores the index of the associated Onu PPPoe profile.
+				 Set to 0 to remove profile configuration."
+		DEFVAL		{ 0 }
+		::=  {  onuIpHostEntry  23  } 
+
+	onuIpHostRowStatus OBJECT-TYPE	
+		SYNTAX		RowStatus
+		MAX-ACCESS	read-create
+		STATUS		current
+		DESCRIPTION	"For row creation/deletion."
+		::=  {  onuIpHostEntry  24  }
+--==========================================================================
+--OnuVEIPTable
+	onuVeipTable OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuVeipEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Parks GPON Virtual Ethernet  Interface Point Table"
+		::=  { gponOnuVeipTable  1 }
+
+	onuVeipEntry OBJECT-TYPE
+		SYNTAX		OnuVeipEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{   onuVeipSlotNo, onuVeipPortNo, onuVeipLogicalPortNo,  onuVeipPhysicalPortNo }
+		::=  { onuVeipTable 1 }
+
+	OnuVeipEntry ::= SEQUENCE {
+		onuVeipSlotNo SlotNo,
+		onuVeipPortNo PortNo,
+		onuVeipLogicalPortNo LogicalPortNo,
+		onuVeipPhysicalPortNo Unsigned32,
+		onuVeipMeId Unsigned32,
+		onuVeipAdministrativeState INTEGER,
+		onuVeipOperationState INTEGER,
+		onuVeipInterdomainName OCTET STRING,
+		onuVeipTcpUdpIndex Unsigned32,
+		onuVeipIanaAssignedPort Unsigned32,
+		onuVeipVLANTranslationProfileIndex Unsigned32,
+		onuVeipMulticastOperationProfileIndex Unsigned32,
+		onuVeipStaticMulticastGroupsProfileIndex Unsigned32,
+		onuVeipMACFilterProfileIndex Unsigned32,
+		onuVeipMACFilterPreassignProfileIndex Unsigned32,		
+		onuVeipPppoeIndex Unsigned32,
+		onuVeipRowStatus RowStatus
+	}
+	
+	onuVeipSlotNo OBJECT-TYPE	
+		SYNTAX		SlotNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuVeipEntry  1  }  
+
+	onuVeipPortNo OBJECT-TYPE	
+		SYNTAX		PortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuVeipEntry  2  }  
+		
+	onuVeipLogicalPortNo OBJECT-TYPE	
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table. 
+                                         It should be identical to ONU ID assigned by OLT. "
+		::=  {  onuVeipEntry  3  } 
+
+	onuVeipPhysicalPortNo OBJECT-TYPE	
+		SYNTAX		Unsigned32(1..255)
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Physical port id."
+		::=  {  onuVeipEntry  4  } 
+
+	onuVeipMeId OBJECT-TYPE	
+		SYNTAX		Unsigned32 (0..65535)
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Managed entity Id. the Values 0 and 0xFFFF are reserved"
+		::=  {  onuVeipEntry  5  } 
+
+	onuVeipAdministrativeState OBJECT-TYPE	
+		SYNTAX		INTEGER{unlocks(0),locks(1)} 
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"This attribute locks (1) and unlocks (0) the functions performed by Managed entity Id."
+		DEFVAL		{ 0 }
+		::=  {  onuVeipEntry  6  } 
+
+	onuVeipOperationState OBJECT-TYPE	
+		SYNTAX		INTEGER {enable(0), disable(1)}
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"This attribute indicates whether or not the managed entity is capable off performing its function.(Optional)" 
+		::=  {  onuVeipEntry  7  } 
+
+	onuVeipInterdomainName OBJECT-TYPE	
+		SYNTAX		OCTET STRING (SIZE(25))
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"This attribute is a character string that provides an optional way to
+				identify the virtual Ethernet interface point to a non-OMCI management
+				domain. The interface may also be identified by its managed entity ID, IANA
+				assigned port and possibly other ways.(Optional)" 
+		::=  {  onuVeipEntry  8  } 
+
+	onuVeipTcpUdpIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32 (0..128)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"This attribute points to an instance of the TCP/UDP profile configuration,(Optional).
+				Set to 0 to remove profile configuration." 
+		::=  {  onuVeipEntry  9  } 
+
+	onuVeipIanaAssignedPort OBJECT-TYPE	
+		SYNTAX		Unsigned32 (0..65535)
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"This attribute contains the TCP or UDP port value as assigned by
+				IANA for the management protocol associated with this virtual Ethernet
+				interface. This attribute is to be regarded as a hint, not as a requirement that
+				management communications use this port; the actual port and protocol are
+				specified in the associated TCP/UDP config" 
+		::=  {  onuVeipEntry  10  } 
+
+	onuVeipVLANTranslationProfileIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..1280)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"It stores the index of the associated Onu VLAN translation profile.
+				 Set to 0 to remove profile configuration."
+		DEFVAL		{ 0 }
+		::=  {  onuVeipEntry  11  }
+		
+	onuVeipMulticastOperationProfileIndex 	OBJECT-TYPE	
+		SYNTAX			Unsigned32(0..1280)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"It stores the profileIndex1 of the associated ONU multicast operation profile. 
+						This profile will be applied to all multicast handling modes if applicable.
+						0 This multicast will be removed if applicable."
+		DEFVAL			{ 0 }
+		::=  {  onuVeipEntry  12  }
+
+	onuVeipStaticMulticastGroupsProfileIndex 	OBJECT-TYPE	
+		SYNTAX			Unsigned32(0..256)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"It stores the profileIndex1 of the associated ONU multicast groups profile. 
+						This profile will be applied to controllable multicast mode.
+						Set to 0 to remove profile configuration."
+		DEFVAL			{ 0 }
+		::=  {  onuVeipEntry  13  }
+
+	onuVeipMACFilterProfileIndex 	OBJECT-TYPE	
+		SYNTAX			Unsigned32(1..1024)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"It stores the profileIndex1 of the associated ONU MAC filter profile."
+		DEFVAL			{ 1 }
+		::=  {  onuVeipEntry  14  }
+
+	onuVeipMACFilterPreassignProfileIndex 	OBJECT-TYPE	
+		SYNTAX			Unsigned32(1..32)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"It stores the profileIndex of the associated ONU MAC filter preassign profile."
+		DEFVAL			{ 1 }
+		::=  {  onuVeipEntry  15  }
+		
+	onuVeipPppoeIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..4096)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"It stores the index of the associated Onu PPPoe profile.
+				 Set to 0 to remove profile configuration."
+		DEFVAL		{ 0 }
+		::=  {  onuVeipEntry  16  } 
+
+	onuVeipRowStatus OBJECT-TYPE	
+		SYNTAX		RowStatus
+		MAX-ACCESS	read-create
+		STATUS		current
+		DESCRIPTION	"For row creation/deletion."
+		::=  {  onuVeipEntry  17  }
+		
+--==========================================================================
+--OnuPppoeConfigTable
+	onuPppoeConfigTable OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuPppoeConfigEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Parks GPON Pppoe config Table"
+		::=  { gponOnuPppoeConfigTable  1 }
+
+	onuPppoeConfigEntry OBJECT-TYPE
+		SYNTAX		OnuPppoeConfigEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{  onuPppoeConfigSlotNo, onuPppoeConfigPortNo, onuPppoeConfigLogicalPortNo, onuPppoeConfigIndex }
+		::=  { onuPppoeConfigTable 1 }
+
+	OnuPppoeConfigEntry ::= SEQUENCE {
+		onuPppoeConfigSlotNo  SlotNo,
+		onuPppoeConfigPortNo  PortNo,
+		onuPppoeConfigLogicalPortNo  LogicalPortNo,
+		onuPppoeConfigIndex Unsigned32,
+		onuPppoeConfigNatEnable INTEGER,
+		onuPppoeConfigAuthType INTEGER,
+		onuPppoeConfigConTrigger INTEGER,
+		onuPppoeConfigIdleTimer Unsigned32,
+		onuPppoeConfigUsername OCTET STRING,
+		onuPppoeConfigPassword OCTET STRING,
+		onuPppoeConfigStatus INTEGER,
+		onuPppoeConfigOnlineDuration Unsigned32,
+		onuPppoeConfigProxy Unsigned32,
+		onuPppoeConfigLargeStringIndex Unsigned32,
+		onuPppoeConfigRowStatus RowStatus
+	}
+
+	onuPppoeConfigSlotNo OBJECT-TYPE	
+		SYNTAX		SlotNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuPppoeConfigEntry  1  }  
+
+	onuPppoeConfigPortNo OBJECT-TYPE	
+		SYNTAX		PortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuPppoeConfigEntry  2  }  
+
+	onuPppoeConfigLogicalPortNo OBJECT-TYPE	
+		SYNTAX		LogicalPortNo
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table. 
+                                         It should be identical to ONU ID assigned by OLT. "
+		::=  {  onuPppoeConfigEntry  3  } 
+
+	onuPppoeConfigIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32(1..4096)
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Serves as an index for this table."
+		::=  {  onuPppoeConfigEntry  4  }  
+
+	onuPppoeConfigNatEnable	OBJECT-TYPE
+		SYNTAX		INTEGER{enable(1),disable(0)}
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE Nat enable (1) or PPPoE Nat disable (0)."
+		::=  { onuPppoeConfigEntry 5 }
+
+	onuPppoeConfigAuthType OBJECT-TYPE	
+		SYNTAX		INTEGER{auto(0), chap(1), pap(2), mschap(3)}
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE Authentication type"
+		::=  {  onuPppoeConfigEntry  6  } 
+
+	onuPppoeConfigConTrigger OBJECT-TYPE	
+		SYNTAX		INTEGER{alwaysOn(0), onDemand(1), manual(2)}
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE Connection Trigger"
+		::=  {  onuPppoeConfigEntry  7  } 
+
+	onuPppoeConfigIdleTimer OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..65535)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE Idle timer, in seconds"
+		::=  {  onuPppoeConfigEntry  8  } 
+
+	onuPppoeConfigUsername OBJECT-TYPE	
+		SYNTAX		OCTET STRING(SIZE(0..25))
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE User Name"
+		::=  {  onuPppoeConfigEntry  9  } 
+
+	onuPppoeConfigPassword OBJECT-TYPE	
+		SYNTAX		OCTET STRING(SIZE(0..25))
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE Password"
+		::=  {  onuPppoeConfigEntry  10  } 
+
+	onuPppoeConfigStatus OBJECT-TYPE	
+		SYNTAX		INTEGER{unconfigured(0),connecting(1), authenticating(2),connected(3), pendingdisconnect(4), disconnecting(5),disconnected(6), demand(7)}
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE connection status"
+		::=  {  onuPppoeConfigEntry  11  } 
+
+	onuPppoeConfigOnlineDuration OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..4294967295)
+		MAX-ACCESS	read-only
+		STATUS		current
+		DESCRIPTION	"Indicate PPPoE connection Up time."
+		::=  {  onuPppoeConfigEntry  12  } 
+
+	onuPppoeConfigProxy OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..65535)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"Reserved to future use"
+		::=  {  onuPppoeConfigEntry  13  } 
+
+	onuPppoeConfigLargeStringIndex OBJECT-TYPE	
+		SYNTAX		Unsigned32(0..4096)
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"This attribute is a pointer to a large string managed entity whose content specifies the User Name 2 (optional).
+					Set to 0 to remove profile configuration."
+		::=  {  onuPppoeConfigEntry  14  } 
+
+	onuPppoeConfigRowStatus OBJECT-TYPE	
+		SYNTAX		RowStatus
+		MAX-ACCESS	read-create
+		STATUS		current
+		DESCRIPTION	"For row creation/deletion."
+		::=  {  onuPppoeConfigEntry  15 }
+
+--==========================================================================
+--OnuTr069ProfTable
+	onuTr069ProfTable OBJECT-TYPE
+		SYNTAX          SEQUENCE OF OnuTr069ProfEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION    "Parks GPON ONU TR-069 Profile Table"
+		::=  { gponOnuTr069ProfTable 1 }
+
+	onuTr069ProfEntry OBJECT-TYPE
+		SYNTAX          OnuTr069ProfEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           { onuTr069ProfIndex }
+		::=  { onuTr069ProfTable 1 }
+
+	OnuTr069ProfEntry ::= SEQUENCE {
+		onuTr069ProfIndex Unsigned32,
+		onuTr069ProfName ProfileName,
+		onuTr069ProfAcsUrl OCTET STRING,
+		onuTr069ProfUserType INTEGER,
+		onuTr069ProfUsername OCTET STRING,
+		onuTr069ProfPassword OCTET STRING,
+		onuTr069ProfValidationScheme INTEGER,
+		onuTr069ProfRealm OCTET STRING,
+		onuTr069ProfVlanMode INTEGER,
+		onuTr069ProfVlanId Unsigned32,
+		onuTr069ProfVlanPriority Unsigned32,
+		onuTr069ProfRowStatus RowStatus
+	}
+
+	onuTr069ProfIndex OBJECT-TYPE
+		SYNTAX          Unsigned32(2..1025)
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuTr069ProfEntry 1 }
+
+	onuTr069ProfName OBJECT-TYPE
+		SYNTAX          ProfileName
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Name of TR-069 profile"
+		::=  { onuTr069ProfEntry  2 }
+
+	onuTr069ProfAcsUrl OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..150))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "ACS URL"
+		::=  { onuTr069ProfEntry 3 }
+
+	onuTr069ProfUserType OBJECT-TYPE
+		SYNTAX          INTEGER { none(0), serial-number(1), alias(2), text(3) }
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Username for ACS connection
+		                0 - (none) No user authentication
+		                1 - (serial-number) Uses the ONU serial-number
+		                2 - (alias) Uses the ONU alias
+		                3 - (text) Uses username oid"
+		DEFVAL          { 1 }
+		::=  { onuTr069ProfEntry 4 }
+
+	onuTr069ProfUsername OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..50))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Username for ACS connection if user type is text"
+		::=  { onuTr069ProfEntry 5 }
+
+	onuTr069ProfPassword OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..25))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Password for ACS connection"
+		::=  { onuTr069ProfEntry 6 }
+
+	onuTr069ProfValidationScheme OBJECT-TYPE
+		SYNTAX          INTEGER { disable(0), md5(1), basic(2) }
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "ACS connection validation scheme.
+		                0 - disable
+		                1 - md5
+		                2 - basic"
+		DEFVAL          { 0 }
+		::=  { onuTr069ProfEntry 7 }
+
+	onuTr069ProfRealm OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..25))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Realm used in validation"
+		::=  { onuTr069ProfEntry 8 }
+
+
+	onuTr069ProfVlanMode OBJECT-TYPE
+		SYNTAX          INTEGER { untagged(0), tagged(1) }
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Vlan mode to management TR-069 traffic passing through the VEIP.
+		                0 - Untagged
+		                1 - Tagged"
+		DEFVAL          { 0 }
+		::=  { onuTr069ProfEntry 9 }
+
+	onuTr069ProfVlanId OBJECT-TYPE
+		SYNTAX          Unsigned32(0..4095)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "If vlan mode is tagged, use this field to set vlan id"
+		::=  { onuTr069ProfEntry 10 }
+
+	onuTr069ProfVlanPriority OBJECT-TYPE
+		SYNTAX          Unsigned32(0..7)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "If vlan mode is tagged, use this field to set vlan priority"
+		::=  { onuTr069ProfEntry 11 }
+
+	onuTr069ProfRowStatus OBJECT-TYPE
+		SYNTAX          RowStatus
+		MAX-ACCESS      read-create
+		STATUS          current
+		DESCRIPTION     "For row creation/deletion."
+		::=  {  onuTr069ProfEntry  12 }
+
+--==========================================================================
+--OnuTr069ConfigTable
+
+	onuTr069ConfigTable OBJECT-TYPE
+		SYNTAX          SEQUENCE OF OnuTr069ConfigEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION    "Parks GPON ONU TR-069 Config Table"
+		::=  { gponOnuTr069ConfigTable 1 }
+
+	onuTr069ConfigEntry OBJECT-TYPE
+		SYNTAX          OnuTr069ConfigEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           { onuTr069ConfigSlotNo,
+		                  onuTr069ConfigPortNo,
+		                  onuTr069ConfigLogicalPortNo,
+		                  onuTr069ConfigTr069PortNo }
+		::=  { onuTr069ConfigTable 1 }
+
+	OnuTr069ConfigEntry ::= SEQUENCE {
+		onuTr069ConfigSlotNo SlotNo,
+		onuTr069ConfigPortNo PortNo,
+		onuTr069ConfigLogicalPortNo LogicalPortNo,
+		onuTr069ConfigTr069PortNo Unsigned32,
+		onuTr069ConfigProfIndex Unsigned32,
+		onuTr069ConfigAdminState INTEGER,
+		onuTr069ConfigRowStatus RowStatus
+	}
+
+	onuTr069ConfigSlotNo OBJECT-TYPE
+		SYNTAX          SlotNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuTr069ConfigEntry 1 }
+
+	onuTr069ConfigPortNo OBJECT-TYPE
+		SYNTAX          PortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuTr069ConfigEntry 2 }
+
+	onuTr069ConfigLogicalPortNo OBJECT-TYPE
+		SYNTAX          LogicalPortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table. It should be identical to ONU ID assigned by OLT."
+		::=  { onuTr069ConfigEntry 3 }
+
+	onuTr069ConfigTr069PortNo OBJECT-TYPE
+		SYNTAX          Unsigned32(1..4)
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table. It should be identical to VEIP ID."
+		::=  { onuTr069ConfigEntry 4 }
+
+	onuTr069ConfigProfIndex OBJECT-TYPE
+		SYNTAX          Unsigned32
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Pointing to TR-069 Profile. Set index 0 to remove profile"
+		::=  { onuTr069ConfigEntry 5 }
+
+	onuTr069ConfigAdminState OBJECT-TYPE
+		SYNTAX          INTEGER { unlock(0), lock(1) }
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Administrative state for TR-069 connectivity"
+		::=  { onuTr069ConfigEntry 6 }
+
+	onuTr069ConfigRowStatus OBJECT-TYPE
+		SYNTAX          RowStatus
+		MAX-ACCESS      read-create
+		STATUS          current
+		DESCRIPTION     "For row creation/deletion."
+		::=  {  onuTr069ConfigEntry  7 }
+
+--==========================================================================
+--OnuMulticastOperProfExtTable--
+	onuMulticastOperProfExtTable OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  OnuMulticastOperProfExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Parks GPON Multicast Opereration Profile Table Extension "
+		::=  { gponOnuMulticastOperProfExtTable 1 }
+
+	onuMulticastOperProfExtEntry OBJECT-TYPE
+		SYNTAX		OnuMulticastOperProfExtEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Row Description"
+		INDEX		{ onuMulticastOperProfileIndex }
+		::=  { onuMulticastOperProfExtTable 1 }
+
+	OnuMulticastOperProfExtEntry  ::=  SEQUENCE {
+		onuMulticastOperProfileIndex	Unsigned32,
+		onuMulticastOperProfUnauthorizedJoinRequest	INTEGER,
+		onuMulticastOperProfDynamicAccessControl	INTEGER,
+		onuMulticastOperProfDownstreamIGMPTCI Unsigned32,
+		onuMulticastOperProfDownstreamIGMPTagControl Unsigned32
+	}
+
+	onuMulticastOperProfileIndex 	OBJECT-TYPE
+		SYNTAX		Unsigned32(2..1280)
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"Index for this table."
+		::=  {  onuMulticastOperProfExtEntry  1 }
+
+	onuMulticastOperProfUnauthorizedJoinRequest	OBJECT-TYPE
+		SYNTAX		INTEGER { disable(0), enable(1) }
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"This attribute specifies the ONU's behaviour when it 
+				   receives an IGMP join request for a group that is not 
+				   authorized in the dynamic address control list table:
+					0 Disabled
+					1 Enabled"
+		DEFVAL			{ 0 }
+		::=  {  onuMulticastOperProfExtEntry  2  }
+
+	onuMulticastOperProfDynamicAccessControl	OBJECT-TYPE
+		SYNTAX		INTEGER { disable(0), enable(1) }
+		MAX-ACCESS	read-write
+		STATUS		current
+		DESCRIPTION	"This attribute specifies the ONU's behaviour in relation to 
+				   configuration the access control list mode. If enable, 
+				   mode is dynamic and if disable (default) mode is static:
+					0 Disabled
+					1 Enabled"
+		DEFVAL			{ 0 }
+		::=  {  onuMulticastOperProfExtEntry  3  }
+
+	onuMulticastOperProfDownstreamIGMPTCI 	OBJECT-TYPE
+		SYNTAX		Unsigned32
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION	"Under control of the downstream IGMP tag control attribute, the downstream IGMP TCI attribute 
+						defines a VLAN ID and P bits to add to downstream IGMP messages:
+            ?	The multicast VLAN associated with the multicast group according to ONU multicast group and 
+            VLAN profile if multicastControlMode = 4 CTC distributed mode
+            ?	UNI port index (starting from 1) if multicastControlMode = 5 CTC controllable mode
+            ?	Use as 0 if multicastControlMode is neither 4 nor 5
+            Other values Use as is."
+		DEFVAL			{ 0 }
+		::=  {  onuMulticastOperProfExtEntry  4 }
+		
+	onuMulticastOperProfDownstreamIGMPTagControl 	OBJECT-TYPE
+		SYNTAX		Unsigned32(0..4)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION	"This attribute controls the downstream IGMP TCI attribute:
+            0 Pass downstream IGMP and multicast traffic transparently, neither stripping nor modifying tags that may be present.
+	    1 Strip the outer VLAN tag (including P bits) from the downstream IGMP and multicast traffic.
+	    2 Add a tag on to the downstream IGMP/MLD and multicast traffic. The new tag TCI is specified by the downstream IGMP TCI attribute.
+            3 Replace the tag on downstream IGMP and multicast traffic. The new tag TCI is specified by the downstream IGMP TCI attribute.
+            4 Replace only the VLAN ID on downstream IGMP and multicast traffic, retaining the original CFI and P bits. The new VLAN ID is specified by
+            the VLAN field of the downstream IGMP TCI attribute."
+	    	DEFVAL			{ 0 }
+		::=  {  onuMulticastOperProfExtEntry  5 }
+END --PARKS-EXT-MIB

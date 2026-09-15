@@ -1,0 +1,167 @@
+-- PARKS-PPPOE-INTERMAGENT-MIB
+-- version 1.1.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2011 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO 
+--                   		 "Postal: PARKS Comunicacoes Digitais
+--                   		              Cruzeiro 530 ,  Distrito Industrial,
+--                    		             CEP 94930-615   Cachoeirinha, RS, BRAZIL
+-- 	                             E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " MIB with configuration for PPPoE Intermediate Agent in PARKS devices. "
+
+PARKS-PPPOE-INTERMAGENT-MIB		DEFINITIONS ::= BEGIN
+	IMPORTS
+		DisplayString
+			FROM SNMPv2-TC
+		OBJECT-TYPE, enterprises, Integer32
+			FROM SNMPv2-SMI
+		parksPppoeIntermAgent
+			FROM PARKS-FEATURES-MIB;
+	
+	pkPppoeIntermAgentAccessNode	OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE (0..63))
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Equipment's Access Node Identifier"
+		::= { parksPppoeIntermAgent 1 }
+	
+	pkPppoeIntermAgentResetAccessNode	OBJECT-TYPE
+		SYNTAX			INTEGER	{ yes(1), no(2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Reset Equipment's Access Node Identifier to default"
+		::= { parksPppoeIntermAgent 2 }
+	
+	pkPppoeIntermAgentOption	OBJECT-TYPE
+		SYNTAX			INTEGER { default(1), slot-port(2), slot-vlan(3), port-vlan(4), slot-port-vlan(5) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"PPPoE Circuit-Id format options"
+		::= { parksPppoeIntermAgent 3 }
+	
+	pkPppoeIntermAgentDelimiter	OBJECT-TYPE
+		SYNTAX			INTEGER { default(1), colon(2), comma(3), dash(4), dot(5), semicolon(6), slash(7) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"PPPoE Circuit-Id format delimiters"
+		::= { parksPppoeIntermAgent 4 }
+	
+	pkPppoeIntermAgentGenErrorMessage	OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE (0..63))
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Equipment's General Error Message"
+		::= { parksPppoeIntermAgent 5 }
+	
+	pkPppoeIntermAgentResetGenErrorMessage	OBJECT-TYPE
+		SYNTAX			INTEGER	{ yes(1), no(2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Reset Equipment's General Error Message to default"
+		::= { parksPppoeIntermAgent 6 }
+	
+	pkPppoeIntermAgentIfTable	OBJECT-TYPE
+		SYNTAX			SEQUENCE OF PkPppoeIntermAgentIfEntry
+		MAX-ACCESS		not-accessible
+		STATUS			current
+		DESCRIPTION		"PPPoE Intermediate Agent interface table."
+		::= { parksPppoeIntermAgent 7 }
+	
+		pkPppoeIntermAgentIfEntry	OBJECT-TYPE
+			SYNTAX			PkPppoeIntermAgentIfEntry
+			MAX-ACCESS		not-accessible
+			STATUS			current
+			DESCRIPTION		"PPPoE Intermediate Agent entries."
+			INDEX			{ pkPppoeIntermAgentIfIndex }
+			::= { pkPppoeIntermAgentIfTable 1 }
+		
+		PkPppoeIntermAgentIfEntry ::=	SEQUENCE {
+			pkPppoeIntermAgentIfIndex			INTEGER,
+			pkPppoeIntermAgentIfName			DisplayString,
+			pkPppoeIntermAgentStatus			INTEGER,
+			pkPppoeIntermAgentCircuitId			DisplayString,
+			pkPppoeIntermAgentResetCircuitId	INTEGER,
+			pkPppoeIntermAgentRemoteId			DisplayString,
+			pkPppoeIntermAgentResetRemoteId		INTEGER
+		}
+		
+		pkPppoeIntermAgentIfIndex	OBJECT-TYPE
+			SYNTAX			INTEGER
+			MAX-ACCESS		read-only
+			STATUS			current
+			DESCRIPTION		"Index of each interface, its constant until destruction of
+							an interface or reset of the equipment. "
+			::= { pkPppoeIntermAgentIfEntry 1 }
+		
+		pkPppoeIntermAgentIfName	OBJECT-TYPE
+			SYNTAX			DisplayString (SIZE (0..255))
+			MAX-ACCESS		read-only
+			STATUS			current
+			DESCRIPTION		"Name of the interface."
+			::= { pkPppoeIntermAgentIfEntry 2 }
+		
+		pkPppoeIntermAgentIfStatus	OBJECT-TYPE
+			SYNTAX			INTEGER { disable(1), untrust(2), trust(3) }
+			MAX-ACCESS		read-write
+			STATUS			current
+			DESCRIPTION		"Interface's PPPoE Status"
+			::= { pkPppoeIntermAgentIfEntry 3 }
+		
+		pkPppoeIntermAgentCircuitId	OBJECT-TYPE
+			SYNTAX			DisplayString (SIZE (0..63))
+			MAX-ACCESS		read-write
+			STATUS			current
+			DESCRIPTION		"Interface's Circuit Identifier"
+			::= { pkPppoeIntermAgentIfEntry 4 }
+		
+		pkPppoeIntermAgentResetCircuitId	OBJECT-TYPE
+			SYNTAX			INTEGER	{ yes(1), no(2) }
+			MAX-ACCESS		read-write
+			STATUS			current
+			DESCRIPTION		"Reset interface's Circuit Identifier to default"
+			::= { pkPppoeIntermAgentIfEntry 5 }
+		
+		pkPppoeIntermAgentRemoteId	OBJECT-TYPE
+			SYNTAX			DisplayString (SIZE (0..63))
+			MAX-ACCESS		read-write
+			STATUS			current
+			DESCRIPTION		"Interface's Remote Identifier"
+			::= { pkPppoeIntermAgentIfEntry 6 }
+			
+		pkPppoeIntermAgentResetRemoteId	OBJECT-TYPE
+			SYNTAX			INTEGER	{ yes(1), no(2) }
+			MAX-ACCESS		read-write
+			STATUS			current
+			DESCRIPTION		"Reset interface's Remote Identifier to default"
+			::= { pkPppoeIntermAgentIfEntry 7 }
+	
+		pkPppoeIntermAgentStatistics	OBJECT IDENTIFIER
+			::= { parksPppoeIntermAgent 8 }
+	
+		pkPppoeIntermAgentReceivedPacket	OBJECT-TYPE
+			SYNTAX			Integer32
+			MAX-ACCESS		read-only
+			STATUS			current
+			DESCRIPTION		"Received PPPoE Intermediate-Agent packets"
+			::= { pkPppoeIntermAgentStatistics 1 }
+		
+		pkPppoeIntermAgentReceivedBytes	OBJECT-TYPE
+			SYNTAX			Integer32
+			MAX-ACCESS		read-only
+			STATUS			current
+			DESCRIPTION		"Received PPPoE Intermediate-Agent bytes"
+			::= { pkPppoeIntermAgentStatistics 2 }
+	
+END

@@ -1,0 +1,142 @@
+-- PARKS-CONFIG-EQUIPMENT
+-- version 1.1.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO 
+--		     "PARKS Comunicacoes Digitais
+--	
+--                    Postal: PARKS Comunicacoes Digitais
+--                    Cruzeiro 530
+--                    Distrito Industrial, Cachoeirinha, RS
+--                    CEP 94930-615 
+--                    BRAZIL
+--
+--                    E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " Equipment configurations for Parks devices. "
+
+
+PARKS-CONFIG-EQUIPMENT-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+    	 DisplayString
+ 			FROM SNMPv2-TC
+		parksConfigEquipment
+			FROM PARKS-FEATURES-MIB
+		OBJECT-TYPE
+			FROM RFC-1212
+		IpAddress, enterprises
+			FROM RFC1155-SMI;
+
+
+	pkConfigTraps	OBJECT IDENTIFIER
+		::=  {  parksConfigEquipment  1  }
+
+	pkConfigOptions	OBJECT IDENTIFIER
+		::=  {  parksConfigEquipment  2  }
+	
+	pkConfigOID	 OBJECT-TYPE
+		SYNTAX			OBJECT IDENTIFIER
+		ACCESS			accessible-for-notify
+		STATUS			mandatory
+		DESCRIPTION		"OID of the changed configuration."
+		::=  {  pkConfigTraps 1  }
+   
+	pkConfigChange	 OBJECT-TYPE
+		SYNTAX			 DisplayString (SIZE (0..255))
+		ACCESS			accessible-for-notify
+		STATUS			mandatory
+		DESCRIPTION		"String containing new configuration."
+		::=  {  pkConfigTraps 2  }
+
+	pkConfigType	 OBJECT-TYPE
+		SYNTAX			INTEGER { type1(1) , type2(2), type3(3), type4(4)}
+		ACCESS			accessible-for-notify
+		STATUS			mandatory
+		DESCRIPTION		"Type identification of the configuration trap."
+		::=  {  pkConfigTraps 3  }
+
+	pkConfigChangeTrap	NOTIFICATION-TYPE
+		OBJECTS	{  pkConfigOID, pkConfigChange, pkConfigType }
+		STATUS		current
+		DESCRIPTION	"Trap of configuration change on the device."
+		::=  { pkConfigTraps	4 }
+
+	pkConfigSave	OBJECT-TYPE	
+		SYNTAX			INTEGER { idle(1), saveConfig(2), completeSuccess(3), completeFailure(4), saveinProgress(5) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"For saving configuration, set value to 'saveConfig(2)'. Setting to
+					any other value will result in error. Save status will be indicated
+					as saveinProgress(5), completeSuccess(3), completeFailure(4)."
+		::=  {  pkConfigOptions  1  }
+
+	pkConfigDefault	OBJECT-TYPE	
+		SYNTAX			INTEGER { idle(1), configDefault(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"For loading default-config from flash, set value to 'configDefault(2)'.
+					Setting to any other value will result in error."
+		::=  {  pkConfigOptions  2  }
+
+	pkConfigSysReboot	OBJECT-TYPE	
+		SYNTAX			INTEGER { lan(1), wan1(2), wan2(3), wan3(4), wan4(5), idle (6)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Reboot system, in ead_efm the only option avaiable its lan(1), in co_efm
+						support reboot of each board individualy; idle(6) its the default return"
+		::=  {  pkConfigOptions  3  }
+
+	pkConfigTelnetServer OBJECT-TYPE	
+		SYNTAX			INTEGER { on(1),off(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Enable or disable telnet-server in the equipment."
+		::=  {  pkConfigOptions  4  }
+
+	pkConfigSSHServer OBJECT-TYPE	
+		SYNTAX			INTEGER { on(1),off(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Enable or disable ssh-server in the equipment."
+		::=  {  pkConfigOptions  5  }
+	pkConfigBackupConfig OBJECT-TYPE	
+		SYNTAX			INTEGER { on(1),off(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"."
+		::=  {  pkConfigOptions  6  }
+
+	pkConfigAutosaveEnable OBJECT-TYPE	
+		SYNTAX			INTEGER { on(1),off(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Enable configuration automatic saving"
+		::=  {  pkConfigOptions  7  }
+
+	pkConfigAutosaveTime OBJECT-TYPE	
+		SYNTAX			INTEGER (1..4095)
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Idle time in minutes to trigger automatic saving"
+		::=  {  pkConfigOptions  8  }
+
+	pkConfigChanged OBJECT-TYPE
+		SYNTAX			INTEGER { clear(0), changed(1) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Indicate if the configuration has changed since the last clear action. A set will clear this flag."
+		::=  {  pkConfigOptions  9  }
+
+END
+

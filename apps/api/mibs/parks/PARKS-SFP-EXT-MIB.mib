@@ -1,0 +1,108 @@
+-- This module will be extend, as required. The specification and other
+-- information contained in this document can be modified without prior
+-- notice. The user should consult PARKS to determine whether any such 
+-- changes have been done.
+-- MODULE-IDENTITY
+--  ORGANIZATION "PARKS Comunicacoes Digitais"
+-- CONTACT-INFO
+--  "Postal: PARKS Comunicacoes Digitais Cruzeiro 530,
+--  Distrito Industrial, CEP 94930-615
+--  Cachoeirinha, RS, BRAZIL E-mail: suporte@parks.com.br"
+-- DESCRIPTION
+--  "MIB with SFP information for PARKS devices interfaces.
+--  (Extention of PARKS-SFP-MIB)"
+
+PARKS-SFP-EXT-MIB DEFINITIONS ::= BEGIN
+	IMPORTS
+		OBJECT-TYPE
+			FROM SNMPv2-SMI
+		ifIndex
+			FROM IF-MIB
+		DisplayString
+			FROM SNMPv2-TC
+		parksSfpExt
+			FROM PARKS-FEATURES-MIB;
+		pkSfpExt OBJECT IDENTIFIER ::= { parksSfpExt 1 }
+
+--==========================================================================
+
+-- Parks Extended SFP TABLE 
+
+	pkSfpExtTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF PkSfpExtEntry
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION
+		"Table of Parks SFP information (Extention)"
+	::= { pkSfpExt 1 }
+
+	PkSfpExtEntry OBJECT-TYPE
+	SYNTAX PkSfpExtEntry
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION
+		"This entry contains information about the SFP devices inserted into the interfaces slots."
+	INDEX { ifIndex }
+	::= { pkSfpExtTable 1 }
+
+	PkSfpExtEntry ::= SEQUENCE {
+		pkSfpTransceiverDetectedType	INTEGER,
+		pkSfpDiagFaultAlarm		INTEGER
+	}
+
+	pkSfpTransceiverDetectedType OBJECT-TYPE
+	SYNTAX INTEGER {
+		ligent             (0),
+		sourcephotonics    (1),
+		fiberxon           (2),
+		fujitsu            (3),
+		ligent-a           (4),
+		ligent-b           (5),
+		sourcephotonics-a  (6),
+		sourcephotonics-b  (7),
+		fiberxon-a         (8),
+		fujitsu-a          (9),
+		nec                (10),
+		neoptec            (11),
+		ligent-c           (12),
+		fiberxon-b         (13),
+		fujitsu-30537      (14),
+		neophotonics-a     (15),
+		neophotonics-b     (16),
+		superxon           (17),
+		transceiver-1      (18),
+		transceiver-2      (19),
+		auto               (20),
+		wtd                (21),
+		neophotonics-c     (22),
+		delta              (23),
+		wtd-a              (24),
+		mentek             (25),
+		any                (26),
+		any-reset-guard    (27),
+		any-reset-preamble (28),
+		sourcephotonics-c  (29),
+		superxon-a         (30),
+		ligent-d           (31),
+		ligent-e           (32),
+		ligent-f           (33),
+		wtd-b              (34),
+		superxon-b         (35),
+		gpon-general-7     (36)
+		}
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Detected SFP type. System type detection based on the serial number."
+	::= { PkSfpExtEntry 1 }
+
+	pkSfpDiagFaultAlarm OBJECT-TYPE
+	SYNTAX      		INTEGER {	normal(1),
+			                	defect(2)}
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Shows if an SFP inserted in interface is or isn't it hardware defect. "
+	::= { PkSfpExtEntry 2 }
+
+END --PARKS-SFP-MIB
+
+

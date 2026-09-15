@@ -1,0 +1,92 @@
+-- PARKS-MAC-FILTERED-RATE-LIMIT-MIB
+-- PARKS Comunicacoes Digitais
+-- Copyright 2014 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO
+--		"Postal: PARKS Comunicacoes Digitais
+--		Cruzeiro 530 ,  Distrito Industrial,
+--		94930-615   Cachoeirinha, RS, BRAZIL
+--		E-mail: suporte@parks.com.br "
+--
+-- DESCRIPTION
+--	"MIB to set mac-filtered outgoing packets rate limiting "
+--	"policies on interfaces."
+
+PARKS-MAC-FILTERED-RATE-LIMIT-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		DisplayString, RowStatus, MacAddress
+			FROM SNMPv2-TC
+		InterfaceIndex
+			FROM IF-MIB
+		OBJECT-TYPE
+			FROM SNMPv2-SMI
+		parksMacFilteredRateLimit
+			FROM PARKS-FEATURES-MIB;
+
+	pkMacFilteredOutRateLimitTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF PkMacFilteredOutRateLimitEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Table of Mac-filtered outgoing packets rate-limiting rules."
+		::=  { parksMacFilteredRateLimit  1 }
+
+	pkMacFilteredOutRateLimitEntry OBJECT-TYPE
+		SYNTAX PkMacFilteredOutRateLimitEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Mac-filtered rate-limiting rules."
+		INDEX { pkMacFilteredOutRateLimitId }
+		::=  { pkMacFilteredOutRateLimitTable 1 }
+
+	PkMacFilteredOutRateLimitEntry  ::=  SEQUENCE {
+		pkMacFilteredOutRateLimitId		INTEGER,
+		pkMacFilteredOutRateLimitMac		MacAddress,
+		pkMacFilteredOutRateLimitRate		INTEGER,
+		pkMacFilteredOutRateLimitIf		InterfaceIndex,
+		pkMacFilteredOutRateLimitRowStatus	RowStatus
+	}
+
+	pkMacFilteredOutRateLimitId OBJECT-TYPE
+		SYNTAX INTEGER (1..65535)
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "Unique rule identifier."
+		::= { pkMacFilteredOutRateLimitEntry 1 }
+
+	pkMacFilteredOutRateLimitMac OBJECT-TYPE
+		SYNTAX MacAddress
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "MAC Address used as filter for the outgoing rate-liming policer."
+		::= { pkMacFilteredOutRateLimitEntry 2 }
+
+	pkMacFilteredOutRateLimitRate OBJECT-TYPE
+		SYNTAX INTEGER (1..1244000000)
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Max Rate (in kbps) allowed of Mac-filtered (pkMacFilteredOutRateLimitMac) outgoing packets in the referred interface (pkMacFilteredOutRateLimitIf)."
+		::= { pkMacFilteredOutRateLimitEntry 3 }
+
+	pkMacFilteredOutRateLimitIf OBJECT-TYPE
+		SYNTAX InterfaceIndex
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Interface in which the rule is applied"
+		::= { pkMacFilteredOutRateLimitEntry 4 }
+
+	pkMacFilteredOutRateLimitRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION "Row status for pkMacFilteredOutRateLimitTable entry."
+		::= { pkMacFilteredOutRateLimitEntry 5 }
+END

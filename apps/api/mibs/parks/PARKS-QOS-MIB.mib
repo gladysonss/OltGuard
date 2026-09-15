@@ -1,0 +1,1256 @@
+PARKS-QOS-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+        DisplayString, PhysAddress
+            FROM SNMPv2-TC
+        OBJECT-TYPE, Counter,mib-2, enterprises
+            FROM SNMPv2-SMI
+        ifIndex 
+            FROM IF-MIB 
+        parksQoS
+            FROM PARKS-FEATURES-MIB;
+
+    pkQoS  OBJECT IDENTIFIER
+        ::=  { parksQoS  1  }
+
+--Policy Map--
+	
+	pkQoSPolicyMap	OBJECT IDENTIFIER
+		::=  { pkQoS 1 }
+	
+	pkQoSPolicyMapCreator	OBJECT IDENTIFIER
+		::=  { pkQoSPolicyMap 1 }
+		
+	pkQoSPolicyMapCreatorName    OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..64))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Policy Map name"
+        ::=  {  pkQoSPolicyMapCreator  1  }
+		
+	pkQoSPolicyMapCreatorMatchACLName    OBJECT-TYPE 
+        SYNTAX          DisplayString (SIZE (0..110))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "ACL group name used as match paramter"
+        ::=  {  pkQoSPolicyMapCreator  2  }
+		
+	pkQoSPolicyMapCreatorMatchCos    OBJECT-TYPE 
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Vlan Priority bits (CoS) value to match"
+        ::=  {  pkQoSPolicyMapCreator  3  }
+
+	pkQoSPolicyMapCreatorMatchInnerCos    OBJECT-TYPE 
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Inner Vlan Priority bits (CoS) value to match"
+        ::=  {  pkQoSPolicyMapCreator  4  }
+
+	pkQoSPolicyMapCreatorMatchDscp    OBJECT-TYPE 
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "DSCP value to match"
+        ::=  {  pkQoSPolicyMapCreator  5  }
+		
+	pkQoSPolicyMapCreatorMatchVlan    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..4095)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "VLAN Id to match"
+        ::=  {  pkQoSPolicyMapCreator  6  }
+
+	pkQoSPolicyMapCreatorMatchInnerVlan    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..4095)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Inner VLAN Id to match"
+        ::=  {  pkQoSPolicyMapCreator  7  }
+		
+	pkQoSPolicyMapCreatorCir  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "CIR value"
+        ::=  {  pkQoSPolicyMapCreator  8 }
+		
+	pkQoSPolicyMapCreatorCbs  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "CBS value"
+        ::=  {  pkQoSPolicyMapCreator  9  }
+		
+	pkQoSPolicyMapCreatorPir  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "PIR value"
+        ::=  {  pkQoSPolicyMapCreator  10  }
+		
+	pkQoSPolicyMapCreatorPbs  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "PBS value"
+        ::=  {  pkQoSPolicyMapCreator  11  }
+		
+	pkQoSPolicyMapCreatorConformAction  OBJECT-TYPE
+        SYNTAX          INTEGER {Default(0), Transmit(1), Drop(2), COSTransmit(3), DSCPtransmit(4), TXQueueTransmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Conform Action"
+        ::=  {  pkQoSPolicyMapCreator  12  }
+		
+	pkQoSPolicyMapCreatorExceedAction  OBJECT-TYPE
+        SYNTAX          INTEGER {Default(0), Transmit(1), Drop(2), COSTransmit(3), DSCPtransmit(4), TXQueueTransmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Exceed Action"
+        ::=  {  pkQoSPolicyMapCreator  13  }
+		
+	pkQoSPolicyMapCreatorViolateAction  OBJECT-TYPE
+        SYNTAX          INTEGER {Default(0), Transmit(1), Drop(2), COSTransmit(3), DSCPtransmit(4), TXQueueTransmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Violate Action"
+        ::=  {  pkQoSPolicyMapCreator  14  }
+		
+	pkQoSPolicyMapCreatorSetCos  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "CoS value to be set"
+        ::=  {  pkQoSPolicyMapCreator  15  }	
+		
+	pkQoSPolicyMapCreatorSetDscp  OBJECT-TYPE
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "DSCP value to be set"
+        ::=  {  pkQoSPolicyMapCreator  16  }
+		
+	pkQoSPolicyMapCreatorSetTXQueue  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "TX Queue value to be set"
+        ::=  {  pkQoSPolicyMapCreator  17  }
+		
+	pkQoSPolicyMapCreate OBJECT-TYPE
+        SYNTAX			INTEGER { Idle(1), Create (2), Clear (3) }
+        MAX-ACCESS		read-write
+        STATUS			current
+        DESCRIPTION		"Identifier of the action."
+        ::=  {  pkQoSPolicyMapCreator 18  }
+
+	--Policy Map Table--
+	
+	pkQoSPolicyMapTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkQoSPolicyMapEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Policy Maps"
+        ::=  { pkQoSPolicyMap  2 }
+
+    pkQoSPolicyMapEntry   OBJECT-TYPE
+        SYNTAX      PkQoSPolicyMapEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkQoSPolicyMapName  }
+        ::=  { pkQoSPolicyMapTable 1 }
+
+    PkQoSPolicyMapEntry  ::=  SEQUENCE {
+		pkQoSPolicyMapName		DisplayString,
+		pkQoSPolicyMapMatchACLName	DisplayString,
+		pkQoSPolicyMapMatchCos		INTEGER,
+		pkQoSPolicyMapMatchInnerCos	INTEGER,
+		pkQoSPolicyMapMatchDscp		INTEGER,
+		pkQoSPolicyMapMatchVlan		INTEGER,
+		pkQoSPolicyMapMatchInnerVlan	INTEGER,
+		pkQoSPolicyMapCir		INTEGER,
+		pkQoSPolicyMapCbs		INTEGER,
+		pkQoSPolicyMapPir		INTEGER,
+		pkQoSPolicyMapPbs		INTEGER,
+		pkQoSPolicyMapConformAction	INTEGER,
+		pkQoSPolicyMapExceedAction	INTEGER,
+		pkQoSPolicyMapViolateAction	INTEGER,
+		pkQoSPolicyMapSetCos		INTEGER,
+		pkQoSPolicyMapSetDscp		INTEGER,
+		pkQoSPolicyMapSetTXQueue	INTEGER,
+		pkQoSPolicyMapDelete		INTEGER
+	}
+
+	pkQoSPolicyMapName    OBJECT-TYPE 
+        SYNTAX          DisplayString (SIZE (0..64))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Policy Map name"
+        ::=  {  pkQoSPolicyMapEntry  1  }
+		
+	pkQoSPolicyMapMatchACLName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..110))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "ACL group name used as match paramter"
+        ::=  {  pkQoSPolicyMapEntry  2  }
+		
+	pkQoSPolicyMapMatchCos    OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Vlan Priority bits (CoS) value to match"
+        ::=  {  pkQoSPolicyMapEntry  3  }
+		
+	pkQoSPolicyMapMatchInnerCos    OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Inner Vlan Priority bits (CoS) value to match"
+        ::=  {  pkQoSPolicyMapEntry  4  }
+		
+	pkQoSPolicyMapMatchDscp    OBJECT-TYPE
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "DSCP value to match"
+        ::=  {  pkQoSPolicyMapEntry  5  }
+		
+	pkQoSPolicyMapMatchVlan    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..4095)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "VLAN Id to match"
+        ::=  {  pkQoSPolicyMapEntry  6  }
+
+	pkQoSPolicyMapMatchInnerVlan    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..4095)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Inner VLAN Id to match"
+        ::=  {  pkQoSPolicyMapEntry  7  }
+
+		
+	pkQoSPolicyMapCir  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "CIR value"
+        ::=  {  pkQoSPolicyMapEntry  8  }
+		
+	pkQoSPolicyMapCbs  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "CBS value"
+        ::=  {  pkQoSPolicyMapEntry  9  }
+		
+	pkQoSPolicyMapPir  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "PIR value"
+        ::=  {  pkQoSPolicyMapEntry  10  }
+		
+	pkQoSPolicyMapPbs  OBJECT-TYPE
+        SYNTAX          INTEGER (0..10000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "PBS value"
+        ::=  {  pkQoSPolicyMapEntry  11  }
+		
+	pkQoSPolicyMapConformAction  OBJECT-TYPE
+        SYNTAX          INTEGER {Default(0), Transmit(1), Drop(2), COSTransmit(3), DSCPtransmit(4), TXQueueTransmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Conform Action"
+        ::=  {  pkQoSPolicyMapEntry  12  }
+		
+	pkQoSPolicyMapExceedAction  OBJECT-TYPE
+        SYNTAX          INTEGER {Default(0), Transmit(1), Drop(2), COSTransmit(3), DSCPtransmit(4), TXQueueTransmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Exceed Action"
+        ::=  {  pkQoSPolicyMapEntry  13  }
+		
+	pkQoSPolicyMapViolateAction  OBJECT-TYPE
+        SYNTAX          INTEGER {Default(0), Transmit(1), Drop(2), COSTransmit(3), DSCPtransmit(4), TXQueueTransmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Violate Action"
+        ::=  {  pkQoSPolicyMapEntry  14  }
+		
+	pkQoSPolicyMapSetCos  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "CoS value to be set"
+        ::=  {  pkQoSPolicyMapEntry  15  }
+		
+	pkQoSPolicyMapSetDscp  OBJECT-TYPE
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "DSCP value to be set"
+        ::=  {  pkQoSPolicyMapEntry  16  }
+		
+	pkQoSPolicyMapSetTXQueue  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "TX Queue value to be set"
+        ::=  {  pkQoSPolicyMapEntry  17  }
+		
+	pkQoSPolicyMapDelete OBJECT-TYPE
+        SYNTAX			INTEGER { Idle(1), Delete (2) }
+        MAX-ACCESS		read-write
+        STATUS			current
+        DESCRIPTION		"Delete row."
+        ::=  {  pkQoSPolicyMapEntry 18  }
+
+--Schedule--
+
+	pkQoSSchedule	OBJECT IDENTIFIER
+		::=  { pkQoS 2 }
+	
+	pkQoSScheduleCreator	OBJECT IDENTIFIER
+		::=  { pkQoSSchedule 1 }
+		
+	pkQoSScheduleCreatorName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..50))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Schedule name"
+        ::=  {  pkQoSScheduleCreator  1  }
+		
+	pkQoSScheduleCreatorType    OBJECT-TYPE 
+        SYNTAX          INTEGER {Strict (1), WFQ (2), WRR (3)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Scheduler type"
+        ::=  {  pkQoSScheduleCreator  2  }
+		
+	pkQoSScheduleCreator0MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  3  }
+		
+	pkQoSScheduleCreator1MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  4  }
+
+	pkQoSScheduleCreator2MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  5  }
+		
+	pkQoSScheduleCreator3MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  6  }
+		
+	pkQoSScheduleCreator4MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  7  }
+		
+	pkQoSScheduleCreator5MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  8  }
+		
+	pkQoSScheduleCreator6MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  9  }
+		
+	pkQoSScheduleCreator7MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  10  }
+		
+	pkQoSScheduleCreator0MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  11  }
+	
+	pkQoSScheduleCreator1MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  12  }
+		
+	pkQoSScheduleCreator2MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  13  }
+		
+	pkQoSScheduleCreator3MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  14  }
+		
+	pkQoSScheduleCreator4MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  15  }
+		
+	pkQoSScheduleCreator5MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  16  }
+		
+	pkQoSScheduleCreator6MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  17  }
+		
+	pkQoSScheduleCreator7MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleCreator  18  }
+		
+	pkQoSScheduleCreator0Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  19  }
+		
+	pkQoSScheduleCreator1Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  20  }
+		
+	pkQoSScheduleCreator2Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  21  }
+		
+	pkQoSScheduleCreator3Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  22  }
+		
+	pkQoSScheduleCreator4Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  23  }
+		
+	pkQoSScheduleCreator5Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  24  }
+		
+	pkQoSScheduleCreator6Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  25  }
+		
+	pkQoSScheduleCreator7Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleCreator  26  }
+		
+	pkQoSScheduleCreate OBJECT-TYPE
+		SYNTAX			INTEGER { Idle (1), Create (2), Clear (3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkQoSScheduleCreator 27  }
+		
+--Schedule Table--
+
+	pkQoSScheduleTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  pkQoSScheduleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Schedules for TX Queues"
+        ::=  { pkQoSSchedule  3 }
+
+    pkQoSScheduleEntry   OBJECT-TYPE
+        SYNTAX      pkQoSScheduleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkQoSScheduleIndex  }
+        ::=  { pkQoSScheduleTable 1 }
+
+    pkQoSScheduleEntry  ::=  SEQUENCE {
+		pkQoSScheduleIndex			INTEGER,
+		pkQoSScheduleName    		OCTET STRING,
+        pkQoSScheduleType			INTEGER,
+		pkQoSSchedule0MaxBandwidth	INTEGER,
+		pkQoSSchedule1MaxBandwidth	INTEGER,
+		pkQoSSchedule2MaxBandwidth	INTEGER,
+		pkQoSSchedule3MaxBandwidth	INTEGER,
+		pkQoSSchedule4MaxBandwidth	INTEGER,
+		pkQoSSchedule5MaxBandwidth	INTEGER,
+		pkQoSSchedule6MaxBandwidth	INTEGER,
+		pkQoSSchedule7MaxBandwidth	INTEGER,
+		pkQoSSchedule0MinBandwidth	INTEGER,
+		pkQoSSchedule1MinBandwidth	INTEGER,
+		pkQoSSchedule2MinBandwidth	INTEGER,
+		pkQoSSchedule3MinBandwidth	INTEGER,
+		pkQoSSchedule4MinBandwidth	INTEGER,
+		pkQoSSchedule5MinBandwidth	INTEGER,
+		pkQoSSchedule6MinBandwidth	INTEGER,
+		pkQoSSchedule7MinBandwidth	INTEGER,
+		pkQoSSchedule0Weight       INTEGER,
+		pkQoSSchedule1Weight       INTEGER,
+		pkQoSSchedule2Weight       INTEGER,
+		pkQoSSchedule3Weight       INTEGER,
+		pkQoSSchedule4Weight       INTEGER,
+		pkQoSSchedule5Weight       INTEGER,
+		pkQoSSchedule6Weight       INTEGER,
+		pkQoSSchedule7Weight       INTEGER,
+		pkQoSScheduleDelete	 	INTEGER
+	}
+	
+	pkQoSScheduleIndex  OBJECT-TYPE
+        SYNTAX          INTEGER   
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "index"
+        ::=  {  pkQoSScheduleEntry  1  }
+	
+	pkQoSScheduleName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..50))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Schedule name"
+        ::=  {  pkQoSScheduleEntry  2  }
+		
+	pkQoSScheduleType    OBJECT-TYPE 
+        SYNTAX          INTEGER {Strict (1), WFQ (2), WRR (3)}
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Scheduler type"
+        ::=  {  pkQoSScheduleEntry  3  }
+		
+	pkQoSSchedule0MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  4  }
+		
+	pkQoSSchedule1MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  5  }
+
+	pkQoSSchedule2MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  6  }
+		
+	pkQoSSchedule3MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  7  }
+		
+	pkQoSSchedule4MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  8  }
+		
+	pkQoSSchedule5MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  9  }
+		
+	pkQoSSchedule6MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  10  }
+		
+	pkQoSSchedule7MaxBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Max Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  11  }
+		
+	pkQoSSchedule0MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  12  }
+	
+	pkQoSSchedule1MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  13  }
+		
+	pkQoSSchedule2MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  14  }
+		
+	pkQoSSchedule3MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  15  }
+		
+	pkQoSSchedule4MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  16  }
+		
+	pkQoSSchedule5MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  17  }
+		
+	pkQoSSchedule6MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  18  }
+		
+	pkQoSSchedule7MinBandwidth    OBJECT-TYPE 
+        SYNTAX          INTEGER (64..10000000)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Min Bandwidth value for Strict scheduling type only"
+        ::=  {  pkQoSScheduleEntry  19  }
+		
+	pkQoSSchedule0Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  20  }
+		
+	pkQoSSchedule1Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  21  }
+		
+	pkQoSSchedule2Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  22  }
+		
+	pkQoSSchedule3Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  23  }
+		
+	pkQoSSchedule4Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  24  }
+		
+	pkQoSSchedule5Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  25  }
+		
+	pkQoSSchedule6Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  26  }
+		
+	pkQoSSchedule7Weight    OBJECT-TYPE 
+        SYNTAX          INTEGER (1..127)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Queue weight value for WRR scheduling types"
+        ::=  {  pkQoSScheduleEntry  27  }
+		
+	pkQoSScheduleDelete OBJECT-TYPE
+		SYNTAX			INTEGER { Idle(1), Delete (2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkQoSScheduleEntry 28  }	
+		
+--Interface X Policy--
+	
+	pkQoSInterfacePolicy	OBJECT IDENTIFIER
+		::=  { pkQoS 3 }
+	
+	pkQoSInterfacePolicyCreator	OBJECT IDENTIFIER
+		::=  { pkQoSInterfacePolicy 1 }
+		
+	pkQoSInterfacePolicyCreatorIfIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Interface index"
+        ::=  {  pkQoSInterfacePolicyCreator  1  }
+		
+	pkQoSInterfacePolicyCreatorMapProfile    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..255))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Policy Map Name"
+        ::=  {  pkQoSInterfacePolicyCreator  2  }
+		
+	pkQoSInterfacePolicyCreate OBJECT-TYPE
+		SYNTAX			INTEGER { Idle (1), Create (2), Clear (3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkQoSInterfacePolicyCreator 3  }
+	
+--Interface X Policy Table--
+
+	pkQoSInterfacePolicyTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  pkQoSInterfacePolicyEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Interface X Policy for relating interface and policy maps"
+        ::=  { pkQoSInterfacePolicy  2 }
+
+    pkQoSInterfacePolicyEntry   OBJECT-TYPE
+        SYNTAX      pkQoSInterfacePolicyEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkQoSInterfacePolicyIndex }
+        ::=  { pkQoSInterfacePolicyTable 1 }
+
+    pkQoSInterfacePolicyEntry  ::=  SEQUENCE {
+		pkQoSInterfacePolicyIndex	INTEGER,
+		pkQoSInterfacePolicyIfIndex INTEGER,
+		pkQoSInterfacePolicyMapProfile DisplayString,
+		pkQoSInterfacePolicyDelete INTEGER
+	}
+	
+	pkQoSInterfacePolicyIndex OBJECT-TYPE
+        SYNTAX          INTEGER   
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "index"
+        ::=  {  pkQoSInterfacePolicyEntry  1  }
+	
+	pkQoSInterfacePolicyIfIndex OBJECT-TYPE
+        SYNTAX          INTEGER   
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "index"
+        ::=  {  pkQoSInterfacePolicyEntry  2  }
+	
+	pkQoSInterfacePolicyMapProfile  OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..110))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Policy-Map Name"
+        ::=  {  pkQoSInterfacePolicyEntry  3  }
+		
+	pkQoSInterfacePolicyDelete OBJECT-TYPE
+		SYNTAX			INTEGER { Idle(1), Delete (2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkQoSInterfacePolicyEntry 4  }	
+		
+--Interface X Schedule Table--
+
+	pkQoSInterfaceScheduleTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  pkQoSInterfaceScheduleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Interface X Schedule for relating interface and schedulers"
+        ::=  { pkQoS  4 }
+
+    pkQoSInterfaceScheduleEntry   OBJECT-TYPE
+        SYNTAX      pkQoSInterfaceScheduleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  ifIndex }
+        ::=  { pkQoSInterfaceScheduleTable 1 }
+
+    pkQoSInterfaceScheduleEntry  ::=  SEQUENCE {
+		pkQoSInterfaceScheduleIndex	INTEGER
+	}
+	
+	pkQoSInterfaceScheduleIndex  OBJECT-TYPE
+        SYNTAX          INTEGER   
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Schedule Profile Index. If index is -1 no scheduler is being used."
+        ::=  {  pkQoSInterfaceScheduleEntry  1  }
+
+--Priority Profile--
+	
+	pkQoSPriorityProf	OBJECT IDENTIFIER
+		::=  { pkQoS 5 }
+	
+	pkQoSPriorityProfCreator	OBJECT IDENTIFIER
+		::=  { pkQoSPriorityProf 1 }
+		
+	pkQoSPriorityProfCreatorProfIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Profile Index, if any"
+        ::=  {  pkQoSPriorityProfCreator  1 }
+	
+	pkQoSPriorityProfCreatorName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..50))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Profile Name"
+        ::=  {  pkQoSPriorityProfCreator  2 }
+	
+	pkQoSPriorityProfCreatorTrafficType    OBJECT-TYPE 
+        SYNTAX          INTEGER { TCONTType1 (1), TCONTType2 (2), TCONTType3 (3), TCONTType4 (4), TCONTType5 (5) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Traffic Type"
+        ::=  {  pkQoSPriorityProfCreator  3 }
+	
+	pkQoSPriorityProfCreatorConformAction  OBJECT-TYPE
+        SYNTAX          INTEGER { Drop(1) , DSCPtransmit(2) , COSTransmit(3) , TXQueueTransmit(4) , Transmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Conform Action"
+        ::=  {  pkQoSPriorityProfCreator  4  }
+	
+	pkQoSPriorityProfCreatorExceedAction  OBJECT-TYPE
+        SYNTAX          INTEGER { Drop(1) , DSCPtransmit(2) , COSTransmit(3) , TXQueueTransmit(4) , Transmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Exceed Action"
+        ::=  {  pkQoSPriorityProfCreator  5  }
+	
+	pkQoSPriorityProfCreatorViolateAction  OBJECT-TYPE
+        SYNTAX          INTEGER { Drop(1) , DSCPtransmit(2) , COSTransmit(3) , TXQueueTransmit(4) , Transmit(5)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Violate Action"
+        ::=  {  pkQoSPriorityProfCreator  6  }
+	
+	pkQoSPriorityProfCreatorSetCos  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "CoS value to be set"
+        ::=  {  pkQoSPriorityProfCreator  7  }	
+	
+	pkQoSPriorityProfCreatorSetDscp  OBJECT-TYPE
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "DSCP value to be set"
+        ::=  {  pkQoSPriorityProfCreator  8  }	
+	
+	pkQoSPriorityProfCreatorSetTXQueue  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "TX Queue value to be set"
+        ::=  {  pkQoSPriorityProfCreator  9  }
+
+	pkQoSPriorityProfCreate OBJECT-TYPE
+		SYNTAX			INTEGER { Idle (1), Create (2), Clear (3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkQoSPriorityProfCreator 10  }
+	
+--Priority Table--
+
+	pkQoSPriorityProfTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  pkQoSInterfacePolicyEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Priority profiles"
+        ::=  { pkQoSPriorityProf  2 }
+
+    pkQoSPriorityProfEntry   OBJECT-TYPE
+        SYNTAX      pkQoSPriorityProfEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkQoSPriorityProfIndex, pkQoSPriorityProfSubIndex }
+        ::=  { pkQoSPriorityProfTable 1 }
+
+    pkQoSPriorityProfEntry  ::=  SEQUENCE {
+		pkQoSPriorityProfIndex INTEGER,
+		pkQoSPriorityProfSubIndex INTEGER,
+		pkQoSPriorityProfName	OCTET STRING,
+		pkQoSPriorityProfTrafficType INTEGER,
+		pkQoSPriorityProfConformAction INTEGER,
+		pkQoSPriorityProfExceedAction INTEGER,
+		pkQoSPriorityProfViolateAction INTEGER,
+		pkQoSPriorityProfSetCos INTEGER,
+		pkQoSPriorityProfSetDscp INTEGER,
+		pkQoSPriorityProfSetTXQueue INTEGER,
+		pkQoSPriorityProfDelete INTEGER
+	}
+			
+	pkQoSPriorityProfIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Profile Index"
+        ::=  {  pkQoSPriorityProfEntry  1 }
+		
+	pkQoSPriorityProfSubIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Profile Sub Index"
+        ::=  {  pkQoSPriorityProfEntry  2 }
+			
+	pkQoSPriorityProfName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..50))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Profile Name"
+        ::=  {  pkQoSPriorityProfEntry  3 }
+	
+	pkQoSPriorityProfTrafficType    OBJECT-TYPE 
+        SYNTAX          INTEGER { TCONTType1 (1), TCONTType2 (2), TCONTType3 (3), TCONTType4 (4), TCONTType5 (5) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Traffic Type"
+        ::=  {  pkQoSPriorityProfEntry  4 }
+	
+	pkQoSPriorityProfConformAction  OBJECT-TYPE
+        SYNTAX          INTEGER { Drop(1) , DSCPtransmit(2) , COSTransmit(3) , TXQueueTransmit(4) , Transmit(5)}
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Conform Action"
+        ::=  {  pkQoSPriorityProfEntry  5  }
+	
+	pkQoSPriorityProfExceedAction  OBJECT-TYPE
+        SYNTAX          INTEGER { Drop(1) , DSCPtransmit(2) , COSTransmit(3) , TXQueueTransmit(4) , Transmit(5)}
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Exceed Action"
+        ::=  {  pkQoSPriorityProfEntry  6  }
+	
+	pkQoSPriorityProfViolateAction  OBJECT-TYPE
+        SYNTAX          INTEGER { Drop(1) , DSCPtransmit(2) , COSTransmit(3) , TXQueueTransmit(4) , Transmit(5)}
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Violate Action"
+        ::=  {  pkQoSPriorityProfEntry  7  }
+	
+	pkQoSPriorityProfSetCos  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "CoS value to be set"
+        ::=  {  pkQoSPriorityProfEntry  8  }	
+	
+	pkQoSPriorityProfSetDscp  OBJECT-TYPE
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "DSCP value to be set"
+        ::=  {  pkQoSPriorityProfEntry  9  }	
+	
+	pkQoSPriorityProfSetTXQueue  OBJECT-TYPE
+        SYNTAX          INTEGER (0..7)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "TX Queue value to be set"
+        ::=  {  pkQoSPriorityProfEntry  10  }
+
+	pkQoSPriorityProfDelete OBJECT-TYPE
+		SYNTAX			INTEGER { Idle(1), Delete (2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkQoSPriorityProfEntry 11  }	
+
+
+--Bandwidth Profile--
+	
+	pkQoSBandwidthProf	OBJECT IDENTIFIER
+		::=  { pkQoS 6 }
+	
+	pkQoSBandwidthProfCreator	OBJECT IDENTIFIER
+		::=  { pkQoSBandwidthProf 1 }
+		
+	pkQoSBandwidthProfCreatorProfIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Profile Index, if any"
+        ::=  {  pkQoSBandwidthProfCreator  1 }
+	
+	pkQoSBandwidthProfCreatorName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..50))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Profile Name"
+        ::=  {  pkQoSBandwidthProfCreator  2 }
+	
+	pkQoSBandwidthProfCreatorTrafficType    OBJECT-TYPE 
+        SYNTAX          INTEGER { TCONTType1 (1), TCONTType2 (2), TCONTType3 (3), TCONTType4 (4), TCONTType5 (5) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Traffic Type"
+        ::=  {  pkQoSBandwidthProfCreator  3 }
+	
+	pkQoSBandwidthProfCreatorFixedDownload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Fixed download rate in kbps"
+        ::=  {  pkQoSBandwidthProfCreator  4  }
+		
+	pkQoSBandwidthProfCreatorAssuredDownload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Assured download rate in kbps"
+        ::=  {  pkQoSBandwidthProfCreator  5  }
+		
+	pkQoSBandwidthProfCreatorMaximumDownload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Maximum download rate in kbps"
+        ::=  {  pkQoSBandwidthProfCreator  6  }
+		
+	pkQoSBandwidthProfCreatorUpload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Upload rate in kbps"
+        ::=  {  pkQoSBandwidthProfCreator  7  }
+	
+	pkQoSBandwidthProfCreate OBJECT-TYPE
+		SYNTAX			INTEGER { Idle (1), Create (2), Clear (3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkQoSBandwidthProfCreator 8  }
+	
+--Bandwidth Table--
+
+	pkQoSBandwidthProfTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  pkQoSInterfacePolicyEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Priority profiles"
+        ::=  { pkQoSBandwidthProf  2 }
+
+    pkQoSBandwidthProfEntry   OBJECT-TYPE
+        SYNTAX      pkQoSBandwidthProfEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkQoSBandwidthProfIndex, pkQoSBandwidthProfSubIndex }
+        ::=  { pkQoSBandwidthProfTable 1 }
+
+    pkQoSBandwidthProfEntry  ::=  SEQUENCE {
+		pkQoSBandwidthProfIndex INTEGER,
+		pkQoSBandwidthProfSubIndex INTEGER,
+		pkQoSBandwidthProfName	OCTET STRING,
+		pkQoSBandwidthProfTrafficType INTEGER,
+		pkQoSBandwidthProfFixedDownload INTEGER,
+		pkQoSBandwidthProfAssuredDownload INTEGER,
+		pkQoSBandwidthProfMaximumDownload INTEGER,
+		pkQoSBandwidthProfUpload INTEGER,
+		pkQoSBandwidthProfDelete INTEGER
+	}
+			
+	pkQoSBandwidthProfIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Profile Index"
+        ::=  {  pkQoSBandwidthProfEntry  1 }
+		
+	pkQoSBandwidthProfSubIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Profile Sub Index"
+        ::=  {  pkQoSBandwidthProfEntry  2 }
+			
+	pkQoSBandwidthProfName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..50))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Profile Name"
+        ::=  {  pkQoSBandwidthProfEntry  3 }
+	
+	pkQoSBandwidthProfTrafficType    OBJECT-TYPE 
+        SYNTAX          INTEGER { TCONTType1 (1), TCONTType2 (2), TCONTType3 (3), TCONTType4 (4), TCONTType5 (5) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Traffic Type"
+        ::=  {  pkQoSBandwidthProfEntry  4 }
+	
+	pkQoSBandwidthProfFixedDownload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Fixed download rate in kbps"
+        ::=  {  pkQoSBandwidthProfEntry  5  }
+		
+	pkQoSBandwidthProfAssuredDownload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Assured download rate in kbps"
+        ::=  {  pkQoSBandwidthProfEntry  6  }
+		
+	pkQoSBandwidthProfMaximumDownload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Maximum download rate in kbps"
+        ::=  {  pkQoSBandwidthProfEntry  7  }
+		
+	pkQoSBandwidthProfUpload  OBJECT-TYPE
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Upload rate in kbps"
+        ::=  {  pkQoSBandwidthProfEntry  8  }
+	
+	pkQoSBandwidthProfDelete OBJECT-TYPE
+		SYNTAX			INTEGER { Idle(1), Delete (2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkQoSBandwidthProfEntry 9  }	
+		
+		
+	
+------Rate Limit Interface Table ------
+
+    pkQoSIFTable           OBJECT-TYPE
+        SYNTAX              SEQUENCE  OF  PkQoSIFEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         " "
+        ::= { pkQoS 7 }
+
+    pkQoSIFEntry           OBJECT-TYPE
+        SYNTAX              PkQoSIFEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         " "
+        INDEX               { ifIndex }
+        ::= { pkQoSIFTable 1 }
+
+    PkQoSIFEntry ::= SEQUENCE {
+        pkQoSIFName        DisplayString,
+        pkQoSRateLimitIn   INTEGER,
+        pkQoSRateLimitOut  INTEGER
+    }
+    
+    pkQoSIFName             OBJECT-TYPE 
+        SYNTAX              DisplayString
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Interface name"
+        ::= { pkQoSIFEntry 2 }
+
+    pkQoSRateLimitIn        OBJECT-TYPE 
+        SYNTAX              INTEGER ( 1..10000 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Rate limit for inbound packets. 0 if disabled."
+        DEFVAL              { 0 }
+        ::= { pkQoSIFEntry 3 }
+
+    pkQoSRateLimitOut       OBJECT-TYPE 
+        SYNTAX              INTEGER ( 1..10000 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Rate limit for outbound packets. 0 if disabled."
+        DEFVAL              { 0 }
+        ::= { pkQoSIFEntry 4 }    
+
+		
+END  --PARKS-QOS-MIB

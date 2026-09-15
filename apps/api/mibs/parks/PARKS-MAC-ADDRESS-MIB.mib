@@ -1,0 +1,127 @@
+PARKS-MAC-ADDRESS-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		DisplayString
+			FROM SNMPv2-TC
+		OBJECT-TYPE
+			FROM RFC-1212
+		enterprises
+			FROM RFC1155-SMI
+		parksMacAddress
+			FROM PARKS-SMI;
+
+-- pkMacCacheTable
+
+	pkMacCacheTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkMacCacheEntry
+		ACCESS		not-accessible
+		STATUS		current
+		DESCRIPTION	"Table that contains cached MAC address discovered by the OLT."
+		::=  { parksMacAddress 1 }
+
+	pkMacCacheEntry	OBJECT-TYPE
+		SYNTAX		PkMacCacheEntry
+		ACCESS		not-accessible
+		STATUS		current
+		DESCRIPTION	"List of information and configuration for each device managed equipment."
+		INDEX		{ pkMacCacheIndex }
+		::=  { pkMacCacheTable 1 }
+	
+	PkMacCacheEntry  ::=  SEQUENCE {
+		pkMacCacheIndex		INTEGER,
+		pkMacCacheMacAddr	DisplayString,
+		pkMacCacheVlan		INTEGER,
+		pkMacCachePort		INTEGER
+	}
+	
+	pkMacCacheIndex    OBJECT-TYPE 
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "Index"
+		::=  {  pkMacCacheEntry  1 }
+        
+	pkMacCacheMacAddr	OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE(18))
+		ACCESS			read-only
+		STATUS			current
+		DESCRIPTION		"MAC Address."
+		::=  { pkMacCacheEntry 2 }
+	
+	pkMacCacheVlan	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			current
+		DESCRIPTION		"Vlan"
+		::=  { pkMacCacheEntry 3 }
+
+	pkMacCachePort	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			current
+		DESCRIPTION		"Port"
+		::=  { pkMacCacheEntry 4 }
+		
+		
+-- pkMacAgingTime	
+
+	pkMacAgingTime    OBJECT-TYPE 
+		SYNTAX          INTEGER (0..10000)
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Aging Time"
+		::=  {  parksMacAddress  2 }
+		
+				
+-- pkMacTable
+
+	pkMacTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkMacEntry
+		ACCESS		not-accessible
+		STATUS		current
+		DESCRIPTION	"Table that contains cached MAC address discovered by the OLT."
+		::=  { parksMacAddress 3 }
+
+	pkMacEntry	OBJECT-TYPE
+		SYNTAX		PkMacEntry
+		ACCESS		not-accessible
+		STATUS		current
+		DESCRIPTION	"List of information and configuration for each device managed equipment."
+		INDEX		{ pkMacIndex }
+		::=  { pkMacTable 1 }
+	
+	PkMacEntry  ::=  SEQUENCE {
+		pkMacIndex		INTEGER,
+		pkMacMacAddr		DisplayString,
+		pkMacVlan		INTEGER,
+		pkMacPort		DisplayString
+	}
+	
+	pkMacIndex    OBJECT-TYPE 
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "Index"
+		::=  {  pkMacEntry  1 }
+        
+	pkMacMacAddr	OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE(18))
+		ACCESS			read-only
+		STATUS			current
+		DESCRIPTION		"MAC Address."
+		::=  { pkMacEntry 2 }
+	
+	pkMacVlan	OBJECT-TYPE
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			current
+		DESCRIPTION		"Vlan"
+		::=  { pkMacEntry 3 }
+
+	pkMacPort	OBJECT-TYPE
+		SYNTAX			DisplayString (SIZE(64))
+		ACCESS			read-only
+		STATUS			current
+		DESCRIPTION		"Port"
+		::=  { pkMacEntry 4 }
+
+END

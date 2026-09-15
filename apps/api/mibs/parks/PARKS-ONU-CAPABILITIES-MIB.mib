@@ -1,0 +1,106 @@
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+
+--    MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--    CONTACT-INFO
+--	"Postal: PARKS Comunicacoes Digitais Cruzeiro 530,
+--	 Distrito Industrial, CEP 94930-615
+--	 Cachoeirinha, RS, BRAZIL E-mail: suporte@parks.com.br"
+--    DESCRIPTION
+--	"MIB with GPON ONU capabilities in PARKS devices."
+
+PARKS-ONU-CAPABILITIES-MIB DEFINITIONS ::= BEGIN
+	IMPORTS
+	OBJECT-TYPE
+		FROM RFC-1212
+	parksOnuCapabilities
+		FROM PARKS-SMI
+	SlotNo,PortNo,LogicalPortNo
+		FROM GPON-TC;
+
+--==========================================================================
+	onuCapabilitiesTable    OBJECT-TYPE
+		SYNTAX          SEQUENCE OF OnuCapabilitiesEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Parks GPON ONU Capabilities"
+		::=  { parksOnuCapabilities 1 }
+
+	onuCapabilitiesEntry    OBJECT-TYPE
+		SYNTAX          OnuCapabilitiesEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           { onuSlotNo, onuPortNo, onuLogicalPortNo }
+		::=  { onuCapabilitiesTable 1 }
+
+	OnuCapabilitiesEntry  ::=  SEQUENCE {
+		onuSlotNo                SlotNo,
+		onuPortNo                PortNo,
+		onuLogicalPortNo         LogicalPortNo,
+		onuCapabilities          OCTET STRING
+	}
+
+	onuSlotNo               OBJECT-TYPE
+		SYNTAX          SlotNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuCapabilitiesEntry 1 }
+
+	onuPortNo               OBJECT-TYPE
+		SYNTAX          PortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table."
+		::=  { onuCapabilitiesEntry 2 }
+		
+	onuLogicalPortNo        OBJECT-TYPE
+		SYNTAX          LogicalPortNo
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table.
+                                 It should be identical to ONU ID assigned by OLT."
+		::=  { onuCapabilitiesEntry 3 }
+
+	onuCapabilities         OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(256))
+		MAX-ACCESS      read-only
+		STATUS          current
+		DESCRIPTION     "Bitfield representing the following ONU capabilities:
+		                 Bit Capability
+		                 0   POL (Passive Optical LAN) support
+		                 1   POL 802.1x configuration support
+		                 2   POL PortSecurity configuration support
+		                 3   Dying Gasp support
+		                 4   Reset Configuration support
+		                 5   IPV6 Host support
+		                 6   Type C Protection Switching Support
+		                 7   Power over Ethernet support
+		                 8   Router Operation Mode
+		                 9   L2 Transparent mode
+		                 10  Power level reporting
+		                 11  IP Host support
+		                 12  ONU MAC reporting
+		                 13  Parks OEM device
+		                 14  PM support
+		                 15  COS setting
+		                 16  QoS Weighted Round Robin
+		                 17  QoS Rate limiting
+		                 18  Multicast Group support
+		                 19  Multicast Configuration
+		                 20  Downstream Rate Limit
+		                 21  Giga-Ethernet Interface
+		                 22  LAN speed configuration
+		                 23  Flow encryption
+		                 24  IP Host Config Data Me reporting
+		                 25  TR-069 config support
+		                 26  PPPoE Config Data Me reporting
+		                 "
+		::=  { onuCapabilitiesEntry 4 }
+
+END -- PARKS-ONU-CAPABILITIES-MIB

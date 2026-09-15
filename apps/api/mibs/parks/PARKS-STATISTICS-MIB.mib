@@ -1,0 +1,115 @@
+-- PARKS-STATISTICS-MIB
+-- version 1.3.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information contained in this document can be modified without prior
+-- notice. The user should consult PARKS to determine whether any such
+-- changes have been done.
+--
+-- MODULE-IDENTITY
+--      ORGANIZATION "PARKS Comunicacoes Digitais"
+--      CONTACT-INFO
+--                   "Postal: PARKS Comunicacoes Digitais
+--                    Cruzeiro 530 ,  Distrito Industrial,
+--                    CEP 94930-615   Cachoeirinha, RS, BRAZIL
+--                    E-mail: suporte@parks.com.br"
+--
+--      DESCRIPTION
+--                   "The Structure of Management Information for
+--                    features statistcs in parks devices."
+--
+
+PARKS-STATISTICS-MIB    DEFINITIONS ::= BEGIN
+	IMPORTS
+		enterprises
+			FROM RFC1155-SMI
+		parksStatistics
+			FROM PARKS-SMI;
+
+--PARKS Statistics groups--
+	parksBridgeStats                OBJECT IDENTIFIER
+		::= { parksStatistics 1 }
+
+	parksNtwperformance             OBJECT IDENTIFIER
+		::= { parksStatistics 2 }
+
+	parksWimaxStats                 OBJECT IDENTIFIER
+		::= { parksStatistics 3 }
+
+	parksCPUMemStats                OBJECT IDENTIFIER
+		::= { parksStatistics 4 }
+
+	parksGSMStats                   OBJECT IDENTIFIER
+		::= { parksStatistics 5 }
+
+	parksQoSStats                   OBJECT IDENTIFIER
+		::= { parksStatistics 6 }
+
+	parksCESStats                   OBJECT IDENTIFIER
+		::= { parksStatistics 7 }
+
+	parksEFMStats                   OBJECT IDENTIFIER
+		::= { parksStatistics 8 }
+
+	parksVoipStats                  OBJECT IDENTIFIER
+		::= { parksStatistics 9 }
+
+	parksIpsecStats                 OBJECT IDENTIFIER
+		::= { parksStatistics 10 }
+
+	parksPPPStats                   OBJECT IDENTIFIER
+		::= { parksStatistics 11 }
+
+	parksMrtgGponStats              OBJECT IDENTIFIER
+		::= { parksStatistics 12 }
+
+	parksKeepconnectedStats         OBJECT IDENTIFIER
+		::= { parksStatistics 13 }
+
+	parksNGSMStats                  OBJECT IDENTIFIER
+		::= { parksStatistics 14 }
+
+	parksNIpSecStats                OBJECT IDENTIFIER
+		::= { parksStatistics 15 }
+
+	parksShdslBisStats              OBJECT IDENTIFIER
+		::= { parksStatistics 16 }
+
+	parksAdslStats                  OBJECT IDENTIFIER
+		::= { parksStatistics 17 }
+
+	parksMultiIOStats               OBJECT IDENTIFIER
+		::= { parksStatistics 18 }
+
+	parksObjTrackStats              OBJECT IDENTIFIER
+		::= { parksStatistics 19 }
+
+	parksPkSlaStats                 OBJECT IDENTIFIER
+		::= { parksStatistics 20 }
+
+	parksVRRPStats                  OBJECT IDENTIFIER
+		::= { parksStatistics 21 }
+
+	parksVRRPStats2                 OBJECT IDENTIFIER
+		::= { parksStatistics 22 }
+
+	parksNtwperformance2            OBJECT IDENTIFIER
+		::= { parksStatistics 23 }
+
+	parksDhcpSnoopingStats          OBJECT IDENTIFIER
+		::= { parksStatistics 24 }
+
+	parksCellularStats              OBJECT IDENTIFIER
+		::= { parksStatistics 25 }
+
+	parksKeepaliveStats             OBJECT IDENTIFIER
+		::= { parksStatistics 26 }
+
+	parksDualsimStats               OBJECT IDENTIFIER
+		::= { parksStatistics 27 }
+
+END
+

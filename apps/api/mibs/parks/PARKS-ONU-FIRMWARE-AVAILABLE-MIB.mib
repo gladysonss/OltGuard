@@ -1,0 +1,135 @@
+-- PARKS-ONU-FIRMWARE-AVAILABLE-MIB
+-- version 1.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2013 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+
+-- MODULE-IDENTITY
+--  ORGANIZATION "PARKS Comunicacoes Digitais"
+--   CONTACT-INFO
+--    "Postal: PARKS Comunicacoes Digitais Cruzeiro 530,
+--    Distrito Industrial, CEP 94930-615
+--    Cachoeirinha, RS, BRAZIL E-mail: suporte@parks.com.br"
+--   DESCRIPTION
+--    "MIB for configuration of the ONU firmware download feature."
+
+PARKS-ONU-FIRMWARE-AVAILABLE-MIB DEFINITIONS ::= BEGIN
+	IMPORTS
+		RowStatus, DisplayString FROM SNMPv2-TC
+		OBJECT-TYPE FROM SNMPv2-SMI
+		parksOnuFirmwareAvailable FROM PARKS-FEATURES-MIB
+		InetAddress FROM INET-ADDRESS-MIB
+		InetAddressType FROM INET-ADDRESS-MIB;
+
+	pkOnuFirmwareAvailable OBJECT IDENTIFIER ::= { parksOnuFirmwareAvailable 1 }
+
+	onuFirmwareAvailableTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF onuFirmwareAvailableEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "This table contains per ONU HwType list of URLs for downloading the ONU firmware as well as other firmware fetching information."
+	::=  { pkOnuFirmwareAvailable 1 }
+
+	onuFirmwareAvailableEntry OBJECT-TYPE
+		SYNTAX onuFirmwareAvailableEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION "URLs for downloading the ONU firmware and other firmware fetching information."
+		INDEX { onuFirmwareAvailableHwType }
+		::=  { onuFirmwareAvailableTable 1 }
+
+	onuFirmwareAvailableEntry ::= SEQUENCE {
+		onuFirmwareAvailableHwType INTEGER,
+		onuFirmwareAvailableServer InetAddress,
+		onuFirmwareAvailableServerType InetAddressType,
+		onuFirmwareAvailableUser DisplayString,
+		onuFirmwareAvailablePassword DisplayString,
+		onuFirmwareAvailablePath DisplayString,
+		onuFirmwareAvailableFileName DisplayString,
+		onuFirmwareAvailableRetries INTEGER,
+		onuFirmwareAvailableStatus INTEGER,
+		onuFirmwareAvailableRowStatus RowStatus
+	}
+
+	onuFirmwareAvailableHwType OBJECT-TYPE
+		SYNTAX INTEGER
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION "ONU HwType."
+		::= { onuFirmwareAvailableEntry 1 }
+
+	onuFirmwareAvailableServer OBJECT-TYPE
+		SYNTAX InetAddress
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "ONU firmware server IP address."
+		::= { onuFirmwareAvailableEntry 2 }
+
+	onuFirmwareAvailableServerType OBJECT-TYPE
+		SYNTAX InetAddressType
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "ONU firmware server IP address type."
+		::= { onuFirmwareAvailableEntry 3 }
+
+	onuFirmwareAvailableUser OBJECT-TYPE
+		SYNTAX DisplayString (SIZE(0..20))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Server autentication user name."
+		::= { onuFirmwareAvailableEntry 4 }
+
+	onuFirmwareAvailablePassword OBJECT-TYPE
+		SYNTAX DisplayString (SIZE(0..20))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Server autentication user password."
+		::= { onuFirmwareAvailableEntry 5 }
+
+	onuFirmwareAvailablePath OBJECT-TYPE
+		SYNTAX DisplayString (SIZE(0..40))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Path for the ONU firmware for the current HwType."
+		::= { onuFirmwareAvailableEntry 6 }
+
+	onuFirmwareAvailableFileName OBJECT-TYPE
+		SYNTAX DisplayString (SIZE(0..30))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "ONU firmware file name."
+		::= { onuFirmwareAvailableEntry 7 }
+
+	onuFirmwareAvailableRetries OBJECT-TYPE
+		SYNTAX INTEGER
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "Number of firmware downloading retries."
+		::= { onuFirmwareAvailableEntry 8 }
+
+	onuFirmwareAvailableStatus OBJECT-TYPE
+		SYNTAX INTEGER {not-present(1), not-found(2), downloaded(3), in-progress(4)}
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION "Code indicating the ONU firmware fetching status."
+		::= { onuFirmwareAvailableEntry 9 }
+
+	onuFirmwareAvailableRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION "For row creation/deletion."
+		::= { onuFirmwareAvailableEntry 10 }
+
+	onuFirmwareDownloadProgresStatusTrap NOTIFICATION-TYPE
+		OBJECTS { onuFirmwareAvailableHwType, onuFirmwareAvailableStatus }
+		STATUS current
+		DESCRIPTION "Trap informing change on onuFirmwareAvailableStatus."
+		::=  { pkOnuFirmwareAvailable 2 }
+	END

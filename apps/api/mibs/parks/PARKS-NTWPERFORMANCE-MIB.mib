@@ -1,0 +1,236 @@
+-- PARKS-NTWPERFORMANCE-MIB
+-- version 1.0.1
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO
+--		     "PARKS Comunicacoes Digitais
+--
+--                    Postal: PARKS Comunicacoes Digitais
+--                    Cruzeiro 530
+--                    Distrito Industrial, Cachoeirinha, RS
+--                    CEP 94930-615
+--                    BRAZIL
+--
+--                    E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " The Structure of Management Information for
+--                      PARKS Comunicacoes Digitais enterprise. "
+
+
+PARKS-NTWPERFORMANCE-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		TRAP-TYPE
+			FROM RFC-1215
+		DisplayString
+			FROM SNMPv2-TC
+		parksNtwperformance
+			FROM PARKS-STATISTICS-MIB
+		OBJECT-TYPE, TimeTicks, IpAddress, mib-2, enterprises,
+		Counter32, Counter64
+			FROM SNMPv2-SMI;
+
+	pkifStatsTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkifStatsEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"A table that contains statitisc data of each interface
+		on the managed device."
+		::=  { parksNtwperformance  1 }
+
+	pkifStatsEntry	OBJECT-TYPE
+		SYNTAX		PkifStatsEntry
+		MAX-ACCESS	not-accessible
+		STATUS		current
+		DESCRIPTION	"A list of statistic information of the equipments interfaces."
+		INDEX		{  pkifStatsIndex  }
+		::=  { pkifStatsTable 1 }
+
+	PkifStatsEntry  ::=  SEQUENCE {
+		pkifStatsIndex  INTEGER,
+		pkifStatsName  DisplayString,
+		pkifStatsInOctets  Counter64,
+		pkifStatsInPkts  Counter64,
+		pkifStatsOutOctets  Counter64,
+		pkifStatsOutPkts  Counter64,
+		pkifStatsCollisions  Counter32,
+		pkifStatsUtilization  Counter32,
+		pkifStatsInDrop  Counter32,
+		pkifStatsInError  Counter32,
+		pkifStatsOutDrop  Counter32,
+		pkifStatsOutError  Counter32,
+		pkifStatsClearStats INTEGER,
+		pkifStatsInOctetRate  Counter32,
+		pkifStatsInPktRate  Counter32,
+		pkifStatsRxLoad INTEGER,
+		pkifStatsOutOctetRate  Counter32,
+		pkifStatsOutPktRate  Counter32,
+		pkifStatsTxLoad INTEGER
+		}
+
+
+	pkifStatsIndex	OBJECT-TYPE
+		SYNTAX			INTEGER
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Index of each interfaces in the system."
+		::=  {  pkifStatsEntry  1  }
+
+
+	pkifStatsName	OBJECT-TYPE
+		SYNTAX			DisplayString  ( SIZE ( 0 .. 255  ) )
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Name of each interfaces in the system."
+		::=  {  pkifStatsEntry  2  }
+
+
+	pkifStatsInOctets	OBJECT-TYPE
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number of octecs received by the interface."
+		::=  {  pkifStatsEntry  3  }
+
+
+	pkifStatsInPkts	OBJECT-TYPE
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number of packets received by the interface."
+		::=  {  pkifStatsEntry  4  }
+
+
+	pkifStatsOutOctets	OBJECT-TYPE
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number of octecs transmitted out of  the interface."
+		::=  {  pkifStatsEntry  5  }
+
+
+	pkifStatsOutPkts	OBJECT-TYPE
+		SYNTAX			Counter64
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number of packets transmitted by the interface."
+		::=  {  pkifStatsEntry  6  }
+
+
+	pkifStatsCollisions	OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number of collisions that ocurred in the interface."
+		::=  {  pkifStatsEntry  7  }
+
+
+	pkifStatsUtilization	OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Rate of utilization of the interface in bps; (ifinoctets+ifoutoctes)/(time*ifspeed)
+		Document ID: 8141(CISCO)."
+		::=  {  pkifStatsEntry  8  }
+
+
+	pkifStatsInDrop	OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number received packets dropped by the interface."
+		::=  {  pkifStatsEntry  9  }
+
+
+	pkifStatsInError	OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number of received packets wich contains error in the interface."
+		::=  {  pkifStatsEntry  10  }
+
+
+	pkifStatsOutDrop	OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number transmitted packets dropped by the interface."
+		::=  {  pkifStatsEntry  11  }
+
+
+	pkifStatsOutError	OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Number of transmitted packets wich contains error in the interface."
+		::=  {  pkifStatsEntry  12  }
+
+	pkifStatsClearStats	OBJECT-TYPE
+		SYNTAX			INTEGER {idle(1), clear(2)}
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Resets the statistics of the interface:
+						 regular state : idle(1)
+						 clear statistics : clear(2)."
+		::=  {  pkifStatsEntry  13  }
+
+	pkifStatsInOctetRate OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Input bits per second."
+		::=  {  pkifStatsEntry  14  }
+
+	pkifStatsInPktRate OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Input packets per second."
+		::=  {  pkifStatsEntry  15  }
+
+	pkifStatsRxLoad OBJECT-TYPE
+		SYNTAX			INTEGER
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Current RX load to this interface"
+		::=  {  pkifStatsEntry  16  }
+
+	pkifStatsOutOctetRate OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Output bits per seconds."
+		::=  {  pkifStatsEntry  17  }
+
+	pkifStatsOutPktRate OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Output packets per seconds."
+		::=  {  pkifStatsEntry  18  }
+
+	pkifStatsTxLoad OBJECT-TYPE
+		SYNTAX			INTEGER
+		MAX-ACCESS		read-only
+		STATUS			current
+		DESCRIPTION		"Current TX load to this interface."
+		::=  {  pkifStatsEntry  19  }
+
+	pkifStatsSampletime	OBJECT-TYPE
+		SYNTAX			Counter32
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Time in seconds of the sampling capture for the utilization stats."
+		::=  {  parksNtwperformance  2  }
+
+END

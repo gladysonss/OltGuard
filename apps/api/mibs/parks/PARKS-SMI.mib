@@ -1,0 +1,99 @@
+-- PARKS-SMI
+-- version 1.1.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION : "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO:
+--                    		"Postal: PARKS Comunicacoes Digitais
+--                    		               Cruzeiro 530  , Distrito Industrial
+--                    		               CEP 94930-615    Cachoeirinha, RS, BRAZIL
+--                   		 E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " The Structure of Management Information for
+--                      PARKS Comunicacoes Digitais enterprise. "
+
+PARKS-SMI	DEFINITIONS ::= BEGIN
+	IMPORTS
+		enterprises
+			FROM RFC1155-SMI;
+
+-- TEXTUAL-CONVENTIONS --
+	PkPortIndex ::= 		INTEGER  ( 1 .. 1000  )
+
+	DisplayString ::= 		OCTET STRING
+
+	PkDevIndex ::= 		INTEGER  { local ( 1 ) , remote1 ( 2 ) , remote2 ( 3 ) , remote3 ( 4 ) , remote4 ( 5 ) , remote5 ( 6 ) , remote6 ( 7 ) , remote7 ( 8 ) , remote8 ( 9 ) }
+
+	PkSlotIndex ::= 		INTEGER  ( 1 .. 33  )
+
+	PkGenIntValue ::= 		INTEGER
+
+--PARKS- GROUPS--
+	parks	OBJECT IDENTIFIER
+		::=  {  enterprises  3893  }
+
+	parksFeatures	OBJECT IDENTIFIER
+		::=  {  parks  1  }
+
+	parksEquipments	OBJECT IDENTIFIER
+		::=  {  parks  2  }
+
+	parksDevices	OBJECT IDENTIFIER
+		::=  {  parks  3  }
+
+	parksStatistics	OBJECT IDENTIFIER
+		::=  {  parks  4  }
+
+	parksFlash	OBJECT IDENTIFIER
+		::=  {  parks  5  }
+
+	parksBackupConfiguration	OBJECT IDENTIFIER
+		::=  {  parks  6  }
+
+	parksFlashFS	OBJECT IDENTIFIER
+		::=  {  parks  7  }
+
+	parksRegistrations	OBJECT IDENTIFIER
+		::=  {  parks  100  }
+
+	parksNotifications	OBJECT IDENTIFIER
+		::=  {  parks  200  }
+
+	parksStatus	OBJECT IDENTIFIER
+		::=  {  parks  300  }
+
+	parksConfig	OBJECT IDENTIFIER
+		::=  {  parks  400  }
+
+	parksDiagnostic	OBJECT IDENTIFIER
+		::=  {  parks  500  }
+
+	parksPerformance	OBJECT IDENTIFIER
+		::=  {  parks  600  }
+
+	parksMacAddress	OBJECT IDENTIFIER
+		::=  {  parks  700  }
+
+	parksMacAddress2 OBJECT IDENTIFIER
+		::=  {  parks  701  }
+
+	parksOltCapabilities OBJECT IDENTIFIER
+		::=  {  parks  800  }
+
+	parksOnuCapabilities OBJECT IDENTIFIER
+		::=  {  parks  801  }
+
+	parksConfigState OBJECT IDENTIFIER
+		::=  {  parks  900  }
+
+END

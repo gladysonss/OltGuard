@@ -1,0 +1,130 @@
+-- PARKS-FEATURES-MIB
+-- version 1.2.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information contained in this document can be modified without prior
+-- notice. The user should consult PARKS to determine whether any such
+-- changes have been done.
+--
+-- MODULE-IDENTITY
+--      ORGANIZATION  "PARKS Comunicacoes Digitais"
+--      CONTACT-INFO
+--                    "Postal: PARKS Comunicacoes Digitais
+--                     Cruzeiro 530 ,  Distrito Industrial,
+--                     CEP 94930-615   Cachoeirinha, RS, BRAZIL
+--	               E-mail: suporte@parks.com.br"
+--
+--      DESCRIPTION
+--                    "Structure of Parks Features OIDs."
+--
+
+PARKS-FEATURES-MIB      DEFINITIONS ::= BEGIN
+	IMPORTS
+		parksFeatures
+			FROM PARKS-SMI
+		enterprises
+			FROM RFC1155-SMI;
+
+--PARKS FEATURES GROUPS--
+
+	parksBridge                     OBJECT IDENTIFIER
+		::= { parksFeatures 1 }
+
+	parksWireless                   OBJECT IDENTIFIER
+		::= { parksFeatures 2 }
+
+	parksEFM                        OBJECT IDENTIFIER
+		::= { parksFeatures 3 }
+
+	parksEthernet                   OBJECT IDENTIFIER
+		::= { parksFeatures 4 }
+
+	parksConfigEquipment            OBJECT IDENTIFIER
+		::= { parksFeatures 5 }
+
+	parksTrunk                      OBJECT IDENTIFIER
+		::= { parksFeatures 6 }
+
+	parksAAA                        OBJECT IDENTIFIER
+		::= { parksFeatures 7 }
+
+	parksVlan                       OBJECT IDENTIFIER
+		::= { parksFeatures 8 }
+
+	parksDhcpL2Relay                OBJECT IDENTIFIER
+		::= { parksFeatures 9 }
+
+	parksPppoeIntermAgent           OBJECT IDENTIFIER
+		::= { parksFeatures 10 }
+
+	parksIgmpSnooping               OBJECT IDENTIFIER
+		::= { parksFeatures 11 }
+
+	parksRstp                       OBJECT IDENTIFIER
+		::= { parksFeatures 12 }
+
+	l2tpv3                          OBJECT IDENTIFIER
+		::= { parksFeatures 13 }
+
+	parksQoS                        OBJECT IDENTIFIER
+		::= { parksFeatures 14 }
+
+	parksStormControlAgent          OBJECT IDENTIFIER
+		::= { parksFeatures 15 }
+
+	parksAcl                        OBJECT IDENTIFIER
+		::= { parksFeatures 16 }
+
+	parksLacp                       OBJECT IDENTIFIER
+		::= { parksFeatures 17 }
+
+	parksCfm                        OBJECT IDENTIFIER
+		::= { parksFeatures 18 }
+
+	parksERPS                       OBJECT IDENTIFIER
+		::= { parksFeatures 19 }
+
+	parksLoopback                   OBJECT IDENTIFIER
+		::= { parksFeatures 20 }
+
+	parksSfp                        OBJECT IDENTIFIER
+		::= { parksFeatures 21 }
+
+	parksNtp                        OBJECT IDENTIFIER
+		::= { parksFeatures 22 }
+
+	parksGponExt                    OBJECT IDENTIFIER
+		::= { parksFeatures 23 }
+
+	parksVlan2                      OBJECT IDENTIFIER
+		::= { parksFeatures 24 }
+
+	parksMacFilteredRateLimit       OBJECT IDENTIFIER
+		::= { parksFeatures 25 }
+
+	parksDot1x                      OBJECT IDENTIFIER
+		::= { parksFeatures 26 }
+
+	parksTemperature                OBJECT IDENTIFIER
+		::= { parksFeatures 27 }
+
+	parksSfpExt                     OBJECT IDENTIFIER
+		::= { parksFeatures 28 }
+
+	parksOnuFirmwareAvailable       OBJECT IDENTIFIER
+		::= { parksFeatures 29 }
+
+	parksDhcpSnooping               OBJECT IDENTIFIER
+		::= { parksFeatures 30 }
+
+	parksLogging                    OBJECT IDENTIFIER
+		::= { parksFeatures 31 }
+
+	parksSensor                    OBJECT IDENTIFIER
+		::= { parksFeatures 32 }
+
+END
+

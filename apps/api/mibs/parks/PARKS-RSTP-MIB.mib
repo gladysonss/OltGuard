@@ -1,0 +1,234 @@
+-- PARKS-RSTP-MIB
+-- version 1.0.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2008 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--  ORGANIZATION "PARKS Comunicacoes Digitais"
+--  CONTACT-INFO 
+--                           "Postal: PARKS Comunicacoes Digitais
+--                                        Cruzeiro 530 ,  Distrito Industrial,
+--                                       CEP 94930-615   Cachoeirinha, RS, BRAZIL
+--                               E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " Mib for configuration of RSTP "
+
+PARKS-RSTP-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+        DisplayString, PhysAddress
+            FROM SNMPv2-TC
+        OBJECT-TYPE, OBJECT-IDENTITY, NOTIFICATION-TYPE, mib-2, enterprises
+            FROM SNMPv2-SMI
+        ifIndex 
+            FROM IF-MIB 
+        parksRstp
+            FROM PARKS-FEATURES-MIB;
+
+    ----------------------------
+
+    pkRstp  OBJECT IDENTIFIER
+        ::= { parksRstp  1  }
+    
+    ------ Scalars Objects ------
+
+    pkRstpEnable            OBJECT-TYPE
+        SYNTAX              INTEGER { enable (1), disable (2) }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Enable/Disable RSTP on switch"
+        ::= { pkRstp 1 }
+
+    pkRstpHoldCount         OBJECT-TYPE
+        SYNTAX              INTEGER ( -1 | 1..10 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Configure max number of BPDUs sending per second or -1 to restore its default value."
+        DEFVAL              { 6 }
+        ::= { pkRstp 2 }
+    
+    pkRstpPathCostMethod    OBJECT-TYPE
+        SYNTAX              INTEGER { short (1), long (2) }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Configure pathcost method"
+        ::= { pkRstp 3 }
+
+    pkRstpBridgePriority    OBJECT-TYPE
+        SYNTAX              INTEGER ( -1 | 0..61440 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Configure bridge priority, multiple of 4096 or -1 to restore its default value."
+        DEFVAL              { 32768 }
+        ::= { pkRstp 4 }
+
+    pkRstpMaxAgeTimer       OBJECT-TYPE
+        SYNTAX              INTEGER ( 6..40 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Max number of bridges reachable by a BPDU"
+        DEFVAL              { 20 }
+        ::= { pkRstp 5 }
+
+    pkRstpForwardDelayTimer OBJECT-TYPE
+        SYNTAX              INTEGER ( 4..30 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Stipulated time for the port to get in forward state"
+        DEFVAL              { 15 }
+        ::= { pkRstp 6 }
+    
+    pkRstpHelloTimer        OBJECT-TYPE
+        SYNTAX              INTEGER ( 1..10 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Stipulated time to send BPDUs"
+        DEFVAL              { 2 }
+        ::= { pkRstp 7 }
+
+    pkRstpConfigTimers      OBJECT-TYPE
+        SYNTAX              INTEGER { apply (1), restore (2) }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Apply new values of timers or restore its default values"
+        ::= { pkRstp 8 }
+
+    pkRstpRootPathCost      OBJECT-TYPE
+        SYNTAX              INTEGER
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Current bridge root path cost"
+        ::= { pkRstp 9 }
+
+
+    ------ Interface Table Objects ------
+
+    pkRstpIFTable           OBJECT-TYPE
+        SYNTAX              SEQUENCE  OF  PkRstpIFEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         " "
+        ::= { parksRstp 2 }
+
+    pkRstpIFEntry           OBJECT-TYPE
+        SYNTAX              PkRstpIFEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         " "
+        INDEX               { ifIndex }
+        ::= { pkRstpIFTable 1 }
+
+    PkRstpIFEntry ::= SEQUENCE {
+        pkRstpIFName        DisplayString,
+        pkRstpAutoEdge      INTEGER,
+        pkRstpAdminEdge     INTEGER,
+        pkRstpPortCost      INTEGER,
+        pkRstpPortPriority  INTEGER,
+        pkRstpPortVersion   INTEGER,
+        pkRstpPortRole      INTEGER,
+        pkRstpPortState     INTEGER,
+		pkRstpPortDisabled  INTEGER
+    }
+    
+    pkRstpIFName            OBJECT-TYPE 
+        SYNTAX              DisplayString
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Interface name"
+        ::= { pkRstpIFEntry 2 }
+
+    pkRstpAutoEdge          OBJECT-TYPE 
+        SYNTAX              INTEGER { enable (1), disable (2) }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Set the interface to verify if it's connected to an edge"
+        ::= { pkRstpIFEntry 3 }
+
+    pkRstpAdminEdge         OBJECT-TYPE 
+        SYNTAX              INTEGER { enable (1), disable (2) }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Set the interface to operate in edge mode"
+        ::= { pkRstpIFEntry 4 }    
+
+    pkRstpPortCost          OBJECT-TYPE
+        SYNTAX              INTEGER ( -1 | 1..2000000 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Set the interface cost or -1 to restore the interface port cost default value."
+        DEFVAL              { 20000 }
+        ::= { pkRstpIFEntry 5 }
+
+    pkRstpPortPriority      OBJECT-TYPE
+        SYNTAX              INTEGER ( -1 | 0..240 )
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Set the interface priority, multiple of 16 or restore the interface port priority default value."
+        DEFVAL              { 128 }
+        ::= { pkRstpIFEntry 6 }
+
+    pkRstpPortVersion       OBJECT-TYPE
+        SYNTAX              INTEGER { stp (1), rstp (2) }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Current interface protocol version"
+        ::= { pkRstpIFEntry 7 }    
+
+    pkRstpPortRole          OBJECT-TYPE
+        SYNTAX              INTEGER { designated (1),
+                                      root (2),
+                                      alternate (3),
+                                      backup (4),
+                                      unknown (5) }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Current interface role"
+        ::= { pkRstpIFEntry 8 }
+
+    pkRstpPortState         OBJECT-TYPE
+        SYNTAX              INTEGER { disable (1),
+                                      blocking (2),
+                                      listening (3),
+                                      learning (4),
+                                      discarding(5),
+                                      forwarding (6) }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Current interface state"
+        ::= { pkRstpIFEntry 9 }
+
+    pkRstpPortDisabled      OBJECT-TYPE
+        SYNTAX              INTEGER { on (1), off (2) }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "If on, the port is excluded from the active topology and remains in forwarding."
+        ::= { pkRstpIFEntry 10 }    
+
+
+    ------ RSTP Traps ------
+
+    pkRstpTraps             OBJECT-IDENTITY
+        STATUS              current
+        DESCRIPTION         "Traps for RSTP MIB"
+        ::=  { parksRstp 3 }
+
+    pkRstpPortStateChanged  NOTIFICATION-TYPE
+        OBJECTS             { pkRstpIFName, pkRstpPortState, pkRstpPortRole }
+        STATUS              current
+        DESCRIPTION         "Trap for RSTP port state changes"
+        ::= { pkRstpTraps 1 }
+
+    pkRstpStatus  NOTIFICATION-TYPE
+        OBJECTS             { pkRstpEnable }
+        STATUS              current
+        DESCRIPTION         "Trap for RSTP status changes according to pkRstpEnable"
+        ::= { pkRstpTraps 2 }
+
+END

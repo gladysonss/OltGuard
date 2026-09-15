@@ -1,0 +1,101 @@
+-- PARKS-LOGGING-MIB
+-- version 1.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2017 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+--
+--    MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--    CONTACT-INFO
+--	"Postal: PARKS Comunicacoes Digitais Cruzeiro 530,
+--	 Distrito Industrial, CEP 94930-615
+--	 Cachoeirinha, RS, BRAZIL E-mail: suporte@parks.com.br"
+--    DESCRIPTION
+--	"MIB for configuration remote logging servers in PARKS devices. "
+
+PARKS-LOGGING-MIB DEFINITIONS ::= BEGIN
+	IMPORTS
+		RowStatus, TruthValue				FROM SNMPv2-TC
+		OBJECT-TYPE, enterprises, Unsigned32		FROM SNMPv2-SMI
+		InetAddress, InetAddressType			FROM INET-ADDRESS-MIB
+		parksLogging					FROM PARKS-FEATURES-MIB;
+
+-- =============================================================================
+-- Logging Remote Table
+
+	pkLoggingRemoteTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF PkLoggingRemoteEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION 
+			"Table containing the logging remote configuration."
+		::=  { parksLogging  1 }
+
+	pkLoggingRemoteEntry OBJECT-TYPE
+		SYNTAX PkLoggingRemoteEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION 
+			"Row description."
+		INDEX {  pkLoggingRemoteIndex  }
+		::=  { pkLoggingRemoteTable 1 }
+
+	PkLoggingRemoteEntry ::= SEQUENCE {
+		PkLoggingRemoteIndex		Unsigned32,
+		pkLoggingRemoteAddressType	InetAddressType,
+		pkLoggingRemoteAddress		InetAddress,
+		pkLoggingRemotePriority		INTEGER ( SIZE (0..7)),
+		pkLoggingRemoteRowStatus	RowStatus
+	}
+
+	pkLoggingRemoteIndex OBJECT-TYPE
+		SYNTAX Unsigned32
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION
+			"Index of the Remote Logging."
+		::=  { pkLoggingRemoteEntry 1 }
+
+	pkLoggingRemoteAddressType OBJECT-TYPE
+		SYNTAX InetAddressType
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION
+			"Configure the remote logging IP Address Type according to the
+			InetAddressType definition in the INET-ADDRESS mib."
+		::=  { pkLoggingRemoteEntry 2 }
+
+	pkLoggingRemoteAddress OBJECT-TYPE
+		SYNTAX InetAddress
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION
+			"Configure the remote logging IP Address according to the 
+			InetAddress definition in the INET-ADDRESS mib"
+		::=  { pkLoggingRemoteEntry 3 }
+
+	pkLoggingRemotePriority OBJECT-TYPE
+		SYNTAX INTEGER ( SIZE (0..7))
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION
+			"Configure loogging priority."
+		::=  { pkLoggingRemoteEntry 4 }
+
+	pkLoggingRemoteRowStatus OBJECT-TYPE
+		SYNTAX RowStatus
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION
+			"Create/Destroy a row. For creation use createAndGo(4).
+			For destruction use destroy(6)."
+		::=  { pkLoggingRemoteEntry 5 }
+
+END
+

@@ -1,0 +1,101 @@
+-- PARKS-TEMPERATURE-MIB
+-- version 1.0.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO:
+--                   		 "Postal: PARKS Comunicacoes Digitais
+--                   		              Cruzeiro 530 ,  Distrito Industrial,
+--                    		             CEP 94930-615   Cachoeirinha, RS, BRAZIL
+-- 	                             E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " Information about Parks equipments' temperature. "
+--
+
+PARKS-TEMPERATURE-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		DisplayString
+			FROM SNMPv2-TC
+		OBJECT-TYPE
+			FROM RFC-1212
+		parksTemperature
+			FROM PARKS-FEATURES-MIB;
+
+--  Temperature Table
+
+	pkTemperatureSensorTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkTemperatureSensorEntry
+		ACCESS		not-accessible
+		STATUS		deprecated
+		DESCRIPTION	"Table that contains temperature information for each 
+				sensor in the managed equipment."
+		::=  {  parksTemperature  1 }
+
+	pkTemperatureSensorEntry	OBJECT-TYPE
+		SYNTAX		PkTemperatureSensorEntry
+		ACCESS		not-accessible
+		STATUS		deprecated
+		DESCRIPTION	"List of temperature information for each 
+				sensor in the managed equipment."
+		INDEX		{  pkTemperatureSensorIndex  }
+		::=  {  pkTemperatureSensorTable 1 }
+
+	PkTemperatureSensorEntry  ::=   SEQUENCE {
+		pkTemperatureSensorIndex		INTEGER,
+		pkTemperatureSensorLocation		DisplayString,
+		pkTemperatureSensorValue		INTEGER,
+		pkTemperatureSensorStatus		INTEGER
+	}
+
+	pkTemperatureSensorIndex	OBJECT-TYPE	
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			deprecated
+		DESCRIPTION		"Index of temperature sensor."
+		::=  {  pkTemperatureSensorEntry  1  }
+
+	pkTemperatureSensorLocation	OBJECT-TYPE	
+		SYNTAX			DisplayString  ( SIZE ( 255  ) ) 
+		ACCESS			read-only
+		STATUS			deprecated
+		DESCRIPTION		"Location of the sensor."
+		::=  {  pkTemperatureSensorEntry  2  }
+
+	pkTemperatureSensorValue	OBJECT-TYPE	
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			deprecated
+		DESCRIPTION		"Value of measured temperature, in Celsius degrees."
+		::=  {  pkTemperatureSensorEntry  3  }
+
+	pkTemperatureSensorStatus	OBJECT-TYPE
+		SYNTAX			INTEGER { normal(1),
+						  limitexceeded(2) }
+		ACCESS			read-only
+		STATUS			deprecated
+		DESCRIPTION		"Sensor's status according to
+					the device's temperature limit."
+		::=  {  pkTemperatureSensorEntry  4  }
+
+-- Temperature Traps
+
+	pkTemperatureTraps		OBJECT-IDENTITY
+		STATUS			deprecated
+		DESCRIPTION		"Traps for PARKS Temperature MIB module."
+		::=  {  parksTemperature 2 }
+
+	pkTemperatureStatusChanged	NOTIFICATION-TYPE
+		STATUS			deprecated
+		DESCRIPTION		"Indication that a sensor has had its status changed."
+		::=  {  pkTemperatureTraps 1  }
+END

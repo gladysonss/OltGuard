@@ -1,0 +1,179 @@
+-- This module will be extend, as required. The specification and other
+-- information contained in this document can be modified without prior
+-- notice. The user should consult PARKS to determine whether any such
+-- changes have been done.
+
+--    MODULE-IDENTITY
+--    ORGANIZATION "PARKS Comunicacoes Digitais"
+--    CONTACT-INFO
+--    "Postal: PARKS Comunicacoes Digitais Cruzeiro 530,
+--     Distrito Industrial, CEP 94930-615
+--     Cachoeirinha, RS, BRAZIL E-mail: suporte@parks.com.br"
+--    DESCRIPTION
+--    "MIB with configuration for IEEE 802.1x and Port-Security in PARKS
+--     devices. "
+
+PARKS-DOT1X-MIB DEFINITIONS ::= BEGIN
+	IMPORTS
+	OBJECT-TYPE, Unsigned32
+		FROM SNMPv2-SMI
+	parksDot1x
+		FROM PARKS-FEATURES-MIB
+	RowStatus, TruthValue
+		FROM SNMPv2-TC
+	MacAddress
+		FROM GPON-TC;
+
+	parksGponDot1xProfileTable        OBJECT IDENTIFIER ::= { parksDot1x 1 }
+	parksGponPortSecurityProfileTable OBJECT IDENTIFIER ::= { parksDot1x 2 }
+
+--==========================================================================
+	Dot1xProfileEntry ::= SEQUENCE {
+		dot1xProfileIndex         Unsigned32,
+		dot1xProfileName          OCTET STRING,
+		dot1xAuthServerAddress    OCTET STRING,
+		dot1xAuthServerKey        OCTET STRING,
+		dot1xAuthServerTimeout    INTEGER,
+		dot1xAuthServerProxy      OCTET STRING,
+		dot1xprofileRowStatus     RowStatus
+	}
+
+	PortSecurityProfileEntry ::= SEQUENCE {
+		portSecurityProfileIndex        Unsigned32,
+		portSecurityEntryIndex          Unsigned32,
+		portSecurityProfileName         OCTET STRING,
+		portSecurityAllowedMacAddress   MacAddress,
+		portSecurityPortBitmap          INTEGER,
+		portSecurityRowStatus           RowStatus
+	}
+
+--==========================================================================
+	gponDot1xProfileTable       OBJECT-TYPE
+		SYNTAX          SEQUENCE OF Dot1xProfileEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Parks 802.1x Profile Extension"
+		::=  { parksGponDot1xProfileTable 1 }
+
+	gponDot1xProfileEntry       OBJECT-TYPE
+		SYNTAX          Dot1xProfileEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           { dot1xProfileIndex }
+		::=  { gponDot1xProfileTable 1 }
+
+	dot1xProfileIndex       OBJECT-TYPE
+		SYNTAX          Unsigned32(1..128)
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table"
+		::=  { gponDot1xProfileEntry 1 }
+
+	dot1xProfileName        OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..63))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Profile name"
+		::=  { gponDot1xProfileEntry 2 }
+
+	dot1xAuthServerAddress  OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..255))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Radius authenticator server address in format:
+		                 IPv4 address,
+		                 IPv6 address,
+		                 DNS host"
+		::=  { gponDot1xProfileEntry 3 }
+
+	dot1xAuthServerKey      OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..255))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Authentication key for Radius server"
+		::=  { gponDot1xProfileEntry 4 }
+
+	dot1xAuthServerTimeout  OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Radius server timeout
+		                 0 means unconfigured"
+		DEFVAL          { 0 }
+		::=  { gponDot1xProfileEntry 5 }
+
+	dot1xAuthServerProxy    OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..255))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "If needed, proxy address for Radius server"
+		::=  { gponDot1xProfileEntry 6 }
+
+	dot1xProfileRowStatus   OBJECT-TYPE
+		SYNTAX          RowStatus
+		MAX-ACCESS      read-create
+		STATUS          current
+		DESCRIPTION     "For row creation/deletion."
+		::=  { gponDot1xProfileEntry 7 }
+--==========================================================================
+	gponPortSecurityProfileTable OBJECT-TYPE
+		SYNTAX          SEQUENCE OF PortSecurityProfileEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Parks Port-Security Extension"
+		::=  { parksGponPortSecurityProfileTable 1 }
+
+	gponPortSecurityProfileEntry OBJECT-TYPE
+		SYNTAX          PortSecurityProfileEntry
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Row Description"
+		INDEX           { portSecurityProfileIndex, portSecurityEntryIndex }
+		::=  { gponPortSecurityProfileTable 1 }
+
+	portSecurityProfileIndex OBJECT-TYPE
+		SYNTAX          Unsigned32(1..1024)
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table"
+		::=  { gponPortSecurityProfileEntry 1 }
+
+	portSecurityEntryIndex  OBJECT-TYPE
+		SYNTAX          Unsigned32(1..128)
+		MAX-ACCESS      not-accessible
+		STATUS          current
+		DESCRIPTION     "Serves as an index for this table"
+		::=  { gponPortSecurityProfileEntry 2 }
+
+	portSecurityProfileName OBJECT-TYPE
+		SYNTAX          OCTET STRING (SIZE(0..63))
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Profile name"
+		::=  { gponPortSecurityProfileEntry 3 }
+
+	portSecurityAllowedMacAddress OBJECT-TYPE
+		SYNTAX          MacAddress
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Port-Security allowed MAC Address"
+		::=  { gponPortSecurityProfileEntry 4 }
+
+	portSecurityPortBitmap  OBJECT-TYPE
+		SYNTAX          INTEGER
+		MAX-ACCESS      read-write
+		STATUS          current
+		DESCRIPTION     "Port-Security allowed LAN ports"
+		::=  { gponPortSecurityProfileEntry 5 }
+
+	portSecurityRowStatus   OBJECT-TYPE
+		SYNTAX          RowStatus
+		MAX-ACCESS      read-create
+		STATUS          current
+		DESCRIPTION     "For row creation/deletion."
+		::=  { gponPortSecurityProfileEntry 6 }
+--==========================================================================
+
+END --PARKS-DOT1X-MIB
+

@@ -1,0 +1,452 @@
+PARKS-ACL-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+        PhysAddress
+            FROM SNMPv2-TC
+        OBJECT-TYPE, IpAddress
+            FROM SNMPv2-SMI
+        parksAcl
+            FROM PARKS-FEATURES-MIB;
+
+    pkAcl  OBJECT IDENTIFIER
+        ::=  { parksAcl  1  }
+
+--ACL RULES--
+	
+	pkAclRule	OBJECT IDENTIFIER
+		::=  { pkAcl 1 }
+	
+	pkAclRuleCreator	OBJECT IDENTIFIER
+		::=  { pkAclRule 1 }
+		
+	pkAclRuleCreatorName    OBJECT-TYPE
+        SYNTAX          OCTET STRING (SIZE (0..110))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "ACL Name"
+        ::=  {  pkAclRuleCreator  1  }
+		
+	pkAclRuleCreatorRuleIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "ACL Rule Index"
+        ::=  {  pkAclRuleCreator  2  }
+		
+	pkAclRuleCreatorType    OBJECT-TYPE 
+        SYNTAX          INTEGER { permit(1), deny(2) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Type of ACL"
+        ::=  {  pkAclRuleCreator  3  }
+		
+	pkAclRuleCreatorProtocol    OBJECT-TYPE 
+        SYNTAX          INTEGER (0..255)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "IANA Protocol Code"
+        ::=  {  pkAclRuleCreator  4  }
+		
+	pkAclRuleCreatorSourceIP    OBJECT-TYPE 
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Source IP"
+        ::=  {  pkAclRuleCreator  5  }
+		
+	pkAclRuleCreatorSourceWildcard  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Source Wildcard"
+        ::=  {  pkAclRuleCreator  6 }
+	
+	pkAclRuleCreatorSourcePortOperation  OBJECT-TYPE
+        SYNTAX          INTEGER { eq(1), gt(2), lt(3), range(4) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Source Port Operation"
+        ::=  {  pkAclRuleCreator  7  }
+		
+	pkAclRuleCreatorSourcePort  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Source Port"
+        ::=  {  pkAclRuleCreator  8  }
+		
+	pkAclRuleCreatorSourcePort2  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Source Port 2"
+        ::=  {  pkAclRuleCreator  9  }
+		
+	pkAclRuleCreatorDestinationIP  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Destination IP"
+        ::=  {  pkAclRuleCreator  10  }
+		
+	pkAclRuleCreatorDestinationWildcard  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Destination Wildcard"
+        ::=  {  pkAclRuleCreator  11  }
+		
+	pkAclRuleCreatorDestinationPortOperation  OBJECT-TYPE
+        SYNTAX          INTEGER { eq(1), gt(2), lt(3), range(4) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Destination Port Operation"
+        ::=  {  pkAclRuleCreator  12  }
+		
+	pkAclRuleCreatorDestinationPort  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Destination Port"
+        ::=  {  pkAclRuleCreator  13  }
+		
+	pkAclRuleCreatorDestinationPort2  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Destination Port 2"
+        ::=  {  pkAclRuleCreator  14  }
+		
+	pkAclRuleCreatorDSCP  OBJECT-TYPE
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "DSCP Value"
+        ::=  {  pkAclRuleCreator  15  }	
+		
+	pkAclRuleCreatorTOS OBJECT-TYPE
+        SYNTAX          INTEGER { minimize-delay(1), maximize-throughput(2), maximize-reliability(3), minimize-cost(4), normal-service(5) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "TOS Value"
+        ::=  {  pkAclRuleCreator  16  }	
+		
+	pkAclRuleCreatorMAC  OBJECT-TYPE
+        SYNTAX          PhysAddress
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "MAC Address to be used"
+        ::=  {  pkAclRuleCreator  17  }
+		
+	pkAclRuleCreatorTCPFlag  OBJECT-TYPE
+        SYNTAX          INTEGER (0..4096)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "TCP Flag Value"
+        ::=  {  pkAclRuleCreator  18  }	
+		
+	pkAclRuleCreatorTCPConnection  OBJECT-TYPE
+        SYNTAX          INTEGER { none(0), new(1), established (2), released (3) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "TCP Connection Value"
+        ::=  {  pkAclRuleCreator  19  }
+		
+	pkAclRuleCreate OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), create (2), clear (3), delete(4) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkAclRuleCreator 20  }
+
+	pkAclRuleCreatorDestinationMAC  OBJECT-TYPE
+        SYNTAX          PhysAddress
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Destination MAC Address to be used"
+        ::=  {  pkAclRuleCreator  21  }
+	
+	--ACL RULES TABLE--
+	
+	pkAclRuleTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkAclRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "ACL Rules"
+        ::=  { pkAclRule  2 }
+
+    pkAclRuleEntry   OBJECT-TYPE
+        SYNTAX      PkAclRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkAclRuleName, pkAclRuleIndex  }
+        ::=  { pkAclRuleTable 1 }
+
+    PkAclRuleEntry  ::=  SEQUENCE {
+		pkAclRuleName						OCTET STRING,
+		pkAclRuleIndex    					INTEGER,
+        pkAclRuleType						INTEGER,
+		pkAclRuleProtocol          			INTEGER,
+		pkAclRuleSourceIP         			IpAddress,
+		pkAclRuleSourceWildcard         	IpAddress,
+		pkAclRuleSourcePortOperation   		INTEGER,
+		pkAclRuleSourcePort          		INTEGER,
+		pkAclRuleSourcePort2          		INTEGER,
+		pkAclRuleDestinationIP          	IpAddress,
+		pkAclRuleDestinationWildcard		IpAddress,
+		pkAclRuleDestinationPortOperation  	INTEGER,
+		pkAclRuleDestinationPort 			INTEGER,
+		pkAclRuleDestinationPort2 			INTEGER,
+		pkAclRuleDSCP 						INTEGER,
+		pkAclRuleTOS 						INTEGER,
+		pkAclRuleMAC 						PhysAddress,
+		pkAclRuleTCPFlag 					INTEGER,
+		pkAclRuleTCPConnection 				INTEGER,
+		pkAclRuleMove 						INTEGER,
+		pkAclRuleDelete	 					INTEGER,
+		pkAclRuleDestinationMAC					PhysAddress
+	}
+	
+	pkAclRuleName    OBJECT-TYPE
+        SYNTAX          OCTET STRING (SIZE (0..110))
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "ACL Name"
+        ::=  {  pkAclRuleEntry  1  }
+		
+	pkAclRuleIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "ACL Rule Index"
+        ::=  {  pkAclRuleEntry  2  }
+		
+	pkAclRuleType    OBJECT-TYPE 
+        SYNTAX          INTEGER { permit(1), deny(2) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Type of ACL"
+        ::=  {  pkAclRuleEntry  3  }
+		
+	pkAclRuleProtocol    OBJECT-TYPE 
+        SYNTAX          INTEGER (0..255)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "IANA Protocol Code"
+        ::=  {  pkAclRuleEntry  4  }
+		
+	pkAclRuleSourceIP    OBJECT-TYPE 
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Source IP"
+        ::=  {  pkAclRuleEntry  5  }
+		
+	pkAclRuleSourceWildcard  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Source Wildcard"
+        ::=  {  pkAclRuleEntry  6 }
+		
+	pkAclRuleSourcePortOperation  OBJECT-TYPE
+        SYNTAX          INTEGER {eq(1), gt(2), lt(3), range(4) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Source Port Operation"
+        ::=  {  pkAclRuleEntry  7  }
+		
+	pkAclRuleSourcePort  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Source Port"
+        ::=  {  pkAclRuleEntry  8  }
+		
+	pkAclRuleSourcePort2  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Source Port 2"
+        ::=  {  pkAclRuleEntry  9  }
+		
+	pkAclRuleDestinationIP  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Destination IP"
+        ::=  {  pkAclRuleEntry  10  }
+		
+	pkAclRuleDestinationWildcard  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Destination Wildcard"
+        ::=  {  pkAclRuleEntry  11  }
+		
+	pkAclRuleDestinationPortOperation  OBJECT-TYPE
+        SYNTAX          INTEGER {eq(1), gt(2), lt(3), range(4) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Destination Port Operation"
+        ::=  {  pkAclRuleEntry  12  }
+		
+	pkAclRuleDestinationPort  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Destination Port"
+        ::=  {  pkAclRuleEntry  13  }
+		
+	pkAclRuleDestinationPort2  OBJECT-TYPE
+        SYNTAX          INTEGER (0..65535)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Destination Port 2"
+        ::=  {  pkAclRuleEntry  14  }
+		
+	pkAclRuleDSCP  OBJECT-TYPE
+        SYNTAX          INTEGER (0..63)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "DSCP Value"
+        ::=  {  pkAclRuleEntry  15  }	
+		
+	pkAclRuleTOS OBJECT-TYPE
+        SYNTAX          INTEGER { minimize-delay(1), maximize-throughput(2), maximize-reliability(3), minimize-cost(4), normal-service(5) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "TOS Value"
+        ::=  {  pkAclRuleEntry  16  }	
+		
+	pkAclRuleMAC  OBJECT-TYPE
+        SYNTAX          PhysAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "MAC Address to be used"
+        ::=  {  pkAclRuleEntry  17  }
+		
+	pkAclRuleTCPFlag  OBJECT-TYPE
+        SYNTAX          INTEGER (0..4096)
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "TCP Flag Value"
+        ::=  {  pkAclRuleEntry  18  }	
+		
+	pkAclRuleTCPConnection  OBJECT-TYPE
+        SYNTAX          INTEGER { none(0), new(1), established (2), released (3) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "TCP Connection Value"
+        ::=  {  pkAclRuleEntry  19  }
+		
+	pkAclRuleMove OBJECT-TYPE
+		SYNTAX			INTEGER
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Move row."
+		::=  {  pkAclRuleEntry 20  }	
+		
+	pkAclRuleDelete OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), delete (2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkAclRuleEntry 21  }
+
+	pkAclRuleDestinationMAC OBJECT-TYPE
+        SYNTAX          PhysAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Destination MAC Address to be used"
+        ::=  {  pkAclRuleEntry  22  }
+		
+--Interface X ACL --
+	
+	pkAclInterfaceAcl	OBJECT IDENTIFIER
+		::=  { pkAcl 2 }
+	
+	pkAclInterfaceAclCreator	OBJECT IDENTIFIER
+		::=  { pkAclInterfaceAcl 1 }
+		
+	pkAclInterfaceAclCreatorIfIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Interface index"
+        ::=  {  pkAclInterfaceAclCreator  1  }
+		
+	pkAclInterfaceAclCreatorAclName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..110))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "ACL Name"
+        ::=  {  pkAclInterfaceAclCreator  2  }
+		
+	pkAclInterfaceAclCreatorDirection    OBJECT-TYPE 
+        SYNTAX          INTEGER { inbound (1), outbound (2) }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Direction of the applied ACL on interface"
+        ::=  {  pkAclInterfaceAclCreator  3  }
+		
+	pkAclInterfaceAclCreate OBJECT-TYPE
+		SYNTAX			INTEGER { idle (1), create (2), clear (3) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Identifier of the action."
+		::=  {  pkAclInterfaceAclCreator 4  }
+	
+--Interface X ACL Table--
+
+	pkAclInterfaceAclTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  PkAclInterfaceAclEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Interface X ACL for relating interface and ACL groups"
+        ::=  { pkAclInterfaceAcl  2 }
+
+    pkAclInterfaceAclEntry   OBJECT-TYPE
+        SYNTAX      PkAclInterfaceAclEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION " "
+        INDEX       {  pkAclInterfaceAclIfIndex, pkAclInterfaceAclName }
+        ::=  { pkAclInterfaceAclTable 1 }
+
+    PkAclInterfaceAclEntry  ::=  SEQUENCE {
+		pkAclInterfaceAclIfIndex INTEGER,
+		pkAclInterfaceAclName OCTET STRING,
+		pkAclInterfaceAclDirection INTEGER,
+		pkAclInterfaceAclDelete INTEGER
+	}
+	
+	pkAclInterfaceAclIfIndex    OBJECT-TYPE 
+        SYNTAX          INTEGER
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "Interface index"
+        ::=  {  pkAclInterfaceAclEntry  1  }
+		
+	pkAclInterfaceAclName    OBJECT-TYPE 
+        SYNTAX          OCTET STRING (SIZE (0..110))
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "ACL Name"
+        ::=  {  pkAclInterfaceAclEntry  2  }
+		
+	pkAclInterfaceAclDirection    OBJECT-TYPE 
+        SYNTAX          INTEGER { inbound (1), outbound (2) }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Direction of the applied ACL on interface"
+        ::=  {  pkAclInterfaceAclEntry  3  }
+		
+	pkAclInterfaceAclDelete OBJECT-TYPE
+		SYNTAX			INTEGER { idle(1), delete (2) }
+		MAX-ACCESS		read-write
+		STATUS			current
+		DESCRIPTION		"Delete row."
+		::=  {  pkAclInterfaceAclEntry 4  }	
+		
+END

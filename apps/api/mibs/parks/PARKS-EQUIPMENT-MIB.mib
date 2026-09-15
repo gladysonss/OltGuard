@@ -1,0 +1,227 @@
+-- PARKS-EQUIPMENT-MIB
+-- version 1.1.1
+-- PARKS Comunicacoes Digitais
+-- Copyright 2006 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO 
+--                   		 "Postal: PARKS Comunicacoes Digitais
+--                   		              Cruzeiro 530 ,  Distrito Industrial,
+--                    		             CEP 94930-615   Cachoeirinha, RS, BRAZIL
+-- 	                             E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " Generic information of hardware and firmware for PARKS devices . "
+--
+
+PARKS-EQUIPMENT-MIB	DEFINITIONS ::= BEGIN
+	IMPORTS
+		DisplayString
+			FROM SNMPv2-TC
+		OBJECT-TYPE
+			FROM RFC-1212
+		enterprises
+			FROM RFC1155-SMI
+		parksEquipments
+			FROM PARKS-SMI;
+
+--Parks Equipment Groups--
+	pkEquipmentData	OBJECT IDENTIFIER
+		::=  {  parksEquipments  1  }
+
+	pkEquipmentDataTraps	OBJECT IDENTIFIER
+		::=  {  parksEquipments  2  }
+
+	pkEquipmentDataEquipName	OBJECT-TYPE	
+		SYNTAX			DisplayString  ( SIZE ( 255  ) ) 
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Name of the PARKS device."
+		::=  {  pkEquipmentData  1  }
+
+--equipment table
+	pkEquipmentDataTable	OBJECT-TYPE
+		SYNTAX		SEQUENCE  OF  PkEquipmentDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"Table that contains generic information for each
+				device on the managed equipment."
+		::=  { pkEquipmentData  2 }
+
+	pkEquipmentDataEntry	OBJECT-TYPE
+		SYNTAX		PkEquipmentDataEntry
+		ACCESS		not-accessible
+		STATUS		mandatory
+		DESCRIPTION	"List of information and configuration for each 
+				device managed equipment."
+		INDEX		{  pkEquipmentDataindex  }
+		::=  { pkEquipmentDataTable 1 }
+
+	PkEquipmentDataEntry  ::=  SEQUENCE {
+		pkEquipmentDataindex  		INTEGER,
+		pkEquipmentDataSerialNo  		DisplayString,
+		pkEquipmentDataHwID  		DisplayString,
+		pkEquipmentDataSwVersion  		DisplayString,
+		pkEquipmentDataUpgradeFileName	DisplayString,
+		pkEquipmentDataUpgradeFileType  	INTEGER,
+		pkEquipmentDataUpgradeServer  	DisplayString,
+		pkEquipmentDataUpgradeAdminState  	INTEGER,
+		pkEquipmentDataBoardOID		OBJECT IDENTIFIER,
+		pkEquipmentDataBoardStatus		INTEGER 
+		}
+
+	pkEquipmentDataindex	OBJECT-TYPE	
+		SYNTAX			INTEGER
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Index of each device in the PARKS equipment."
+		::=  {  pkEquipmentDataEntry  1  }
+
+	pkEquipmentDataSerialNo	OBJECT-TYPE	
+		SYNTAX			DisplayString  ( SIZE ( 255  ) ) 
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Serial Number of parks device."
+		::=  {  pkEquipmentDataEntry  2  }
+
+	pkEquipmentDataHwID	OBJECT-TYPE	
+		SYNTAX			DisplayString  ( SIZE ( 255  ) ) 
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"The parks-identifier of the hardware of each device
+	             			 in the system."
+		::=  {  pkEquipmentDataEntry  3  }
+
+	pkEquipmentDataSwVersion	OBJECT-TYPE	
+		SYNTAX			DisplayString  ( SIZE ( 255  ) ) 
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"The full name of softwares version in the device, 
+		     			containing boot loader, SO and packages version, 
+					if necessary. "
+		::=  {  pkEquipmentDataEntry  4  }
+
+	pkEquipmentDataUpgradeFileName	OBJECT-TYPE	
+		SYNTAX			DisplayString  ( SIZE ( 255  ) ) 
+		ACCESS			read-write
+		STATUS			mandatory
+		DESCRIPTION		"File name that upgrades  firmware and/or 
+					software in each device."
+		::=  {  pkEquipmentDataEntry  5  }
+
+	pkEquipmentDataUpgradeFileType	OBJECT-TYPE	
+		SYNTAX			INTEGER  { firmware ( 1 ) } 
+		ACCESS			read-write
+		STATUS			mandatory
+		DESCRIPTION		"The type of the file of update, for system 
+		    			 guided action."
+		::=  {  pkEquipmentDataEntry  6  }
+
+	pkEquipmentDataUpgradeServer	OBJECT-TYPE	
+		SYNTAX			DisplayString  ( SIZE ( 20  ) ) 
+		ACCESS			read-write
+		STATUS			deprecated
+		DESCRIPTION		"Server Adress for software/firmware update.
+						**NOTE: this object is deprecated, server address for software
+						and firmware update must be set in equipment configuration."
+		::=  {  pkEquipmentDataEntry  7  }
+
+	pkEquipmentDataUpgradeAdminState	OBJECT-TYPE	
+		SYNTAX			INTEGER  { none (0),
+								   active (1),
+								   noerror (2),
+								   error (3),
+								   downloaded (4),
+								   noServerDefined (5),
+								   saveInProgress (6) }
+		ACCESS			read-write
+		STATUS			mandatory
+		DESCRIPTION		"Setting this value to active causes the device to initiate
+             				the software download from a server (e.g. software image
+             				server) and update the equipment firmware.
+							Reading this object returns the status of the operation.
+							Setting this to 0 stops the current download operation,
+							1 starts a firmware upgrade and everthing else does nothing.
+							State downloaded indicates when the download is finished,
+							it happens just before the firmware flashing begins.
+							The 'noServerDefined' state, as the own name says, signifies
+							that there's no server configured in the equipment to upgrade
+							its firmware.
+							State saveInProgress indicates that the firmware flashing is
+							in progress."
+		DEFVAL			{ null }
+		::=  {  pkEquipmentDataEntry  8  }
+
+	pkEquipmentDataBoardOID		OBJECT-TYPE
+		SYNTAX			OBJECT IDENTIFIER 
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"OID of the board or equipment, described in PARKS-DEVICES-MIB"
+		::=  {  pkEquipmentDataEntry 9 }
+
+
+	pkEquipmentDataBoardStatus		OBJECT-TYPE
+		SYNTAX			INTEGER  { on (1) , off (2) , unplugged (3) }
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Status of the board"
+		::=  {  pkEquipmentDataEntry 10 }
+
+--- config lock
+	pkEquipmentLockConfiguration		OBJECT-TYPE
+		SYNTAX			INTEGER  { unlocked ( 1 ) ,
+									console ( 2 ),
+									web( 3 ),
+									telnet( 4 ),
+									ssh( 5 ),
+									snmp ( 6 ) }
+		ACCESS			read-only
+		STATUS			mandatory
+		DESCRIPTION		"Status of the lock of configuration for Parks Equipments"
+		::=  {  pkEquipmentData 3 }
+
+---equipment traps
+	pkInsertBoardTrap	NOTIFICATION-TYPE
+		OBJECTS	{ pkEquipmentDataindex ,  pkEquipmentDataBoardStatus, pkEquipmentDataBoardOID, pkEquipmentDataSwVersion, pkEquipmentDataSerialNo, pkEquipmentDataHwID }
+		STATUS		deprecated
+		DESCRIPTION	"Trap of insert board in the rack, in parks devices.  "
+		::=  { pkEquipmentDataTraps	1 }
+
+	pkRemoveBoardTrap	NOTIFICATION-TYPE
+		OBJECTS	{ pkEquipmentDataindex ,pkEquipmentDataBoardStatus}
+		STATUS		deprecated
+		DESCRIPTION	"Trap of remove board in the rack, in parks devices.  "
+		::=  { pkEquipmentDataTraps	2 }
+
+	pkLockConfiguration	NOTIFICATION-TYPE
+		OBJECTS	{ pkEquipmentLockConfiguration}
+		STATUS		current
+		DESCRIPTION	"Trap of lock of configuration, return the change of the change in pkEquipmentLockConfiguration.  "
+		::=  { pkEquipmentDataTraps	3 }
+
+	pkFirmwareUpgradeTrap NOTIFICATION-TYPE
+		OBJECTS { pkEquipmentDataUpgradeAdminState }
+		STATUS		current
+		DESCRIPTION	"Trap of firmware upgrade status, returns status notifications."
+		::=	{ pkEquipmentDataTraps 4 }
+
+	pkBoardStatusChangedTrap	NOTIFICATION-TYPE
+		OBJECTS	{ pkEquipmentDataindex, pkEquipmentDataBoardStatus, pkEquipmentDataBoardOID, pkEquipmentDataSwVersion, pkEquipmentDataSerialNo, pkEquipmentDataHwID }
+		STATUS		current
+		DESCRIPTION	"Indication that a board in a Parks device changed its status."
+		::=  { pkEquipmentDataTraps	5 }
+
+	OLTDown	NOTIFICATION-TYPE
+		STATUS		current
+		DESCRIPTION	"Indication that a Parks device is going to reboot."
+		::=  { pkEquipmentDataTraps	6 }
+
+END

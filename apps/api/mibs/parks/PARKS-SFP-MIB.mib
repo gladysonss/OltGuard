@@ -1,0 +1,224 @@
+-- This module will be extend, as required. The specification and other
+-- information
+-- contained in this document can be modified without prior notice. The
+-- user should consult PARKS to determine whether any such changes have
+-- been done.
+
+--    MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--    CONTACT-INFO
+--	"Postal: PARKS Comunicacoes Digitais Cruzeiro 530,
+--	 Distrito Industrial, CEP 94930-615
+--	 Cachoeirinha, RS, BRAZIL E-mail: suporte@parks.com.br"
+--    DESCRIPTION
+--	"MIB with SFP information for PARKS devices interfaces. "
+
+PARKS-SFP-MIB DEFINITIONS ::= BEGIN
+    IMPORTS 
+		OBJECT-TYPE
+			FROM SNMPv2-SMI
+		ifIndex	
+			FROM IF-MIB
+		DisplayString
+			FROM SNMPv2-TC
+    parksSfp	FROM PARKS-FEATURES-MIB;
+
+    pkSfp		OBJECT IDENTIFIER ::= { parksSfp 1 }
+  
+--==========================================================================
+
+-- Parks SFP TABLE 
+
+    pkSfpTable   OBJECT-TYPE
+	SYNTAX SEQUENCE OF PkSfpEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+	    "Table of Parks SFP information"
+   	::= { pkSfp 1 }
+
+    pkSfpEntry OBJECT-TYPE
+	SYNTAX      PkSfpEntry
+	MAX-ACCESS  not-accessible
+	STATUS      current
+	DESCRIPTION
+	    "This entry contains information about the SFP devices inserted into the interfaces slots.."
+	INDEX { ifIndex }
+	::= { pkSfpTable 1 }
+
+    PkSfpEntry ::= 
+    SEQUENCE {
+	pkSfpPresent				INTEGER,
+	pkSfpTransceiverConnector		INTEGER,
+	pkSfpTransceiverLaserWavelength 	INTEGER,
+	pkSfpTransceiverEncodingMechanism	INTEGER,
+	pkSfpTransceiverNominalBitRate		INTEGER,
+	pkSfpVendorName				DisplayString,
+	pkSfpVendorPN				DisplayString,
+	pkSfpVendorRev				DisplayString,
+	pkSfpVendorSN				DisplayString,
+	pkSfpVendorDataCode			DisplayString,
+	pkSfpLinkLengthSupported		INTEGER,
+	pkSfpDiagnostics 			INTEGER,
+	pkSfpDiagTemperature			INTEGER,
+	pkSfpDiagSupplyVoltage			INTEGER,
+	pkSfpDiagTXOutputPower			INTEGER,
+	pkSfpDiagRXInputPower			INTEGER
+    }
+	
+    pkSfpPresent OBJECT-TYPE
+	SYNTAX      		INTEGER {	yes(1),       
+			                	no(2) }
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Shows if an SFP is either inserted or not in the interface. "
+	::= { pkSfpEntry 2 }
+
+    pkSfpTransceiverConnector OBJECT-TYPE
+	SYNTAX      		INTEGER {	unknown(0),
+						sc(1),       
+			                	lc(7),
+			                	rj45(3)}
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Type of the SFP Connector. "
+	::= { pkSfpEntry 3 }
+
+    pkSfpTransceiverLaserWavelength OBJECT-TYPE
+	SYNTAX      		INTEGER 
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Tranceiver Laser Wavelenght (in nm). "
+	::= { pkSfpEntry 4 }
+
+    pkSfpTransceiverEncodingMechanism OBJECT-TYPE
+	SYNTAX      		INTEGER {	unknown(0),
+						enc8B-10B(1),
+						enc4B-5B(2),
+						encNRZ(3),
+						encManchester(4),
+						encSONETScrambled(5),
+						enc64B-66B(6)}
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Tranceiver Encoding Mechanism. "
+	::= { pkSfpEntry 5 }
+
+    pkSfpTransceiverNominalBitRate OBJECT-TYPE
+	SYNTAX      		INTEGER
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Tranceiver Nominal Bit Rate (in Mbps). "
+	::= { pkSfpEntry 6 }
+
+    pkSfpVendorName OBJECT-TYPE
+	SYNTAX      		DisplayString (SIZE (0..16))
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Vendor Name. "
+	::= { pkSfpEntry 7 }
+
+    pkSfpVendorPN OBJECT-TYPE
+	SYNTAX      		DisplayString (SIZE (0..16))
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Vendor Part Number. "
+	::= { pkSfpEntry 8 }
+
+    pkSfpVendorRev OBJECT-TYPE
+	SYNTAX      		DisplayString (SIZE (0..4))
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Vendor revision level for Part Number. "
+	::= { pkSfpEntry 9 }
+
+    pkSfpVendorSN OBJECT-TYPE
+	SYNTAX      		DisplayString (SIZE (0..16))
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Vendor Serial Number."
+	::= { pkSfpEntry 10 }
+
+    pkSfpVendorDataCode OBJECT-TYPE
+	SYNTAX      		DisplayString (SIZE (0..8))
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"SFP's Vendor Data Code "
+	::= { pkSfpEntry 11 }
+
+    pkSfpLinkLengthSupported OBJECT-TYPE
+	SYNTAX      		INTEGER
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Link Lenght supported for 9/125mm Fiber (meters)"
+	::= { pkSfpEntry 12 }
+
+    pkSfpDiagnostics OBJECT-TYPE
+	SYNTAX      		INTEGER {	no(0),
+						internally(1),       
+			                	externally(2)}
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Shows if the Diagnostics is implemented, either internally or externally calibrated."
+	::= { pkSfpEntry 13 }
+
+    pkSfpDiagTemperature OBJECT-TYPE
+	SYNTAX      		INTEGER
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Shows the SFP's temperature. (°C x 100)"
+	::= { pkSfpEntry 14 }
+
+    pkSfpDiagSupplyVoltage OBJECT-TYPE
+	SYNTAX      		INTEGER
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Shows the SFP's Supply Voltage (mV)"
+	::= { pkSfpEntry 15 }
+
+    pkSfpDiagTXOutputPower OBJECT-TYPE
+	SYNTAX      		INTEGER
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Shows the SFP's TX Output Power. (dBm x 100)"
+	::= { pkSfpEntry 16 }
+
+    pkSfpDiagRXInputPower OBJECT-TYPE
+	SYNTAX      		INTEGER
+	MAX-ACCESS  		read-only
+	STATUS      		current
+	DESCRIPTION		"Shows the SFP's RSSI Level (last ONU RSSI measure). (dBm x 100)"
+	::= { pkSfpEntry 17 }
+
+	
+	
+--pkSfpTraps--
+	pkSfpTraps 	OBJECT-IDENTITY
+	STATUS		current
+	DESCRIPTION	"Traps for SFP mib."
+		::=  { pkSfp 2 }
+
+	pkSfpPresentOn	NOTIFICATION-TYPE
+		OBJECTS	{ 	ifIndex,
+				pkSfpPresent,
+				pkSfpTransceiverConnector,
+				pkSfpTransceiverLaserWavelength,
+				pkSfpTransceiverNominalBitRate,
+				pkSfpVendorName,
+				pkSfpVendorSN,
+				pkSfpTransceiverEncodingMechanism,
+				pkSfpLinkLengthSupported}
+		STATUS		current
+		DESCRIPTION	"Trap for SFP inserted, with information embedded."
+		::=  { pkSfpTraps	1 }
+		
+	pkSfpPresentOff	NOTIFICATION-TYPE
+		OBJECTS	{ 	ifIndex, 
+				pkSfpPresent }
+		STATUS		current
+		DESCRIPTION	"Trap for SFP removed."
+		::=  { pkSfpTraps	2 }
+  
+END --PARKS-SFP-MIB
+
+

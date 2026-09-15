@@ -1,0 +1,249 @@
+-- PARKS-ETHERNET-MIB
+-- version 1.1.0
+-- PARKS Comunicacoes Digitais
+-- Copyright 2008 by PARKS Comunicacoes Digitais. All Rights Reserved.
+-- This PARKS SNMP MIB Specification is PARKS proprietary intellectual 
+-- property.
+-- This module will be extend, as required. The specification and other
+-- information 
+-- contained in this document can be modified without prior notice. The 
+-- user should consult PARKS to determine whether any such changes have 
+-- been done.
+--
+-- MODULE-IDENTITY
+--	ORGANIZATION "PARKS Comunicacoes Digitais"
+--	CONTACT-INFO 
+--                   		 "Postal: PARKS Comunicacoes Digitais
+--                   		              Cruzeiro 530 ,  Distrito Industrial,
+--                    		             CEP 94930-615   Cachoeirinha, RS, BRAZIL
+-- 	                             E-mail: suporte@parks.com.br "
+--
+--      DESCRIPTION
+--                    " MIB with configuration for Ethernet ports in PARKS devices. "
+
+PARKS-ETHERNET-MIB 	DEFINITIONS	::= BEGIN
+	IMPORTS
+		RowStatus, TEXTUAL-CONVENTION, TruthValue, DisplayString, PhysAddress
+			FROM SNMPv2-TC
+		OBJECT-TYPE, Counter, TimeTicks, IpAddress, mib-2, enterprises, Integer32, Counter32
+			FROM SNMPv2-SMI
+		parksEthernet
+			FROM PARKS-FEATURES-MIB;
+--PKinterfaces group--
+	pkinterfaces	OBJECT IDENTIFIER
+		::=  {  parksEthernet  1  }
+
+	pkifNumber  OBJECT-TYPE
+    		SYNTAX      		Integer32
+    		MAX-ACCESS  		read-only
+    		STATUS      		current
+    		DESCRIPTION	          "The number of network interfaces (regardless of their
+            				current state)."
+    		::= { pkinterfaces 1 }
+
+-- the Interfaces table
+	pkifTable OBJECT-TYPE
+    		SYNTAX      		SEQUENCE OF PkifEntry
+    		MAX-ACCESS  		not-accessible
+    		STATUS      		current
+    		DESCRIPTION	          "A list of interface.  The number of interfaces  is
+            				given by the value of pkifNumber."
+    		::= { pkinterfaces 2 }
+
+	pkifEntry OBJECT-TYPE
+    		SYNTAX      		PkifEntry
+    		MAX-ACCESS  		not-accessible
+    		STATUS      		current
+    		DESCRIPTION            	"An entry containing management information applicable to a
+            				particular interface."
+    		INDEX   { pkifIndex }
+    		::= { pkifTable 1 }
+
+	PkifEntry ::=	SEQUENCE {
+        		pkifIndex                	INTEGER,
+        		pkifName                 	DisplayString,
+		pkifPhysAddress          	PhysAddress,
+		pkifIpAddress		IpAddress,
+		pkifIpMask		IpAddress,
+		pkifSecIpAddress		IpAddress,
+		pkifSecIpMask		IpAddress,
+        		pkifType                 	INTEGER,
+		pkifMedia			INTEGER,
+		pkifSpeed			INTEGER,
+		pkifMediaConn		INTEGER,
+		pkifAdminStatus          	INTEGER,
+		pkifOperStatus           	INTEGER,
+		pkifDescription 			DisplayString
+
+	    	}
+
+	pkifIndex OBJECT-TYPE
+    		SYNTAX      		INTEGER
+    		MAX-ACCESS  		read-only
+    		STATUS      		current
+    		DESCRIPTION	          "Index of each interface, its constant until destruction of
+					 the interface or reset of the equipment. "
+    		::= { pkifEntry 1 }
+
+	pkifName OBJECT-TYPE
+    		SYNTAX      		DisplayString (SIZE (0..255))
+    		MAX-ACCESS  		read-only
+    		STATUS      		current
+    		DESCRIPTION		"Name of the ethernet port. "
+    		::= { pkifEntry 2 }
+
+	pkifPhysAddress OBJECT-TYPE
+    		SYNTAX      		PhysAddress
+    		MAX-ACCESS  		read-only
+    		STATUS      		current
+    		DESCRIPTION		"Mac address of the ethernet port, if exist."
+    	::= { pkifEntry 3 }
+
+	pkifIpAddress OBJECT-TYPE
+    		SYNTAX      		IpAddress
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+    		DESCRIPTION 	         "IP Address of the internet port."
+    	::= { pkifEntry 4 }
+
+	pkifIpMask OBJECT-TYPE
+    		SYNTAX      		IpAddress
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+    		DESCRIPTION	         "IP mask of the internet port."
+    	::= { pkifEntry 5 }
+
+	pkifSecIpAddress OBJECT-TYPE
+    		SYNTAX      		IpAddress
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+    		DESCRIPTION 	         "Secondary IP Address of the internet port."
+    	::= { pkifEntry 6 }
+
+	pkifSecIpMask OBJECT-TYPE
+    		SYNTAX      		IpAddress
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+    		DESCRIPTION	         "IP mask of secondary IP address the internet port "
+    	::= { pkifEntry 7 }
+
+	pkifType OBJECT-TYPE
+       		SYNTAX  			INTEGER {	other(1),          -- none of the following
+                          				regular1822(2),
+                         				hdh1822(3),
+                         				ddn-x25(4),
+                         				rfc877-x25(5),
+                          				ethernet-csmacd(6),
+                          				iso88023-csmacd(7),
+                          				iso88024-tokenBus(8),
+                          				iso88025-tokenRing(9),
+                          				iso88026-man(10),
+                          				starLan(11),
+                          				proteon-10Mbit(12),
+                         				proteon-80Mbit(13),
+                          				hyperchannel(14),
+                          				fddi(15),
+                          				lapb(16),
+                          				sdlc(17),
+                          				ds1(18),           
+                          				e1(19),            
+                          				basicISDN(20),
+                         				primaryISDN(21),   
+                          				propPointToPointSerial(22),
+                          				ppp(23),
+                          				softwareLoopback(24),
+                          				eon(25),            
+                          				ethernet-3Mbit(26),
+                          				nsip(27),           
+                          				slip(28),           
+                          				ultra(29),          
+                          				ds3(30),            
+                          				sip(31),            
+                          				frame-relay(32)
+                      				}
+    		MAX-ACCESS  		read-only
+    		STATUS      		current
+    		DESCRIPTION	         "Type of interface. "
+    		::= { pkifEntry 8 }
+
+
+	pkifMedia OBJECT-TYPE
+    		SYNTAX      		INTEGER { auto(1),
+						  hd10(2),
+						  fd10(3),
+						  hd100(4),
+						  fd100(5),
+						  fd1000(6),
+						  fd10000(7),
+						  fd2500 (8)}
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+   		DESCRIPTION                   "Transport media of the ethernet port."
+    		::= { pkifEntry 9 }
+
+
+	pkifSpeed OBJECT-TYPE
+    		SYNTAX      		INTEGER 
+    		MAX-ACCESS  		read-only
+    		STATUS     		current
+    		DESCRIPTION             	"Information of the speed of the the ethernet port in Mbps."
+    		::= { pkifEntry 10 }
+
+	pkifMediaConn OBJECT-TYPE
+    		SYNTAX      		INTEGER { rj45(1), --rj45 connector
+				  		sfp(2),  --optical interface connector
+				  		xfp(3),  --optical 10giga interface connector
+				  		cx4(4),  --cx4 copper 10giga interface connector
+						virtual(5)  --virtual ethernet interface
+						}
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+    		DESCRIPTION	         "Media connector type of the ethernet port."
+    		::= { pkifEntry 11 }
+
+	pkifAdminStatus OBJECT-TYPE
+    		SYNTAX  			INTEGER {	up(1),       
+                					down(2),
+                					testing(3)   -- test mode
+           				 	}
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+    		DESCRIPTION            	"Administrative status of the ethernet port ."
+    		::= { pkifEntry 12 }
+
+	pkifOperStatus OBJECT-TYPE
+    		SYNTAX  			INTEGER {	up(1),       
+			                		down(2)
+            					}
+    		MAX-ACCESS  		read-only
+    		STATUS      		current
+    		DESCRIPTION	          "Operational status of the ethernet port (link up link down)."
+    		::= { pkifEntry 13 }
+
+	pkifDescription OBJECT-TYPE
+    		SYNTAX      		DisplayString (SIZE (0..255))
+    		MAX-ACCESS  		read-write
+    		STATUS      		current
+    		DESCRIPTION			"Description of Interface."
+    		::= { pkifEntry 14 }
+
+
+--pkiftraps--
+	pkifTraps 	OBJECT-IDENTITY
+	STATUS		current
+	DESCRIPTION	"Traps for Ethernet mib."
+		::=  { pkinterfaces 3 }
+
+	pkifLinkUp	NOTIFICATION-TYPE
+		OBJECTS	{ pkifIndex , pkifAdminStatus, pkifOperStatus, pkifSpeed, pkifMediaConn}
+		STATUS		current
+		DESCRIPTION	"Trap of link up of the ethernet port, with port information embedded."
+		::=  { pkifTraps	1 }
+		
+	pkifLinkDown	NOTIFICATION-TYPE
+		OBJECTS	{ pkifIndex , pkifAdminStatus, pkifOperStatus}
+		STATUS		current
+		DESCRIPTION	"Trap of link down of the ethernet port."
+		::=  { pkifTraps	2 }
+
+END

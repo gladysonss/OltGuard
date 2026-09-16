@@ -40,6 +40,7 @@ model Olt {
 
   onus             Onu[]
   provisioningJobs ProvisioningJob[]
+  alarms           Alarm[]
 }
 
 enum OnuStatus {
@@ -70,6 +71,7 @@ model Onu {
   updatedAt DateTime @updatedAt
 
   signalReadings SignalReading[]
+  alarms         Alarm[]
 
   @@unique([oltId, slotNo, portNo, logicalPortNo])
   @@index([oltId, status])
@@ -118,4 +120,77 @@ model ProvisioningJob {
   finishedAt DateTime?
 
   @@index([oltId, status])
+}
+
+enum AlarmSeverity {
+  CLEAR
+  INFO
+  WARNING
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+enum AlarmCondition {
+  ACTIVE
+  CLEARED
+}
+
+enum AlarmSource {
+  OLT
+  PON_LINK
+  ONU
+}
+
+/// Um alarme por ocorrencia (raised -> cleared), alimentado pelo parser de traps
+/// (ver apps/api/src/olt/parks-trap-mapping.ts) e pelo job de reconciliacao.
+model Alarm {
+  id    String @id @default(uuid())
+  oltId String
+  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
+
+  onuId String?
+  onu   Onu?   @relation(fields: [onuId], references: [id], onDelete: Cascade)
+
+  source AlarmSource
+  slotNo Int
+  portNo Int?
+  logicalPortNo Int?
+
+  trapOid   String
+  alarmName String
+  severity  AlarmSeverity
+  condition AlarmCondition @default(ACTIVE)
+
+  confirmed       Boolean   @default(false)
+  confirmedAt     DateTime?
+  confirmedByUserId String?
+  confirmedByUser User?     @relation(fields: [confirmedByUserId], references: [id])
+
+  raisedAt  DateTime
+  clearedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([oltId, condition])
+  @@index([oltId, slotNo, portNo])
+}
+
+enum UserRole {
+  ADMIN
+  VIEWER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(VIEWER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  confirmedAlarms Alarm[]
 }

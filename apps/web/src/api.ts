@@ -73,6 +73,28 @@ export interface CreateOltInput {
   sshPort?: number;
 }
 
+export interface ManagedUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  role?: UserRole;
+  password?: string;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
@@ -119,4 +141,13 @@ export const api = {
   clearAlarm: (id: string) => request<Alarm>(`/alarms/${id}/clear`, { method: 'PATCH' }),
   confirmAndClearAlarm: (id: string) =>
     request<Alarm>(`/alarms/${id}/confirm-and-clear`, { method: 'PATCH', body: '{}' }),
+};
+
+export const userApi = {
+  list: () => request<ManagedUser[]>('/users'),
+  create: (input: CreateUserInput) =>
+    request<ManagedUser>('/users', { method: 'POST', body: JSON.stringify(input) }),
+  update: (id: string, input: UpdateUserInput) =>
+    request<ManagedUser>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  remove: (id: string) => request<void>(`/users/${id}`, { method: 'DELETE' }),
 };

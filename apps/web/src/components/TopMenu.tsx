@@ -49,9 +49,14 @@ export function TopMenu() {
           Alarmes e Eventos
         </NavLink>
         {user?.role === 'ADMIN' && (
-          <NavLink to="/cadastro" style={({ isActive }) => menuItemStyle(isActive)}>
-            Cadastro
-          </NavLink>
+          <>
+            <NavLink to="/cadastro" style={({ isActive }) => menuItemStyle(isActive)}>
+              Cadastro
+            </NavLink>
+            <NavLink to="/usuarios" style={({ isActive }) => menuItemStyle(isActive)}>
+              Usuarios
+            </NavLink>
+          </>
         )}
       </nav>
 

@@ -1,5 +1,25 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+export type UserRole = 'ADMIN' | 'VIEWER';
+
+export interface CurrentUser {
+  userId: string;
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+let authToken: string | null = null;
+let onUnauthorized: (() => void) | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
 export type AlarmSeverity = 'CLEAR' | 'INFO' | 'WARNING' | 'MINOR' | 'MAJOR' | 'CRITICAL';
 export type AlarmCondition = 'ACTIVE' | 'CLEARED';
 export type AlarmSource = 'OLT' | 'PON_LINK' | 'ONU';
@@ -56,8 +76,15 @@ export interface CreateOltInput {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...init?.headers,
+    },
   });
+  if (res.status === 401) {
+    onUnauthorized?.();
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     const message = body?.message ?? res.statusText;
@@ -66,6 +93,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (res.status === 204) return undefined as T;
   return res.json();
 }
+
+export const authApi = {
+  login: (email: string, password: string) =>
+    request<{ accessToken: string; user: { id: string; name: string; email: string; role: UserRole } }>(
+      '/auth/login',
+      { method: 'POST', body: JSON.stringify({ email, password }) },
+    ),
+  me: () => request<CurrentUser>('/auth/me'),
+};
 
 export const api = {
   listOlts: () => request<Olt[]>('/olts'),

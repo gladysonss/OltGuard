@@ -30,6 +30,9 @@ services:
       REDIS_URL: redis://redis:6379
       PORT: 3000
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY precisa ser definida (64 caracteres hex)}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET precisa ser definida}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     expose:
       - "3000"
     depends_on:

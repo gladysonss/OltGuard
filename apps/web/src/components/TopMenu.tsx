@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 
 const menuItemStyle = (active: boolean): React.CSSProperties => ({
   padding: '9px 14px',
@@ -9,7 +10,14 @@ const menuItemStyle = (active: boolean): React.CSSProperties => ({
   background: active ? 'var(--surface-2)' : 'transparent',
 });
 
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: 'Administrador',
+  VIEWER: 'Visualizador',
+};
+
 export function TopMenu() {
+  const { user, logout } = useAuth();
+
   return (
     <header
       style={{
@@ -40,10 +48,46 @@ export function TopMenu() {
         <NavLink to="/" end style={({ isActive }) => menuItemStyle(isActive)}>
           Alarmes e Eventos
         </NavLink>
-        <NavLink to="/cadastro" style={({ isActive }) => menuItemStyle(isActive)}>
-          Cadastro
-        </NavLink>
+        {user?.role === 'ADMIN' && (
+          <NavLink to="/cadastro" style={({ isActive }) => menuItemStyle(isActive)}>
+            Cadastro
+          </NavLink>
+        )}
       </nav>
+
+      {user && (
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span
+            style={{
+              padding: '3px 9px',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 600,
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+            }}
+          >
+            {ROLE_LABEL[user.role] ?? user.role}
+          </span>
+          <span style={{ fontSize: 13 }}>{user.name}</span>
+          <button
+            onClick={logout}
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '6px 10px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+              color: 'var(--text)',
+              cursor: 'pointer',
+            }}
+          >
+            Sair
+          </button>
+        </div>
+      )}
     </header>
   );
 }

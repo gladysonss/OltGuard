@@ -12,11 +12,13 @@ import {
 import { OltService } from './olt.service';
 import { CreateOltDto } from './dto/create-olt.dto';
 import { UpdateOltDto } from './dto/update-olt.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('olts')
 export class OltController {
   constructor(private readonly oltService: OltService) {}
 
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreateOltDto) {
     return this.oltService.create(dto);
@@ -32,11 +34,13 @@ export class OltController {
     return this.oltService.findOne(id);
   }
 
+  @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateOltDto) {
     return this.oltService.update(id, dto);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {

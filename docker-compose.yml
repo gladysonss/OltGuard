@@ -37,6 +37,18 @@ services:
       redis:
         condition: service_started
 
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - api
+
 volumes:
   postgres-data:
   redis-data:

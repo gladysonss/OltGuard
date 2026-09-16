@@ -33,8 +33,15 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET precisa ser definida}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      TRAP_PORT: 1162
     expose:
       - "3000"
+    ports:
+      # Trap SNMP e UDP puro - nao da para rotear pelo proxy HTTP do Coolify,
+      # entao essa porta precisa ser publicada de verdade no host. As OLTs
+      # devem ser configuradas para enviar trap para a porta 162 (padrao),
+      # que o host mapeia para a 1162 do container (nao-privilegiada).
+      - "162:1162/udp"
     depends_on:
       postgres:
         condition: service_healthy

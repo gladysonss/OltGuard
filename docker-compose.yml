@@ -29,6 +29,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-oltguard}:${POSTGRES_PASSWORD:-oltguard}@postgres:5432/${POSTGRES_DB:-oltguard}?schema=public
       REDIS_URL: redis://redis:6379
       PORT: 3000
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY precisa ser definida (64 caracteres hex)}
     expose:
       - "3000"
     depends_on:

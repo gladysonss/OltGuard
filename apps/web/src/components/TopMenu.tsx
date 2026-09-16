@@ -74,7 +74,12 @@ export function TopMenu() {
           >
             {ROLE_LABEL[user.role] ?? user.role}
           </span>
-          <span style={{ fontSize: 13 }}>{user.name}</span>
+          <NavLink
+            to="/minha-conta"
+            style={({ isActive }) => ({ fontSize: 13, color: isActive ? 'var(--accent)' : 'var(--text)', textDecoration: 'none' })}
+          >
+            {user.name}
+          </NavLink>
           <button
             onClick={logout}
             style={{

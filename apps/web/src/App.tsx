@@ -4,6 +4,7 @@ import { AlarmsPage } from './pages/AlarmsPage';
 import { OltRegisterPage } from './pages/OltRegisterPage';
 import { LoginPage } from './pages/LoginPage';
 import { UsersPage } from './pages/UsersPage';
+import { AccountPage } from './pages/AccountPage';
 import { useAuth } from './auth/AuthContext';
 
 export function App() {
@@ -30,6 +31,7 @@ export function App() {
           path="/usuarios"
           element={user.role === 'ADMIN' ? <UsersPage /> : <Navigate to="/" replace />}
         />
+        <Route path="/minha-conta" element={<AccountPage />} />
       </Routes>
     </div>
   );

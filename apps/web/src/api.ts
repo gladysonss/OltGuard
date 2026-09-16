@@ -123,6 +123,11 @@ export const authApi = {
       { method: 'POST', body: JSON.stringify({ email, password }) },
     ),
   me: () => request<CurrentUser>('/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ success: true }>('/auth/change-password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 };
 
 export const api = {

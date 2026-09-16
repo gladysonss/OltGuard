@@ -50,8 +50,8 @@ export function TopMenu() {
         </NavLink>
         {user?.role === 'ADMIN' && (
           <>
-            <NavLink to="/cadastro" style={({ isActive }) => menuItemStyle(isActive)}>
-              Cadastro
+            <NavLink to="/olts" style={({ isActive }) => menuItemStyle(isActive)}>
+              OLTs
             </NavLink>
             <NavLink to="/usuarios" style={({ isActive }) => menuItemStyle(isActive)}>
               Usuarios

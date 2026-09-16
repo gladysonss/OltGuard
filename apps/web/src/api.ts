@@ -98,6 +98,16 @@ export interface CreateOltInput {
   sshPort?: number;
 }
 
+export interface UpdateOltInput {
+  name?: string;
+  ipAddress?: string;
+  snmpCommunity?: string;
+  snmpPort?: number;
+  sshUsername?: string;
+  sshPassword?: string;
+  sshPort?: number;
+}
+
 export interface ManagedUser {
   id: string;
   name: string;
@@ -157,8 +167,11 @@ export const authApi = {
 
 export const api = {
   listOlts: () => request<Olt[]>('/olts'),
+  getOlt: (id: string) => request<Olt>(`/olts/${id}`),
   createOlt: (input: CreateOltInput) =>
     request<Olt>('/olts', { method: 'POST', body: JSON.stringify(input) }),
+  updateOlt: (id: string, input: UpdateOltInput) =>
+    request<Olt>(`/olts/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
   listAlarms: (params?: { oltId?: string }) => {
     const qs = params?.oltId ? `?oltId=${encodeURIComponent(params.oltId)}` : '';
     return request<Alarm[]>(`/alarms${qs}`);

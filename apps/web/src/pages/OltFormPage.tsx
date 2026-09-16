@@ -1,20 +1,45 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 
-export function OltRegisterPage() {
+const emptyForm = {
+  name: '',
+  ipAddress: '',
+  snmpCommunity: '',
+  snmpPort: '161',
+  sshUsername: '',
+  sshPassword: '',
+  sshPort: '22',
+};
+
+export function OltFormPage() {
+  const { id } = useParams<{ id: string }>();
+  const isEdit = Boolean(id);
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: '',
-    ipAddress: '',
-    snmpCommunity: 'public',
-    snmpPort: '161',
-    sshUsername: '',
-    sshPassword: '',
-    sshPort: '22',
-  });
+
+  const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    api
+      .getOlt(id)
+      .then((olt) => {
+        setForm({
+          name: olt.name,
+          ipAddress: olt.ipAddress,
+          snmpCommunity: '',
+          snmpPort: String(olt.snmpPort),
+          sshUsername: olt.sshUsername,
+          sshPassword: '',
+          sshPort: String(olt.sshPort),
+        });
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Falha ao carregar OLT'))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -25,28 +50,48 @@ export function OltRegisterPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await api.createOlt({
-        name: form.name,
-        ipAddress: form.ipAddress,
-        snmpCommunity: form.snmpCommunity,
-        snmpPort: Number(form.snmpPort),
-        sshUsername: form.sshUsername,
-        sshPassword: form.sshPassword,
-        sshPort: Number(form.sshPort),
-      });
-      navigate('/');
+      if (isEdit && id) {
+        await api.updateOlt(id, {
+          name: form.name,
+          ipAddress: form.ipAddress,
+          snmpCommunity: form.snmpCommunity || undefined,
+          snmpPort: Number(form.snmpPort),
+          sshUsername: form.sshUsername,
+          sshPassword: form.sshPassword || undefined,
+          sshPort: Number(form.sshPort),
+        });
+      } else {
+        await api.createOlt({
+          name: form.name,
+          ipAddress: form.ipAddress,
+          snmpCommunity: form.snmpCommunity,
+          snmpPort: Number(form.snmpPort),
+          sshUsername: form.sshUsername,
+          sshPassword: form.sshPassword,
+          sshPort: Number(form.sshPort),
+        });
+      }
+      navigate('/olts');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao cadastrar OLT');
+      setError(err instanceof Error ? err.message : 'Falha ao salvar OLT');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <main style={{ flex: 1, padding: '28px 32px' }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Carregando...</span>
+      </main>
+    );
   }
 
   return (
     <main style={{ flex: 1, overflow: 'auto', padding: '28px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ width: '100%', maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Cadastrar nova OLT</h1>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{isEdit ? 'Editar OLT' : 'Cadastrar nova OLT'}</h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>
             Os dados de acesso sao usados para SNMP (monitoramento) e SSH (provisionamento).
           </p>
@@ -73,8 +118,15 @@ export function OltRegisterPage() {
 
           <Section title="SNMP">
             <div style={row2Style}>
-              <Field label="Community">
-                <input value={form.snmpCommunity} onChange={(e) => update('snmpCommunity', e.target.value)} required className="mono" style={inputStyle} />
+              <Field label={isEdit ? 'Community (deixe em branco para manter)' : 'Community'}>
+                <input
+                  value={form.snmpCommunity}
+                  onChange={(e) => update('snmpCommunity', e.target.value)}
+                  placeholder={isEdit ? '••••••••' : undefined}
+                  required={!isEdit}
+                  className="mono"
+                  style={inputStyle}
+                />
               </Field>
               <Field label="Porta SNMP">
                 <input value={form.snmpPort} onChange={(e) => update('snmpPort', e.target.value)} type="number" required className="mono" style={inputStyle} />
@@ -91,15 +143,27 @@ export function OltRegisterPage() {
                 <input value={form.sshPort} onChange={(e) => update('sshPort', e.target.value)} type="number" required className="mono" style={inputStyle} />
               </Field>
             </div>
-            <Field label="Senha">
-              <input value={form.sshPassword} onChange={(e) => update('sshPassword', e.target.value)} type="password" required style={inputStyle} />
+            <Field label={isEdit ? 'Senha (deixe em branco para manter)' : 'Senha'}>
+              <input
+                value={form.sshPassword}
+                onChange={(e) => update('sshPassword', e.target.value)}
+                type="password"
+                placeholder={isEdit ? '••••••••' : undefined}
+                required={!isEdit}
+                style={inputStyle}
+              />
             </Field>
           </Section>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
             <button type="submit" disabled={submitting} style={submitBtnStyle}>
-              {submitting ? 'Cadastrando...' : 'Cadastrar OLT'}
+              {submitting ? 'Salvando...' : isEdit ? 'Salvar alteracoes' : 'Cadastrar OLT'}
             </button>
+            {isEdit && (
+              <button type="button" onClick={() => navigate('/olts')} style={cancelBtnStyle}>
+                Cancelar
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -146,6 +210,18 @@ const submitBtnStyle: React.CSSProperties = {
   fontWeight: 600,
   fontSize: 14,
   padding: '12px 16px',
+  borderRadius: 8,
+  cursor: 'pointer',
+  width: '100%',
+};
+
+const cancelBtnStyle: React.CSSProperties = {
+  background: 'var(--surface-2)',
+  border: '1px solid var(--border)',
+  color: 'var(--text)',
+  fontWeight: 600,
+  fontSize: 14,
+  padding: '10px 16px',
   borderRadius: 8,
   cursor: 'pointer',
   width: '100%',

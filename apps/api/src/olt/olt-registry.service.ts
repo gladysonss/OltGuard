@@ -27,10 +27,11 @@ export class OltRegistryService implements OnModuleInit {
 
   async refresh() {
     const olts = await this.prisma.olt.findMany({
-      select: { id: true, ipAddress: true, snmpCommunity: true },
+      select: { id: true, name: true, ipAddress: true, snmpCommunity: true },
     });
     this.trustedOlts = olts.map((olt) => ({
       id: olt.id,
+      name: olt.name,
       ipAddress: olt.ipAddress,
       snmpCommunity: this.encryption.decrypt(olt.snmpCommunity),
     }));

@@ -1,8 +1,10 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Subject } from 'rxjs';
 import { OltRegistryService } from './olt-registry.service';
 import { AlarmIngestService, type ParsedTrapAlarm } from '../alarm/alarm-ingest.service';
 import { INDICATION_OBJECT_OID, PARKS_TRAP_MAP } from './parks-trap-mapping';
+import type { TrapLogEntry } from './trap-log.types';
 
 // net-snmp nao publica types; ver node_modules/net-snmp/README.md para o formato
 // da notification (pdu.varbinds, pdu.community, rinfo.address).
@@ -10,6 +12,7 @@ import { INDICATION_OBJECT_OID, PARKS_TRAP_MAP } from './parks-trap-mapping';
 const snmp = require('net-snmp');
 
 const SNMP_TRAP_OID_VARBIND = '1.3.6.1.6.3.1.1.4.1.0';
+const LOG_BUFFER_SIZE = 200;
 
 interface Varbind {
   oid: string;
@@ -21,6 +24,10 @@ interface Varbind {
 export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TrapReceiverService.name);
   private receiver: { close: (cb?: () => void) => void } | null = null;
+
+  private readonly logSubject = new Subject<TrapLogEntry>();
+  private readonly logBuffer: TrapLogEntry[] = [];
+  readonly log$ = this.logSubject.asObservable();
 
   constructor(
     private readonly config: ConfigService,
@@ -43,9 +50,29 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     this.receiver?.close();
   }
 
+  getRecentLog(): TrapLogEntry[] {
+    return [...this.logBuffer];
+  }
+
+  private emit(entry: TrapLogEntry) {
+    this.logBuffer.push(entry);
+    if (this.logBuffer.length > LOG_BUFFER_SIZE) {
+      this.logBuffer.shift();
+    }
+    this.logSubject.next(entry);
+  }
+
   private handleNotification(error: Error | null, notification: any) {
     if (error) {
       this.logger.warn(`Trap descartada: ${error.message}`);
+      this.emit({
+        timestamp: new Date().toISOString(),
+        sourceIp: (error as any).rinfo?.address ?? 'desconhecido',
+        outcome: 'REJECTED',
+        rejectionReason: 'PACKET_ERROR',
+        message: error.message,
+        varbinds: [],
+      });
       return;
     }
 
@@ -61,9 +88,21 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     const sourceIp: string = notification.rinfo.address;
     const community: string = notification.pdu.community ?? '';
 
+    const displayVarbinds = varbinds.map((vb) => ({
+      oid: vb.oid,
+      value: Buffer.isBuffer(vb.value) ? vb.value.toString('utf8').trim() : String(vb.value),
+    }));
+
     const trapOidVarbind = varbinds.find((vb) => vb.oid === SNMP_TRAP_OID_VARBIND);
     if (!trapOidVarbind) {
       this.logger.debug(`Trap de ${sourceIp} sem snmpTrapOID - ignorada`);
+      this.emit({
+        timestamp: new Date().toISOString(),
+        sourceIp,
+        outcome: 'IGNORED',
+        message: 'Pacote sem snmpTrapOID - nao e uma trap valida',
+        varbinds: displayVarbinds,
+      });
       return;
     }
     const trapOid = String(trapOidVarbind.value);
@@ -71,12 +110,34 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     const validation = this.registry.validateTrap({ sourceIp, community, oid: trapOid });
     if (!validation.accepted) {
       this.logger.warn(`Trap rejeitada de ${sourceIp} (${validation.rejectionReason}) - oid ${trapOid}`);
+      this.emit({
+        timestamp: new Date().toISOString(),
+        sourceIp,
+        outcome: 'REJECTED',
+        trapOid,
+        rejectionReason: validation.rejectionReason,
+        message:
+          validation.rejectionReason === 'UNKNOWN_SOURCE_IP'
+            ? `Origem ${sourceIp} nao corresponde a nenhuma OLT cadastrada`
+            : `Community incorreta para a OLT em ${sourceIp}`,
+        varbinds: displayVarbinds,
+      });
       return;
     }
 
     const definition = PARKS_TRAP_MAP[trapOid];
     if (!definition) {
       this.logger.debug(`Trap de OLT conhecida (${sourceIp}) mas OID nao mapeado: ${trapOid}`);
+      this.emit({
+        timestamp: new Date().toISOString(),
+        sourceIp,
+        outcome: 'UNMAPPED',
+        trapOid,
+        oltId: validation.oltId,
+        oltName: validation.oltName,
+        message: `OID ${trapOid} nao esta em parks-trap-mapping.ts`,
+        varbinds: displayVarbinds,
+      });
       return;
     }
 
@@ -102,6 +163,11 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       getInt(INDICATION_OBJECT_OID.oltEventLogicalPortNo);
     const serialNumber = getString(INDICATION_OBJECT_OID.oltOnuSerialNumber);
     const conditionRaw = getInt(INDICATION_OBJECT_OID.oltAlarmCondition);
+    const condition: 'SET' | 'CLEAR' | undefined = definition.isAlarm
+      ? conditionRaw === 0
+        ? 'CLEAR'
+        : 'SET'
+      : undefined;
 
     const parsed: ParsedTrapAlarm = {
       oltId: validation.oltId!,
@@ -109,20 +175,33 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       mibName: definition.mibName,
       severity: definition.severity,
       isAlarm: definition.isAlarm,
-      condition: definition.isAlarm ? (conditionRaw === 0 ? 'CLEAR' : 'SET') : undefined,
+      condition,
       slotNo,
       portNo,
       logicalPortNo,
       serialNumber,
     };
 
+    this.emit({
+      timestamp: new Date().toISOString(),
+      sourceIp,
+      outcome: 'ACCEPTED',
+      trapOid,
+      mibName: definition.mibName,
+      oltId: validation.oltId,
+      oltName: validation.oltName,
+      severity: definition.severity,
+      condition,
+      slotNo,
+      portNo,
+      logicalPortNo,
+      serialNumber,
+      message: `${definition.mibName}${condition ? ` (${condition})` : ''} - OLT ${validation.oltName}`,
+      varbinds: displayVarbinds,
+    });
+
     this.alarmIngest
       .ingest(parsed)
-      .then((result) => {
-        if (result) {
-          this.logger.log(`${definition.mibName} (${parsed.condition ?? 'evento'}) - OLT ${parsed.oltId}`);
-        }
-      })
       .catch((err) => this.logger.error(`Falha ao gravar alarme: ${err.message}`));
   }
 }

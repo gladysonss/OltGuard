@@ -12,6 +12,7 @@ export interface IncomingTrap {
 
 export interface TrustedOlt {
   id: string;
+  name: string;
   ipAddress: string;
   snmpCommunity: string;
 }
@@ -21,6 +22,7 @@ export type TrapRejectionReason = 'UNKNOWN_SOURCE_IP' | 'COMMUNITY_MISMATCH';
 export interface TrapValidationResult {
   accepted: boolean;
   oltId?: string;
+  oltName?: string;
   rejectionReason?: TrapRejectionReason;
 }
 
@@ -43,6 +45,6 @@ export class TrapSecurityService {
       return { accepted: false, rejectionReason: 'COMMUNITY_MISMATCH' };
     }
 
-    return { accepted: true, oltId: olt.id };
+    return { accepted: true, oltId: olt.id, oltName: olt.name };
   }
 }

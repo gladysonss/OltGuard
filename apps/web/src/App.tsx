@@ -5,6 +5,7 @@ import { OltRegisterPage } from './pages/OltRegisterPage';
 import { LoginPage } from './pages/LoginPage';
 import { UsersPage } from './pages/UsersPage';
 import { AccountPage } from './pages/AccountPage';
+import { TrapTerminalPage } from './pages/TrapTerminalPage';
 import { useAuth } from './auth/AuthContext';
 
 export function App() {
@@ -32,6 +33,10 @@ export function App() {
           element={user.role === 'ADMIN' ? <UsersPage /> : <Navigate to="/" replace />}
         />
         <Route path="/minha-conta" element={<AccountPage />} />
+        <Route
+          path="/terminal-traps"
+          element={user.role === 'ADMIN' ? <TrapTerminalPage /> : <Navigate to="/" replace />}
+        />
       </Routes>
     </div>
   );

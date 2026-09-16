@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export type UserRole = 'ADMIN' | 'VIEWER';
 
@@ -14,6 +14,10 @@ let onUnauthorized: (() => void) | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
+}
+
+export function getAuthToken() {
+  return authToken;
 }
 
 export function setUnauthorizedHandler(handler: (() => void) | null) {
@@ -62,6 +66,27 @@ export interface Alarm {
 }
 
 export type AlarmSummary = Record<AlarmSeverity, number>;
+
+export type TrapLogOutcome = 'ACCEPTED' | 'REJECTED' | 'UNMAPPED' | 'IGNORED';
+
+export interface TrapLogEntry {
+  timestamp: string;
+  sourceIp: string;
+  outcome: TrapLogOutcome;
+  trapOid?: string;
+  mibName?: string;
+  oltId?: string;
+  oltName?: string;
+  severity?: string;
+  condition?: 'SET' | 'CLEAR';
+  slotNo?: number;
+  portNo?: number;
+  logicalPortNo?: number;
+  serialNumber?: string;
+  rejectionReason?: string;
+  message: string;
+  varbinds: { oid: string; value: string }[];
+}
 
 export interface CreateOltInput {
   name: string;

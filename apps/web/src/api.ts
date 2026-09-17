@@ -28,13 +28,22 @@ export type AlarmSeverity = 'CLEAR' | 'INFO' | 'WARNING' | 'MINOR' | 'MAJOR' | '
 export type AlarmCondition = 'ACTIVE' | 'CLEARED';
 export type AlarmSource = 'OLT' | 'PON_LINK' | 'ONU';
 export type OltBootstrapStatus = 'PENDING' | 'WALKING' | 'ACTIVE' | 'FAILED';
+export const OLT_MANUFACTURERS = ['PARKS', 'HUAWEI', 'ZTE', 'FIBERHOME', 'DATACOM'] as const;
+export type OltManufacturer = (typeof OLT_MANUFACTURERS)[number];
+
+export interface City {
+  id: string;
+  name: string;
+  createdAt: string;
+}
 
 export interface Olt {
   id: string;
   name: string;
   ipAddress: string;
-  city: string | null;
-  manufacturer: string | null;
+  cityId: string | null;
+  city: { id: string; name: string } | null;
+  manufacturer: OltManufacturer;
   snmpPort: number;
   sshUsername: string | null;
   sshPort: number;
@@ -122,8 +131,8 @@ export interface TrapLogEntry {
 export interface CreateOltInput {
   name: string;
   ipAddress: string;
-  city?: string;
-  manufacturer?: string;
+  cityId?: string;
+  manufacturer: OltManufacturer;
   snmpCommunity: string;
   snmpPort?: number;
   sshUsername?: string;
@@ -134,8 +143,8 @@ export interface CreateOltInput {
 export interface UpdateOltInput {
   name?: string;
   ipAddress?: string;
-  city?: string;
-  manufacturer?: string;
+  cityId?: string;
+  manufacturer?: OltManufacturer;
   snmpCommunity?: string;
   snmpPort?: number;
   sshUsername?: string;
@@ -211,6 +220,10 @@ export const api = {
   addAllowedNetwork: (input: { cidr: string; label?: string }) =>
     request<AllowedNetwork>('/allowed-networks', { method: 'POST', body: JSON.stringify(input) }),
   removeAllowedNetwork: (id: string) => request<void>(`/allowed-networks/${id}`, { method: 'DELETE' }),
+  listCities: () => request<City[]>('/cities'),
+  addCity: (input: { name: string }) =>
+    request<City>('/cities', { method: 'POST', body: JSON.stringify(input) }),
+  removeCity: (id: string) => request<void>(`/cities/${id}`, { method: 'DELETE' }),
   clearTraps: () => request<void>('/traps/recent', { method: 'DELETE' }),
   listAlarms: (params?: {
     oltId?: string;

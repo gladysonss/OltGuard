@@ -15,16 +15,40 @@ enum OltBootstrapStatus {
   FAILED
 }
 
+/// Fabricantes de OLT suportados pelo cadastro. Hoje so PARKS tem parser de
+/// traps implementado (ver parks-trap-mapping.ts) - os demais antecipam
+/// outros modelos e servem para o sistema decidir, no futuro, qual parser
+/// usar para cada OLT. E um enum fixo (nao editavel pelo cliente) porque
+/// cada valor exige codigo de suporte proprio, ao contrario de City.
+enum OltManufacturer {
+  PARKS
+  HUAWEI
+  ZTE
+  FIBERHOME
+  DATACOM
+}
+
+/// Cidade onde uma ou mais OLTs estao instaladas - cadastrada pelo cliente
+/// na tela de Configuracoes (ver CityController) e usada como dropdown no
+/// cadastro de OLT, alem de agrupar a arvore de OLTs na tela de Alarmes.
+model City {
+  id   String @id @default(uuid())
+  name String @unique
+
+  createdAt DateTime @default(now())
+
+  olts Olt[]
+}
+
 model Olt {
   id       String @id @default(uuid())
   name     String
   ipAddress String @unique
 
-  /// Cidade onde a OLT esta instalada - usado para agrupar a lista de OLTs na UI.
-  city         String?
-  /// Fabricante do equipamento (ex: Parks, Huawei, ZTE) - hoje so Parks tem
-  /// parser de traps implementado, mas o campo antecipa outros modelos.
-  manufacturer String?
+  cityId String?
+  city   City?   @relation(fields: [cityId], references: [id])
+
+  manufacturer OltManufacturer
 
   snmpCommunity String
   snmpPort      Int    @default(161)

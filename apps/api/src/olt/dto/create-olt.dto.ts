@@ -1,4 +1,5 @@
-import { IsIP, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { IsEnum, IsIP, IsInt, IsOptional, IsString, IsUUID, Max, Min, MinLength } from 'class-validator';
+import { OltManufacturer } from '@prisma/client';
 
 export class CreateOltDto {
   @IsString()
@@ -9,14 +10,11 @@ export class CreateOltDto {
   ipAddress: string;
 
   @IsOptional()
-  @IsString()
-  @MinLength(1)
-  city?: string;
+  @IsUUID()
+  cityId?: string;
 
-  @IsOptional()
-  @IsString()
-  @MinLength(1)
-  manufacturer?: string;
+  @IsEnum(OltManufacturer)
+  manufacturer: OltManufacturer;
 
   @IsString()
   @MinLength(1)

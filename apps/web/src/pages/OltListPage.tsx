@@ -56,8 +56,8 @@ export function OltListPage() {
           <div key={olt.id} style={rowStyle}>
             <span>{olt.name}</span>
             <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>{olt.ipAddress}</span>
-            <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{olt.city ?? '—'}</span>
-            <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{olt.manufacturer ?? '—'}</span>
+            <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{olt.city?.name ?? '—'}</span>
+            <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{olt.manufacturer}</span>
             <span
               style={{
                 color: olt.bootstrapStatus === 'FAILED' ? 'var(--crit)' : 'var(--text-muted)',

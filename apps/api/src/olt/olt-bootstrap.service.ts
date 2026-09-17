@@ -11,12 +11,16 @@ const IF_NAME_OID = '1.3.6.1.2.1.31.1.1.1.1';
 /**
  * OIDs da Parks pra cada ONU cadastrada na OLT - tabelas indexadas por
  * slot.pon.posicao (os 3 ultimos numeros do OID de cada instancia, ex:
- * ".62.1.1.1" = alias da ONU 1/1/1). Guardamos aqui so o prefixo da coluna
- * (sem os 3 indices), que e o que se anda com walkSubtree().
+ * "...62.1.1.21" = alias da ONU 1/1/21). Guardamos aqui so o prefixo fixo
+ * da coluna (sem os 3 indices), que e o que se anda com walkSubtree() -
+ * SEM incluir o "slot" na base, mesmo ele sendo sempre 1 nos exemplos: e
+ * parte do indice que varia, nao do OID fixo (confirmado com dado real de
+ * producao - usar ".62.1" como base fazia o indice parecer ter so 2 partes
+ * em vez de 3, e nenhuma ONU batia no parsing).
  */
-const ONU_ALIAS_OID = '1.3.6.1.4.1.6771.10.1.5.1.62.1';
-const ONU_SERIAL_OID = '1.3.6.1.4.1.6771.10.1.5.1.18.1';
-const ONU_STATUS_OID = '1.3.6.1.4.1.6771.10.1.5.1.5.1';
+const ONU_ALIAS_OID = '1.3.6.1.4.1.6771.10.1.5.1.62';
+const ONU_SERIAL_OID = '1.3.6.1.4.1.6771.10.1.5.1.18';
+const ONU_STATUS_OID = '1.3.6.1.4.1.6771.10.1.5.1.5';
 
 /** oltOnuStatus - estado administrativo da ONU reportado pela Parks. */
 const ONU_STATUS_MAP: Record<number, OnuStatus> = {

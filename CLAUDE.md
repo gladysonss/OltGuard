@@ -85,10 +85,14 @@ os dois passos abaixo numa sessao SNMP so, ver `snmp-client.util.ts`
    porta PON, ex: `gpon0/1`; uplink/mgmt sao descartadas). Substitui (delete
    + insert, sem merge incremental) as `GponInterface` (`oltId`, `ifIndex`,
    `ifName`) da OLT.
-2. **ONUs**: anda 3 tabelas Parks - alias (`1.3.6.1.4.1.6771.10.1.5.1.62.1`),
-   serial (`...18.1`) e status (`...5.1`) - cada uma indexada pelos 3
+2. **ONUs**: anda 3 tabelas Parks - alias (`1.3.6.1.4.1.6771.10.1.5.1.62`),
+   serial (`...18`) e status (`...5`) - cada uma indexada pelos 3
    ultimos numeros do OID de cada instancia (`slotNo.portNo.logicalPortNo`,
-   ex: `...62.1.1.1.1` = alias da ONU 1/1/1). O serial usa o mesmo
+   ex: `...62.1.1.21` = alias da ONU 1/1/21; **sem** um digito extra de
+   "numero de coluna" antes dos 3 indices - o equipamento real da Parks nao
+   usa o formato convencional de tabela SNMP com coluna, so
+   `base.slot.pon.posicao` direto, confirmado com OIDs reais capturados em
+   producao). O serial usa o mesmo
    `formatOnuSerialNumber()` das traps (16 hex chars: 4 bytes de vendor ID
    em ASCII + 4 bytes de serie em hex). O status e o inteiro Parks bruto
    (`OnuStatus`: `INVALID`=0 .. `DISABLE`=6, ver `ONU_STATUS_MAP`) - **essa
@@ -110,16 +114,21 @@ Testado com um agente SNMP mock (`net-snmp` `createAgent`, sem uso em
 producao) simulando `ifXTable` e as 3 tabelas de ONU - nao ha script de
 teste no repo, foi so verificacao manual.
 
-**As 3 tabelas de ONU (alias/serial/status) ainda nao foram validadas
-contra uma OLT Parks real** - so contra o agente mock. Em producao ja
-apareceu o caso de `walkGpons` completar com sucesso (GPONs corretas) mas
-0 ONUs, sem erro nenhum (`bootstrapStatus: ACTIVE`) - ou seja, os 3
-`walkSubtree()` rodaram mas voltaram vazios ou com um formato que
-`indexByPosition()`/`parseOnuPosition()` nao reconheceu. `walkOnus()` loga
-em `debug` a contagem de varbinds de cada tabela e uma amostra (ate 3) do
-que cada uma devolveu - usar isso pra descobrir se o problema e OID errado,
-tabela vazia nesse equipamento, ou formato de valor diferente do esperado,
-antes de mexer no parsing as cegas.
+**Pegadinha ja vivida em producao**: as constantes `ONU_ALIAS_OID`/
+`ONU_SERIAL_OID`/`ONU_STATUS_OID` chegaram a ser cadastradas com um
+segmento `.1` extra no final (ex: `...62.1` em vez de `...62`), copiando a
+estrutura convencional de tabela SNMP (base + numero de coluna + indice).
+Isso passava em todos os testes com o agente mock porque o mock usa
+`MibProviderType.Table` do `net-snmp`, que insere esse mesmo `.1` de coluna
+sozinho - mock e codigo compartilhavam a mesma premissa errada. Contra uma
+OLT Parks real (que nao usa esse formato) o walk completava 100% (varbinds
+batendo entre as 3 tabelas, sem timeout nem erro, `bootstrapStatus:
+ACTIVE`) mas `parseOnuPosition()` via só 2 numeros sobrando em vez de 3 e
+descartava toda linha - 0 ONUs salvas, sem nenhum sinal de erro. Corrigido
+removendo o `.1` das 3 constantes. `walkOnus()` loga em `debug` a contagem
+de varbinds de cada tabela e uma amostra (ate 3) do que cada uma devolveu -
+foi assim que o formato real do OID foi confirmado; util de novo se
+aparecer um caso parecido com outro equipamento/versao de firmware.
 
 ### Criacao incremental de ONU via trap (sem esperar sincronizar)
 

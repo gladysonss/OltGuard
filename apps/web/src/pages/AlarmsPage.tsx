@@ -9,10 +9,12 @@ import {
   type Olt,
   type OltGuardEvent,
   type OltWorstSeverity,
+  type Onu,
 } from '../api';
 import { SEVERITY_COLOR_VAR, SEVERITY_LABEL, SEVERITY_ORDER } from '../severity';
+import { ONU_STATUS_COLOR_VAR, ONU_STATUS_LABEL } from '../onu-status';
 
-type View = 'alarms' | 'events';
+type View = 'alarms' | 'events' | 'onus';
 type AlarmStatusFilter = 'active' | 'inactive' | 'all';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
@@ -93,6 +95,8 @@ export function AlarmsPage() {
   const [alarmsTotal, setAlarmsTotal] = useState(0);
   const [events, setEvents] = useState<OltGuardEvent[]>([]);
   const [eventsTotal, setEventsTotal] = useState(0);
+  const [onus, setOnus] = useState<Onu[]>([]);
+  const [onusTotal, setOnusTotal] = useState(0);
   const [summary, setSummary] = useState<AlarmSummary | null>(null);
   const [oltWorstSeverity, setOltWorstSeverity] = useState<OltWorstSeverity>({});
   const [selectedOltIds, setSelectedOltIds] = useState<Set<string>>(new Set());
@@ -119,7 +123,7 @@ export function AlarmsPage() {
       // AlarmService.findAll/EventService.findAll no backend).
       const oltPort = selectedGponKeys.size ? [...selectedGponKeys] : undefined;
       const oltId = !oltPort && selectedOltIds.size ? [...selectedOltIds] : undefined;
-      const [oltsRes, alarmsRes, summaryRes, eventsRes, worstRes] = await Promise.all([
+      const [oltsRes, alarmsRes, summaryRes, eventsRes, onusRes, worstRes] = await Promise.all([
         api.listOlts(),
         api.listAlarms({
           oltId,
@@ -136,6 +140,7 @@ export function AlarmsPage() {
         }),
         api.alarmSummary(oltId, oltPort),
         api.listEvents({ oltId, oltPort, page, pageSize }),
+        api.listOnus({ oltId, oltPort, page, pageSize }),
         api.alarmSummaryByOlt(),
       ]);
       setOlts(oltsRes);
@@ -144,6 +149,8 @@ export function AlarmsPage() {
       setSummary(summaryRes);
       setEvents(eventsRes.data);
       setEventsTotal(eventsRes.total);
+      setOnus(onusRes.data);
+      setOnusTotal(onusRes.total);
       setOltWorstSeverity(worstRes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados');
@@ -422,6 +429,9 @@ export function AlarmsPage() {
               <button onClick={() => setView('events')} style={tabBtnStyle(view === 'events')}>
                 Eventos
               </button>
+              <button onClick={() => setView('onus')} style={tabBtnStyle(view === 'onus')}>
+                ONUs
+              </button>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {selectedGponKeys.size > 0
@@ -625,6 +635,48 @@ export function AlarmsPage() {
             <PaginationBar page={page} pageSize={pageSize} total={eventsTotal} onPageChange={setPage} onPageSizeChange={handlePageSizeChange} />
           </div>
         )}
+
+        {view === 'onus' && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <div style={onuRowGridStyle('head')}>
+                <span>Status</span><span>OLT</span><span>Slot/PON/Posicao</span><span>Serial</span><span>Alias</span><span>Visto por ultimo</span>
+              </div>
+
+              {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
+
+              {!loading && onus.length === 0 && (
+                <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhuma ONU encontrada.</div>
+              )}
+
+              {onus.map((onu) => (
+                <div key={onu.id} style={onuRowGridStyle('row')}>
+                  <span
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '3px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.03em',
+                      background: `var(${ONU_STATUS_COLOR_VAR[onu.status]})`,
+                      color: '#171a21',
+                    }}
+                  >
+                    {ONU_STATUS_LABEL[onu.status]}
+                  </span>
+                  <span>{onu.olt.name}</span>
+                  <span className="mono" style={{ color: 'var(--text-muted)' }}>
+                    {onu.slotNo}/{onu.portNo}/{onu.logicalPortNo}
+                  </span>
+                  <span className="mono">{onu.serialNumber}</span>
+                  <span style={{ color: onu.alias ? 'var(--text)' : 'var(--text-muted)' }}>{onu.alias ?? '—'}</span>
+                  <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                    {onu.lastSeenAt ? new Date(onu.lastSeenAt).toLocaleString('pt-BR') : '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <PaginationBar page={page} pageSize={pageSize} total={onusTotal} onPageChange={setPage} onPageSizeChange={handlePageSizeChange} />
+          </div>
+        )}
       </main>
     </div>
   );
@@ -748,6 +800,21 @@ function eventLogRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
     gridTemplateColumns: '110px 1fr 0.7fr 2.4fr 1.1fr',
+    alignItems: 'center',
+    gap: 12,
+    padding: '9px 14px',
+    fontSize: kind === 'head' ? 10.5 : 12.5,
+    textTransform: kind === 'head' ? 'uppercase' : 'none',
+    letterSpacing: kind === 'head' ? '0.05em' : 'normal',
+    color: kind === 'head' ? 'var(--text-muted)' : 'var(--text)',
+    borderBottom: '1px solid var(--border)',
+  };
+}
+
+function onuRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
+  return {
+    display: 'grid',
+    gridTemplateColumns: '130px 1fr 1fr 1.4fr 1.4fr 1.1fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',

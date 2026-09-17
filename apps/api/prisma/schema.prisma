@@ -39,6 +39,12 @@ model Olt {
   reconciliationEnabled         Boolean @default(true)
   reconciliationIntervalMinutes Int     @default(180)
 
+  // Alcancabilidade via SNMP GET periodico (ver olt-health-check.service.ts) -
+  // trap nao serve pra isso, e so um aviso pontual, nao um heartbeat.
+  reachable    Boolean   @default(true)
+  lastPolledAt DateTime?
+  lastSeenAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

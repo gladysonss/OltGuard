@@ -44,7 +44,7 @@ export function OltListPage() {
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column' }}>
         <div style={headRowStyle}>
-          <span>Nome</span><span>IP</span><span>Bootstrap</span><span>ONUs</span><span>Reconciliacao</span><span>Acoes</span>
+          <span>Nome</span><span>IP</span><span>Status</span><span>Bootstrap</span><span>ONUs</span><span>Reconciliacao</span><span>Acoes</span>
         </div>
 
         {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
@@ -56,6 +56,13 @@ export function OltListPage() {
           <div key={olt.id} style={rowStyle}>
             <span>{olt.name}</span>
             <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>{olt.ipAddress}</span>
+            <span
+              title={olt.lastSeenAt ? `Ultima resposta: ${new Date(olt.lastSeenAt).toLocaleString('pt-BR')}` : 'Ainda nao respondeu a nenhuma checagem'}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: olt.reachable ? 'var(--ok)' : 'var(--unknown)' }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+              {olt.reachable ? 'Ativa' : 'Inativa'}
+            </span>
             <span
               style={{
                 color: olt.bootstrapStatus === 'FAILED' ? 'var(--crit)' : 'var(--text-muted)',
@@ -80,7 +87,7 @@ export function OltListPage() {
 
 const headRowStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1.3fr 1fr 0.9fr 0.6fr 1.1fr 0.7fr',
+  gridTemplateColumns: '1.2fr 1fr 0.8fr 0.9fr 0.6fr 1.1fr 0.7fr',
   gap: 12,
   padding: '10px 16px',
   fontSize: 10.5,
@@ -92,7 +99,7 @@ const headRowStyle: React.CSSProperties = {
 
 const rowStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1.3fr 1fr 0.9fr 0.6fr 1.1fr 0.7fr',
+  gridTemplateColumns: '1.2fr 1fr 0.8fr 0.9fr 0.6fr 1.1fr 0.7fr',
   gap: 12,
   alignItems: 'center',
   padding: '10px 16px',

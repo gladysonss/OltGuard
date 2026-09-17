@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Alarm, type AlarmSeverity, type AlarmSummary, type Olt, type OltGuardEvent } from '../api';
+import { api, type Alarm, type AlarmSeverity, type AlarmSummary, type NeStatus, type Olt, type OltGuardEvent } from '../api';
 import { SEVERITY_COLOR_VAR, SEVERITY_LABEL, SEVERITY_ORDER } from '../severity';
 
 type View = 'alarms' | 'events';
+type NeStatusFilter = NeStatus | 'all';
 
 const SEVERITY_RANK: Record<AlarmSeverity, number> = {
   CRITICAL: 5,
@@ -28,6 +29,7 @@ export function AlarmsPage() {
   const [events, setEvents] = useState<OltGuardEvent[]>([]);
   const [summary, setSummary] = useState<AlarmSummary | null>(null);
   const [selectedOltId, setSelectedOltId] = useState<string | undefined>(undefined);
+  const [neStatusFilter, setNeStatusFilter] = useState<NeStatusFilter>('all');
   const [view, setView] = useState<View>('alarms');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function AlarmsPage() {
     try {
       const [oltsRes, alarmsRes, summaryRes, eventsRes] = await Promise.all([
         api.listOlts(),
-        api.listAlarms({ oltId: selectedOltId }),
+        api.listAlarms({ oltId: selectedOltId, neStatus: neStatusFilter === 'all' ? undefined : neStatusFilter }),
         api.alarmSummary(selectedOltId),
         api.listEvents({ oltId: selectedOltId }),
       ]);
@@ -51,7 +53,7 @@ export function AlarmsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedOltId]);
+  }, [selectedOltId, neStatusFilter]);
 
   useEffect(() => {
     reload();
@@ -97,18 +99,22 @@ export function AlarmsPage() {
           <div
             key={olt.id}
             onClick={() => setSelectedOltId(olt.id)}
-            style={treeNodeStyle(selectedOltId === olt.id)}
+            style={{ ...treeNodeStyle(selectedOltId === olt.id), opacity: olt.reachable ? 1 : 0.55 }}
+            title={olt.reachable ? 'NE ativa' : 'NE inativa - sem resposta ao ultimo SNMP GET'}
           >
             <span
               style={{
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: worstSeverityColor(alarms, olt.id),
+                background: olt.reachable ? worstSeverityColor(alarms, olt.id) : 'var(--unknown)',
                 flexShrink: 0,
               }}
             />
             {olt.name}
+            {!olt.reachable && (
+              <span style={{ fontSize: 9.5, color: 'var(--unknown)', marginLeft: 'auto' }}>OFFLINE</span>
+            )}
           </div>
         ))}
         {olts.length === 0 && !loading && (
@@ -158,6 +164,19 @@ export function AlarmsPage() {
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {selectedOltId ? olts.find((o) => o.id === selectedOltId)?.name : 'Todas as OLTs'}
             </div>
+            {view === 'alarms' && (
+              <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3 }}>
+                <button onClick={() => setNeStatusFilter('all')} style={tabBtnStyle(neStatusFilter === 'all')}>
+                  Todas as NEs
+                </button>
+                <button onClick={() => setNeStatusFilter('active')} style={tabBtnStyle(neStatusFilter === 'active')}>
+                  NEs Ativas
+                </button>
+                <button onClick={() => setNeStatusFilter('inactive')} style={tabBtnStyle(neStatusFilter === 'inactive')}>
+                  NEs Inativas
+                </button>
+              </div>
+            )}
           </div>
           <button onClick={() => reload()} style={secondaryBtnStyle}>Atualizar</button>
         </div>
@@ -193,7 +212,12 @@ export function AlarmsPage() {
                 >
                   {SEVERITY_LABEL[alarm.severity]}
                 </span>
-                <span>{alarm.olt.name}</span>
+                <span>
+                  {alarm.olt.name}
+                  {!alarm.olt.reachable && (
+                    <span style={{ marginLeft: 6, fontSize: 9.5, color: 'var(--unknown)' }}>OFFLINE</span>
+                  )}
+                </span>
                 <span className="mono" style={{ color: 'var(--text-muted)' }}>
                   {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
                 </span>

@@ -16,9 +16,10 @@ export class AlarmService {
         portNo: query.portNo,
         severity: query.severity,
         condition: query.condition ?? AlarmCondition.ACTIVE,
+        olt: query.neStatus ? { reachable: query.neStatus === 'active' } : undefined,
       },
       include: {
-        olt: { select: { id: true, name: true } },
+        olt: { select: { id: true, name: true, reachable: true } },
         onu: { select: { id: true, serialNumber: true } },
       },
       orderBy: { raisedAt: 'desc' },

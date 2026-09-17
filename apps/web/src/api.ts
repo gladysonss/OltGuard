@@ -40,6 +40,8 @@ export interface Olt {
   bootstrapError: string | null;
   reconciliationEnabled: boolean;
   reconciliationIntervalMinutes: number;
+  reachable: boolean;
+  lastSeenAt: string | null;
   createdAt: string;
   updatedAt: string;
   _count: { onus: number };
@@ -68,11 +70,13 @@ export interface Alarm {
   confirmedAt: string | null;
   raisedAt: string;
   clearedAt: string | null;
-  olt: { id: string; name: string };
+  olt: { id: string; name: string; reachable: boolean };
   onu: { id: string; serialNumber: string } | null;
 }
 
 export type AlarmSummary = Record<AlarmSeverity, number>;
+
+export type NeStatus = 'active' | 'inactive';
 
 export interface OltGuardEvent {
   id: string;
@@ -202,9 +206,12 @@ export const api = {
     request<AllowedNetwork>('/allowed-networks', { method: 'POST', body: JSON.stringify(input) }),
   removeAllowedNetwork: (id: string) => request<void>(`/allowed-networks/${id}`, { method: 'DELETE' }),
   clearTraps: () => request<void>('/traps/recent', { method: 'DELETE' }),
-  listAlarms: (params?: { oltId?: string }) => {
-    const qs = params?.oltId ? `?oltId=${encodeURIComponent(params.oltId)}` : '';
-    return request<Alarm[]>(`/alarms${qs}`);
+  listAlarms: (params?: { oltId?: string; neStatus?: NeStatus }) => {
+    const search = new URLSearchParams();
+    if (params?.oltId) search.set('oltId', params.oltId);
+    if (params?.neStatus) search.set('neStatus', params.neStatus);
+    const qs = search.toString();
+    return request<Alarm[]>(`/alarms${qs ? `?${qs}` : ''}`);
   },
   alarmSummary: (oltId?: string) => {
     const qs = oltId ? `?oltId=${encodeURIComponent(oltId)}` : '';

@@ -214,6 +214,18 @@ maioria das traps de ONU (`oNUDNi`, `sDi`, `lANLOS` etc, que so trazem
 posicao) nunca teria `onuId` preenchido, e o botao "Ver alarmes" da aba
 ONUs (que filtra por `onuId`) ficaria vazio pra quase todo alarme.
 
+**Esse vinculo so e resolvido uma vez, no momento da ingestao** - se a trap
+chegou antes de `Onu` ter aquela posicao (OLT ainda nao tinha sido
+sincronizada, ou a ONU ainda nao tinha sido provisionada), `onuId` fica
+`null` pra sempre, mesmo que a ONU aparece depois normalmente na aba ONUs.
+A migration `20260922080000_backfill_alarm_event_onu_by_position` fez um
+backfill unico pra corrigir o que ja existia (so em `Alarm`/`Event` com
+`onuId` e `removedOnuId` ambos `NULL`, casando por posicao com a `Onu`
+atual) - mas e so pro dado historico ate aquele momento; nao ha
+re-resolucao automatica depois disso. Se aparecer de novo (ex: outra OLT
+que so foi sincronizada bem depois de comecar a mandar trap), o mesmo tipo
+de backfill manual resolve.
+
 `POST /olts/:id/sync-gpons` (botao "Sincronizar" na listagem de OLTs,
 `OltListPage.tsx`) refaz o bootstrap inteiro (GPONs + ONUs) sob demanda -
 pras OLTs cadastradas antes dessa feature existir (`bootstrapStatus` ainda

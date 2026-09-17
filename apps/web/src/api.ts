@@ -56,6 +56,14 @@ export interface Olt {
   _count: { onus: number };
 }
 
+export interface GponInterface {
+  id: string;
+  oltId: string;
+  ifIndex: number;
+  ifName: string;
+  createdAt: string;
+}
+
 export interface AllowedNetwork {
   id: string;
   cidr: string;
@@ -224,6 +232,8 @@ export const api = {
     request<Olt>('/olts', { method: 'POST', body: JSON.stringify(input) }),
   updateOlt: (id: string, input: UpdateOltInput) =>
     request<Olt>(`/olts/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  listGponInterfaces: (oltId: string) => request<GponInterface[]>(`/olts/${oltId}/gpon-interfaces`),
+  syncOltGpons: (oltId: string) => request<Olt>(`/olts/${oltId}/sync-gpons`, { method: 'POST', body: '{}' }),
   listAllowedNetworks: () => request<AllowedNetwork[]>('/allowed-networks'),
   addAllowedNetwork: (input: { cidr: string; label?: string }) =>
     request<AllowedNetwork>('/allowed-networks', { method: 'POST', body: JSON.stringify(input) }),

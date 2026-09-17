@@ -182,6 +182,14 @@ de cada uma.
   remover): ver `AllowedNetwork` (filtro de rede de traps) e `City` em
   `SettingsPage.tsx` - mesmo padrao serve de referencia para futuras
   entidades cadastraveis pelo cliente.
+- O `<aside>` da tela de Alarmes tem dois blocos empilhados com scroll
+  independente: a arvore de OLTs (`flex: 1, overflow: auto`) e o grafico de
+  severidade "Alarmes" (`flexShrink: 0`, fixo embaixo, fora da area com
+  scroll). O `<aside>` em si e `overflow: hidden` - sem isso os dois filhos
+  com `overflow: auto` nao conseguem ficar cada um do seu tamanho (o
+  `<aside>` tentaria crescer pra caber tudo). Importante manter essa
+  estrutura ao mexer na arvore: expandir uma OLT com muitas GPONs nao pode
+  empurrar o grafico pra fora da tela nem fazer o menu inteiro rolar junto.
 
 ## Convencoes gerais
 

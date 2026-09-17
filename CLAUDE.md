@@ -110,6 +110,17 @@ Testado com um agente SNMP mock (`net-snmp` `createAgent`, sem uso em
 producao) simulando `ifXTable` e as 3 tabelas de ONU - nao ha script de
 teste no repo, foi so verificacao manual.
 
+**As 3 tabelas de ONU (alias/serial/status) ainda nao foram validadas
+contra uma OLT Parks real** - so contra o agente mock. Em producao ja
+apareceu o caso de `walkGpons` completar com sucesso (GPONs corretas) mas
+0 ONUs, sem erro nenhum (`bootstrapStatus: ACTIVE`) - ou seja, os 3
+`walkSubtree()` rodaram mas voltaram vazios ou com um formato que
+`indexByPosition()`/`parseOnuPosition()` nao reconheceu. `walkOnus()` loga
+em `debug` a contagem de varbinds de cada tabela e uma amostra (ate 3) do
+que cada uma devolveu - usar isso pra descobrir se o problema e OID errado,
+tabela vazia nesse equipamento, ou formato de valor diferente do esperado,
+antes de mexer no parsing as cegas.
+
 ### Criacao incremental de ONU via trap (sem esperar sincronizar)
 
 A trap `pROVISIONED` (`oltOnuEventIndication.7`, `OltInternalEvent.OnuProvisioned`)

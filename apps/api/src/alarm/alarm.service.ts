@@ -9,7 +9,8 @@ export class AlarmService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryAlarmsDto) {
-    const condition = query.condition ?? AlarmCondition.ACTIVE;
+    // condition omitido = Todos (ativos + historico). ACTIVE ou CLEARED filtra so um dos dois.
+    const condition = query.condition;
     return this.prisma.alarm.findMany({
       where: {
         oltId: query.oltId,
@@ -17,16 +18,16 @@ export class AlarmService {
         portNo: query.portNo,
         severity: query.severity,
         condition,
-        olt: query.neStatus ? { reachable: query.neStatus === 'active' } : undefined,
       },
       include: {
-        olt: { select: { id: true, name: true, reachable: true } },
+        olt: { select: { id: true, name: true } },
         onu: { select: { id: true, serialNumber: true } },
       },
-      // Historico (CLEARED) ordena por quando foi resolvido, nao por quando comecou,
-      // e e limitado pra nao devolver a tabela inteira conforme ela cresce.
+      // Historico (CLEARED) ordena por quando foi resolvido; Ativos e Todos por
+      // quando foi levantado. CLEARED e Todos sao limitados pra nao devolver a
+      // tabela inteira conforme ela cresce.
       orderBy: condition === AlarmCondition.CLEARED ? { clearedAt: 'desc' } : { raisedAt: 'desc' },
-      take: condition === AlarmCondition.CLEARED ? 200 : undefined,
+      take: condition === AlarmCondition.ACTIVE ? undefined : 200,
     });
   }
 

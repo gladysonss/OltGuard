@@ -16,8 +16,6 @@ const OLT_SUMMARY_SELECT = {
   bootstrapError: true,
   reconciliationEnabled: true,
   reconciliationIntervalMinutes: true,
-  reachable: true,
-  lastSeenAt: true,
   createdAt: true,
   updatedAt: true,
   _count: { select: { onus: true } },

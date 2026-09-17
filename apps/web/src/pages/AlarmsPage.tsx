@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Alarm, type AlarmSeverity, type AlarmSummary, type NeStatus, type Olt, type OltGuardEvent } from '../api';
+import { api, type Alarm, type AlarmCondition, type AlarmSeverity, type AlarmSummary, type Olt, type OltGuardEvent } from '../api';
 import { SEVERITY_COLOR_VAR, SEVERITY_LABEL, SEVERITY_ORDER } from '../severity';
 
 type View = 'alarms' | 'events';
-type NeStatusFilter = NeStatus | 'all';
-type AlarmStatusFilter = 'active' | 'resolved';
+type AlarmStatusFilter = 'active' | 'inactive' | 'all';
 
 const SEVERITY_RANK: Record<AlarmSeverity, number> = {
   CRITICAL: 5,
@@ -13,6 +12,12 @@ const SEVERITY_RANK: Record<AlarmSeverity, number> = {
   WARNING: 2,
   INFO: 1,
   CLEAR: 0,
+};
+
+const ALARM_STATUS_CONDITION: Record<AlarmStatusFilter, AlarmCondition | undefined> = {
+  active: 'ACTIVE',
+  inactive: 'CLEARED',
+  all: undefined,
 };
 
 function worstSeverityColor(alarms: Alarm[], oltId: string): string {
@@ -30,23 +35,17 @@ export function AlarmsPage() {
   const [events, setEvents] = useState<OltGuardEvent[]>([]);
   const [summary, setSummary] = useState<AlarmSummary | null>(null);
   const [selectedOltId, setSelectedOltId] = useState<string | undefined>(undefined);
-  const [neStatusFilter, setNeStatusFilter] = useState<NeStatusFilter>('all');
   const [alarmStatusFilter, setAlarmStatusFilter] = useState<AlarmStatusFilter>('active');
   const [view, setView] = useState<View>('alarms');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actioningId, setActioningId] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     setError(null);
     try {
       const [oltsRes, alarmsRes, summaryRes, eventsRes] = await Promise.all([
         api.listOlts(),
-        api.listAlarms({
-          oltId: selectedOltId,
-          neStatus: neStatusFilter === 'all' ? undefined : neStatusFilter,
-          condition: alarmStatusFilter === 'resolved' ? 'CLEARED' : 'ACTIVE',
-        }),
+        api.listAlarms({ oltId: selectedOltId, condition: ALARM_STATUS_CONDITION[alarmStatusFilter] }),
         api.alarmSummary(selectedOltId),
         api.listEvents({ oltId: selectedOltId }),
       ]);
@@ -59,25 +58,11 @@ export function AlarmsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedOltId, neStatusFilter, alarmStatusFilter]);
+  }, [selectedOltId, alarmStatusFilter]);
 
   useEffect(() => {
     reload();
   }, [reload]);
-
-  async function runAction(id: string, action: 'confirm' | 'clear' | 'confirm-and-clear') {
-    setActioningId(id);
-    try {
-      if (action === 'confirm') await api.confirmAlarm(id);
-      if (action === 'clear') await api.clearAlarm(id);
-      if (action === 'confirm-and-clear') await api.confirmAndClearAlarm(id);
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao atualizar alarme');
-    } finally {
-      setActioningId(null);
-    }
-  }
 
   const maxCount = summary ? Math.max(1, ...Object.values(summary)) : 1;
 
@@ -105,22 +90,18 @@ export function AlarmsPage() {
           <div
             key={olt.id}
             onClick={() => setSelectedOltId(olt.id)}
-            style={{ ...treeNodeStyle(selectedOltId === olt.id), opacity: olt.reachable ? 1 : 0.55 }}
-            title={olt.reachable ? 'NE ativa' : 'NE inativa - sem resposta ao ultimo SNMP GET'}
+            style={treeNodeStyle(selectedOltId === olt.id)}
           >
             <span
               style={{
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: olt.reachable ? worstSeverityColor(alarms, olt.id) : 'var(--unknown)',
+                background: worstSeverityColor(alarms, olt.id),
                 flexShrink: 0,
               }}
             />
             {olt.name}
-            {!olt.reachable && (
-              <span style={{ fontSize: 9.5, color: 'var(--unknown)', marginLeft: 'auto' }}>OFFLINE</span>
-            )}
           </div>
         ))}
         {olts.length === 0 && !loading && (
@@ -175,21 +156,11 @@ export function AlarmsPage() {
                 <button onClick={() => setAlarmStatusFilter('active')} style={tabBtnStyle(alarmStatusFilter === 'active')}>
                   Ativos
                 </button>
-                <button onClick={() => setAlarmStatusFilter('resolved')} style={tabBtnStyle(alarmStatusFilter === 'resolved')}>
-                  Historico
+                <button onClick={() => setAlarmStatusFilter('inactive')} style={tabBtnStyle(alarmStatusFilter === 'inactive')}>
+                  Inativos
                 </button>
-              </div>
-            )}
-            {view === 'alarms' && (
-              <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3 }}>
-                <button onClick={() => setNeStatusFilter('all')} style={tabBtnStyle(neStatusFilter === 'all')}>
-                  Todas as NEs
-                </button>
-                <button onClick={() => setNeStatusFilter('active')} style={tabBtnStyle(neStatusFilter === 'active')}>
-                  NEs Ativas
-                </button>
-                <button onClick={() => setNeStatusFilter('inactive')} style={tabBtnStyle(neStatusFilter === 'inactive')}>
-                  NEs Inativas
+                <button onClick={() => setAlarmStatusFilter('all')} style={tabBtnStyle(alarmStatusFilter === 'all')}>
+                  Todos
                 </button>
               </div>
             )}
@@ -206,17 +177,13 @@ export function AlarmsPage() {
         {view === 'alarms' && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
             <div style={eventRowGridStyle('head')}>
-              <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Alarme</span><span>Confirmacao</span>
-              <span>{alarmStatusFilter === 'resolved' ? 'Levantado / Resolvido' : 'Data'}</span>
-              <span>{alarmStatusFilter === 'resolved' ? '' : 'Acoes'}</span>
+              <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Alarme</span><span>Levantado / Resolvido</span>
             </div>
 
             {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
 
             {!loading && alarms.length === 0 && (
-              <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>
-                {alarmStatusFilter === 'resolved' ? 'Nenhum alarme resolvido ainda.' : 'Nenhum alarme ativo.'}
-              </div>
+              <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhum alarme encontrado.</div>
             )}
 
             {alarms.map((alarm) => (
@@ -232,12 +199,7 @@ export function AlarmsPage() {
                 >
                   {SEVERITY_LABEL[alarm.severity]}
                 </span>
-                <span>
-                  {alarm.olt.name}
-                  {!alarm.olt.reachable && (
-                    <span style={{ marginLeft: 6, fontSize: 9.5, color: 'var(--unknown)' }}>OFFLINE</span>
-                  )}
-                </span>
+                <span>{alarm.olt.name}</span>
                 <span className="mono" style={{ color: 'var(--text-muted)' }}>
                   {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
                 </span>
@@ -245,36 +207,11 @@ export function AlarmsPage() {
                   <span>{alarm.description ?? alarm.alarmName}</span>
                   <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{alarm.alarmName}</span>
                 </span>
-                <span style={{ color: 'var(--text-muted)' }}>{alarm.confirmed ? 'Confirmado' : 'Nao confirmado'}</span>
-                {alarmStatusFilter === 'resolved' ? (
-                  <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span>{new Date(alarm.raisedAt).toLocaleString('pt-BR')}</span>
-                    <span style={{ color: 'var(--ok)' }}>{alarm.clearedAt ? new Date(alarm.clearedAt).toLocaleString('pt-BR') : '-'}</span>
+                <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span>{new Date(alarm.raisedAt).toLocaleString('pt-BR')}</span>
+                  <span style={{ color: alarm.clearedAt ? 'var(--ok)' : 'var(--text-muted)' }}>
+                    {alarm.clearedAt ? new Date(alarm.clearedAt).toLocaleString('pt-BR') : '-'}
                   </span>
-                ) : (
-                  <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                    {new Date(alarm.raisedAt).toLocaleString('pt-BR')}
-                  </span>
-                )}
-                <span style={{ display: 'flex', gap: 6 }}>
-                  {alarmStatusFilter === 'active' && (
-                    <>
-                      <button
-                        disabled={actioningId === alarm.id || alarm.confirmed}
-                        onClick={() => runAction(alarm.id, 'confirm')}
-                        style={secondaryBtnStyle}
-                      >
-                        Confirmar
-                      </button>
-                      <button
-                        disabled={actioningId === alarm.id}
-                        onClick={() => runAction(alarm.id, 'confirm-and-clear')}
-                        style={primaryBtnStyle}
-                      >
-                        Limpar
-                      </button>
-                    </>
-                  )}
                 </span>
               </div>
             ))}
@@ -367,7 +304,7 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '110px 1fr 0.7fr 2.2fr 0.9fr 1fr 1.4fr',
+    gridTemplateColumns: '110px 1fr 0.7fr 2.4fr 1.2fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',
@@ -404,11 +341,4 @@ const secondaryBtnStyle: React.CSSProperties = {
   background: 'var(--surface-2)',
   color: 'var(--text)',
   cursor: 'pointer',
-};
-
-const primaryBtnStyle: React.CSSProperties = {
-  ...secondaryBtnStyle,
-  background: 'var(--accent)',
-  borderColor: 'var(--accent)',
-  color: '#171a21',
 };

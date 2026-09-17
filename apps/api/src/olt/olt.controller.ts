@@ -34,6 +34,11 @@ export class OltController {
     return this.oltService.findOne(id);
   }
 
+  @Get(':id/gpon-interfaces')
+  listGponInterfaces(@Param('id') id: string) {
+    return this.oltService.listGponInterfaces(id);
+  }
+
   @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateOltDto) {

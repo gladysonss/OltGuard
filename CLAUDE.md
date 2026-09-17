@@ -34,7 +34,14 @@ cadastro/edicao de OLT ou rede autorizada) → `parks-trap-mapping.ts`
 
 - **Alarm** (`isAlarm: true`, grupos "Alarm" da MIB): tem `oltAlarmCondition`
   (SET/CLEAR) e representa algo que pode ser resolvido depois - vira uma
-  linha com `condition: ACTIVE/CLEARED`, `raisedAt`/`clearedAt`.
+  linha com `condition: ACTIVE/CLEARED`, `raisedAt`/`clearedAt`. Resolver um
+  alarme (via trap de CLEAR, botao manual ou reconciliacao de ONU removida)
+  **so muda `condition`** - a `severity` original (`MINOR`/`MAJOR`/etc) e
+  preservada pra sempre, nunca vira `AlarmSeverity.CLEAR`. Quem indica "isso
+  ja foi resolvido" e o `condition`, nao a severidade; sobrescrever a
+  severidade perderia a informacao de quao grave o problema era quando
+  esteve ativo. `AlarmSeverity.CLEAR` como valor de enum so aparece em dado
+  historico anterior a essa correcao.
 - **Event** (`isAlarm: false`, grupos "Event"/"Avc"): ocorrencia pontual sem
   par de limpeza - cada trap gera uma linha nova, sempre.
 
@@ -335,8 +342,11 @@ de cada uma.
   Alarmes, que reflete o estado atual (via `/alarms/summary`, que so conta
   `condition=ACTIVE`). Incluir `CLEAR` faria o grafico virar um contador
   historico que so cresce, nunca um indicador do que esta acontecendo agora.
-  `SEVERITY_LABEL`/`SEVERITY_COLOR_VAR` continuam mapeando `CLEAR` (usado
-  em badges de alarme resolvido fora do grafico).
+  `SEVERITY_LABEL`/`SEVERITY_COLOR_VAR` continuam mapeando `CLEAR` so pra
+  nao quebrar em dado historico anterior a essa correcao - um alarme
+  resolvido hoje mantem a severidade original no badge (ver nota sobre
+  `Alarm.severity`/`condition` em "Pipeline de ingestao de traps" acima),
+  entao `CLEAR` na pratica nao aparece mais em alarme novo.
 - Padrao de tela de configuracao simples (lista + form de adicionar +
   remover): ver `AllowedNetwork` (filtro de rede de traps) e `City` em
   `SettingsPage.tsx` - mesmo padrao serve de referencia para futuras

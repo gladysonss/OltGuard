@@ -6,11 +6,9 @@ import { TrapSecurityService, type TrustedOlt, type TrapValidationResult } from 
 const REFRESH_INTERVAL_MS = 30_000;
 
 /**
- * Mantem em memoria a lista de OLTs cadastradas (community descriptografada,
- * usada para identificar de qual OLT veio uma trap - o IP de origem nao serve
- * pra isso quando varias OLTs saem atras do mesmo roteador/NAT) e a lista
- * global de redes autorizadas, para o trap receiver validar cada trap sem
- * bater no banco a cada pacote. Recarrega periodicamente, e sob demanda
+ * Mantem em memoria a lista de OLTs cadastradas (ip + community descriptografada)
+ * e a lista global de redes autorizadas, para o trap receiver validar cada trap
+ * sem bater no banco a cada pacote. Recarrega periodicamente, e sob demanda
  * (refresh()) quando uma OLT ou uma rede autorizada e cadastrada/editada, para
  * nao esperar o intervalo.
  */
@@ -33,13 +31,14 @@ export class OltRegistryService implements OnModuleInit {
   async refresh() {
     const [olts, networks] = await Promise.all([
       this.prisma.olt.findMany({
-        select: { id: true, name: true, snmpCommunity: true },
+        select: { id: true, name: true, ipAddress: true, snmpCommunity: true },
       }),
       this.prisma.allowedNetwork.findMany({ select: { cidr: true } }),
     ]);
     this.trustedOlts = olts.map((olt) => ({
       id: olt.id,
       name: olt.name,
+      ipAddress: olt.ipAddress,
       snmpCommunity: this.encryption.decrypt(olt.snmpCommunity),
     }));
     this.allowedNetworks = networks.map((n) => n.cidr);

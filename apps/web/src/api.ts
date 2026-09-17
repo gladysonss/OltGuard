@@ -209,10 +209,11 @@ export const api = {
     request<AllowedNetwork>('/allowed-networks', { method: 'POST', body: JSON.stringify(input) }),
   removeAllowedNetwork: (id: string) => request<void>(`/allowed-networks/${id}`, { method: 'DELETE' }),
   clearTraps: () => request<void>('/traps/recent', { method: 'DELETE' }),
-  listAlarms: (params?: { oltId?: string; neStatus?: NeStatus }) => {
+  listAlarms: (params?: { oltId?: string; neStatus?: NeStatus; condition?: AlarmCondition }) => {
     const search = new URLSearchParams();
     if (params?.oltId) search.set('oltId', params.oltId);
     if (params?.neStatus) search.set('neStatus', params.neStatus);
+    if (params?.condition) search.set('condition', params.condition);
     const qs = search.toString();
     return request<Alarm[]>(`/alarms${qs ? `?${qs}` : ''}`);
   },

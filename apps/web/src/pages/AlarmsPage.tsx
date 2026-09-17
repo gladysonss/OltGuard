@@ -4,6 +4,7 @@ import { SEVERITY_COLOR_VAR, SEVERITY_LABEL, SEVERITY_ORDER } from '../severity'
 
 type View = 'alarms' | 'events';
 type NeStatusFilter = NeStatus | 'all';
+type AlarmStatusFilter = 'active' | 'resolved';
 
 const SEVERITY_RANK: Record<AlarmSeverity, number> = {
   CRITICAL: 5,
@@ -30,6 +31,7 @@ export function AlarmsPage() {
   const [summary, setSummary] = useState<AlarmSummary | null>(null);
   const [selectedOltId, setSelectedOltId] = useState<string | undefined>(undefined);
   const [neStatusFilter, setNeStatusFilter] = useState<NeStatusFilter>('all');
+  const [alarmStatusFilter, setAlarmStatusFilter] = useState<AlarmStatusFilter>('active');
   const [view, setView] = useState<View>('alarms');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,11 @@ export function AlarmsPage() {
     try {
       const [oltsRes, alarmsRes, summaryRes, eventsRes] = await Promise.all([
         api.listOlts(),
-        api.listAlarms({ oltId: selectedOltId, neStatus: neStatusFilter === 'all' ? undefined : neStatusFilter }),
+        api.listAlarms({
+          oltId: selectedOltId,
+          neStatus: neStatusFilter === 'all' ? undefined : neStatusFilter,
+          condition: alarmStatusFilter === 'resolved' ? 'CLEARED' : 'ACTIVE',
+        }),
         api.alarmSummary(selectedOltId),
         api.listEvents({ oltId: selectedOltId }),
       ]);
@@ -53,7 +59,7 @@ export function AlarmsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedOltId, neStatusFilter]);
+  }, [selectedOltId, neStatusFilter, alarmStatusFilter]);
 
   useEffect(() => {
     reload();
@@ -151,8 +157,8 @@ export function AlarmsPage() {
       </aside>
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: '18px 22px', gap: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3 }}>
               <button onClick={() => setView('alarms')} style={tabBtnStyle(view === 'alarms')}>
                 Alarmes
@@ -164,6 +170,16 @@ export function AlarmsPage() {
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {selectedOltId ? olts.find((o) => o.id === selectedOltId)?.name : 'Todas as OLTs'}
             </div>
+            {view === 'alarms' && (
+              <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3 }}>
+                <button onClick={() => setAlarmStatusFilter('active')} style={tabBtnStyle(alarmStatusFilter === 'active')}>
+                  Ativos
+                </button>
+                <button onClick={() => setAlarmStatusFilter('resolved')} style={tabBtnStyle(alarmStatusFilter === 'resolved')}>
+                  Historico
+                </button>
+              </div>
+            )}
             {view === 'alarms' && (
               <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3 }}>
                 <button onClick={() => setNeStatusFilter('all')} style={tabBtnStyle(neStatusFilter === 'all')}>
@@ -190,13 +206,17 @@ export function AlarmsPage() {
         {view === 'alarms' && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
             <div style={eventRowGridStyle('head')}>
-              <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Alarme</span><span>Confirmacao</span><span>Data</span><span>Acoes</span>
+              <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Alarme</span><span>Confirmacao</span>
+              <span>{alarmStatusFilter === 'resolved' ? 'Levantado / Resolvido' : 'Data'}</span>
+              <span>{alarmStatusFilter === 'resolved' ? '' : 'Acoes'}</span>
             </div>
 
             {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
 
             {!loading && alarms.length === 0 && (
-              <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhum alarme ativo.</div>
+              <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>
+                {alarmStatusFilter === 'resolved' ? 'Nenhum alarme resolvido ainda.' : 'Nenhum alarme ativo.'}
+              </div>
             )}
 
             {alarms.map((alarm) => (
@@ -226,24 +246,35 @@ export function AlarmsPage() {
                   <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{alarm.alarmName}</span>
                 </span>
                 <span style={{ color: 'var(--text-muted)' }}>{alarm.confirmed ? 'Confirmado' : 'Nao confirmado'}</span>
-                <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                  {new Date(alarm.raisedAt).toLocaleString('pt-BR')}
-                </span>
+                {alarmStatusFilter === 'resolved' ? (
+                  <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span>{new Date(alarm.raisedAt).toLocaleString('pt-BR')}</span>
+                    <span style={{ color: 'var(--ok)' }}>{alarm.clearedAt ? new Date(alarm.clearedAt).toLocaleString('pt-BR') : '-'}</span>
+                  </span>
+                ) : (
+                  <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                    {new Date(alarm.raisedAt).toLocaleString('pt-BR')}
+                  </span>
+                )}
                 <span style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    disabled={actioningId === alarm.id || alarm.confirmed}
-                    onClick={() => runAction(alarm.id, 'confirm')}
-                    style={secondaryBtnStyle}
-                  >
-                    Confirmar
-                  </button>
-                  <button
-                    disabled={actioningId === alarm.id}
-                    onClick={() => runAction(alarm.id, 'confirm-and-clear')}
-                    style={primaryBtnStyle}
-                  >
-                    Limpar
-                  </button>
+                  {alarmStatusFilter === 'active' && (
+                    <>
+                      <button
+                        disabled={actioningId === alarm.id || alarm.confirmed}
+                        onClick={() => runAction(alarm.id, 'confirm')}
+                        style={secondaryBtnStyle}
+                      >
+                        Confirmar
+                      </button>
+                      <button
+                        disabled={actioningId === alarm.id}
+                        onClick={() => runAction(alarm.id, 'confirm-and-clear')}
+                        style={primaryBtnStyle}
+                      >
+                        Limpar
+                      </button>
+                    </>
+                  )}
                 </span>
               </div>
             ))}

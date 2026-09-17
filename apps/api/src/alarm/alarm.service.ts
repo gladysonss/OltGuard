@@ -9,20 +9,24 @@ export class AlarmService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryAlarmsDto) {
+    const condition = query.condition ?? AlarmCondition.ACTIVE;
     return this.prisma.alarm.findMany({
       where: {
         oltId: query.oltId,
         slotNo: query.slotNo,
         portNo: query.portNo,
         severity: query.severity,
-        condition: query.condition ?? AlarmCondition.ACTIVE,
+        condition,
         olt: query.neStatus ? { reachable: query.neStatus === 'active' } : undefined,
       },
       include: {
         olt: { select: { id: true, name: true, reachable: true } },
         onu: { select: { id: true, serialNumber: true } },
       },
-      orderBy: { raisedAt: 'desc' },
+      // Historico (CLEARED) ordena por quando foi resolvido, nao por quando comecou,
+      // e e limitado pra nao devolver a tabela inteira conforme ela cresce.
+      orderBy: condition === AlarmCondition.CLEARED ? { clearedAt: 'desc' } : { raisedAt: 'desc' },
+      take: condition === AlarmCondition.CLEARED ? 200 : undefined,
     });
   }
 

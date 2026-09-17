@@ -7,12 +7,14 @@ import { TrapReceiverService } from './trap-receiver.service';
 import { TrapController } from './trap.controller';
 import { AllowedNetworkService } from './allowed-network.service';
 import { AllowedNetworkController } from './allowed-network.controller';
+import { CityService } from './city.service';
+import { CityController } from './city.controller';
 import { AlarmModule } from '../alarm/alarm.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [AlarmModule, AuthModule],
-  controllers: [OltController, TrapController, AllowedNetworkController],
-  providers: [OltService, EncryptionService, OltRegistryService, TrapReceiverService, AllowedNetworkService],
+  controllers: [OltController, TrapController, AllowedNetworkController, CityController],
+  providers: [OltService, EncryptionService, OltRegistryService, TrapReceiverService, AllowedNetworkService, CityService],
 })
 export class OltModule {}

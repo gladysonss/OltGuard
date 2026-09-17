@@ -25,7 +25,7 @@ const NO_CITY_LABEL = 'Sem cidade';
 function groupOltsByCity(olts: Olt[]): { city: string; olts: Olt[] }[] {
   const groups = new Map<string, Olt[]>();
   for (const olt of olts) {
-    const city = olt.city?.trim() || NO_CITY_LABEL;
+    const city = olt.city?.name?.trim() || NO_CITY_LABEL;
     if (!groups.has(city)) groups.set(city, []);
     groups.get(city)!.push(olt);
   }

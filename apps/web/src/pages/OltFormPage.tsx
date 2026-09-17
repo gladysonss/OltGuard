@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../api';
+import { api, OLT_MANUFACTURERS, type City, type OltManufacturer } from '../api';
 
 const emptyForm = {
   name: '',
   ipAddress: '',
-  city: '',
-  manufacturer: '',
+  cityId: '',
+  manufacturer: '' as OltManufacturer | '',
   snmpCommunity: '',
   snmpPort: '161',
   sshUsername: '',
@@ -20,9 +20,14 @@ export function OltFormPage() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(emptyForm);
+  const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.listCities().then(setCities).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -32,8 +37,8 @@ export function OltFormPage() {
         setForm({
           name: olt.name,
           ipAddress: olt.ipAddress,
-          city: olt.city ?? '',
-          manufacturer: olt.manufacturer ?? '',
+          cityId: olt.cityId ?? '',
+          manufacturer: olt.manufacturer,
           snmpCommunity: '',
           snmpPort: String(olt.snmpPort),
           sshUsername: olt.sshUsername ?? '',
@@ -45,12 +50,16 @@ export function OltFormPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  function update<K extends keyof typeof form>(key: K, value: string) {
+  function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!form.manufacturer) {
+      setError('Selecione o fabricante da OLT');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -58,8 +67,8 @@ export function OltFormPage() {
         await api.updateOlt(id, {
           name: form.name,
           ipAddress: form.ipAddress,
-          city: form.city || undefined,
-          manufacturer: form.manufacturer || undefined,
+          cityId: form.cityId || undefined,
+          manufacturer: form.manufacturer,
           snmpCommunity: form.snmpCommunity || undefined,
           snmpPort: Number(form.snmpPort),
           sshUsername: form.sshUsername || undefined,
@@ -70,8 +79,8 @@ export function OltFormPage() {
         await api.createOlt({
           name: form.name,
           ipAddress: form.ipAddress,
-          city: form.city || undefined,
-          manufacturer: form.manufacturer || undefined,
+          cityId: form.cityId || undefined,
+          manufacturer: form.manufacturer,
           snmpCommunity: form.snmpCommunity,
           snmpPort: Number(form.snmpPort),
           sshUsername: form.sshUsername || undefined,
@@ -125,10 +134,30 @@ export function OltFormPage() {
             </Field>
             <div style={row2Style}>
               <Field label="Cidade">
-                <input value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Ex: Sao Paulo" style={inputStyle} />
+                <select value={form.cityId} onChange={(e) => update('cityId', e.target.value)} style={inputStyle}>
+                  <option value="">Sem cidade</option>
+                  {cities.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {cities.length === 0 && (
+                  <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                    Nenhuma cidade cadastrada - adicione em Configuracoes.
+                  </span>
+                )}
               </Field>
               <Field label="Fabricante">
-                <input value={form.manufacturer} onChange={(e) => update('manufacturer', e.target.value)} placeholder="Ex: Parks" style={inputStyle} />
+                <select
+                  value={form.manufacturer}
+                  onChange={(e) => update('manufacturer', e.target.value as OltManufacturer)}
+                  required
+                  style={inputStyle}
+                >
+                  <option value="" disabled>Selecione...</option>
+                  {OLT_MANUFACTURERS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
               </Field>
             </div>
           </Section>

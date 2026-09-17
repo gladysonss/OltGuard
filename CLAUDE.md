@@ -58,10 +58,13 @@ trap `lOSi` carrega esse dado hoje (unica trap Alarm cujo payload MIB inclui
 `oltOnuSerialNumber`).
 
 O serial e gravado direto em `Alarm.serialNumber`, **nao** via o relaciona-
-mento `Alarm.onuId → Onu` - a tabela `Onu` nunca e populada por nenhum
-codigo hoje (nenhum `onu.create` no projeto), entao esse vinculo relacional
-sempre resolve `null` na pratica. `AlarmsPage.tsx` mostra o serial na
-descricao do alarme quando presente.
+mento `Alarm.onuId → Onu` - o vinculo relacional (`prisma.onu.findFirst` por
+`oltId`+`serialNumber` em `AlarmIngestService.ingest()`) so passou a poder
+resolver depois que o bootstrap ganhou o passo de walk de ONUs (ver
+"Bootstrap da OLT" abaixo), que e a primeira coisa no projeto a criar linhas
+em `Onu` - antes disso a tabela era sempre vazia e `onuId` sempre `null`.
+`AlarmsPage.tsx` mostra o serial na descricao do alarme quando presente,
+independente desse vinculo.
 
 ## Bootstrap da OLT (walk SNMP)
 
@@ -72,30 +75,48 @@ fire-and-forget (`void this.bootstrap.walkGpons(olt.id)`, nunca `await`ado)
 por `OltService.create()` assim que a OLT e cadastrada - o cadastro nao
 espera o walk terminar.
 
-`OltBootstrapService.walkGpons()` (passo 1 do bootstrap, mais passos vem
-depois - mapear slot/porta de cada GPON, andar pelas ONUs de cada uma):
-anda `ifName` (IF-MIB::ifXTable, OID `1.3.6.1.2.1.31.1.1.1.1` - retorna o
-nome de toda interface da OLT, indexado por `ifIndex`) via
-`walkSubtree()`/`createSnmpSession()` (`snmp-client.util.ts`, wrapper fino
-sobre `net-snmp` `session.subtree()`, SNMPv2c so) e filtra so os nomes que
-comecam com `gpon` (case-insensitive - convencao Parks pra porta PON, ex:
-`gpon0/1`; outras interfaces como uplink/mgmt sao descartadas). O resultado
-substitui (delete + insert, sem merge incremental ainda) as linhas de
-`GponInterface` (`oltId`, `ifIndex`, `ifName`) daquela OLT.
+`OltBootstrapService.walkGpons()` (nome historico do metodo publico - ja faz
+os dois passos abaixo numa sessao SNMP so, ver `snmp-client.util.ts`
+`walkSubtree()`/`createSnmpSession()`, SNMPv2c so):
+
+1. **GPONs**: anda `ifName` (IF-MIB::ifXTable, OID `1.3.6.1.2.1.31.1.1.1.1` -
+   nome de toda interface da OLT, indexado por `ifIndex`) e filtra so os
+   nomes que comecam com `gpon` (case-insensitive - convencao Parks pra
+   porta PON, ex: `gpon0/1`; uplink/mgmt sao descartadas). Substitui (delete
+   + insert, sem merge incremental) as `GponInterface` (`oltId`, `ifIndex`,
+   `ifName`) da OLT.
+2. **ONUs**: anda 3 tabelas Parks - alias (`1.3.6.1.4.1.6771.10.1.5.1.62.1`),
+   serial (`...18.1`) e status (`...5.1`) - cada uma indexada pelos 3
+   ultimos numeros do OID de cada instancia (`slotNo.portNo.logicalPortNo`,
+   ex: `...62.1.1.1.1` = alias da ONU 1/1/1). O serial usa o mesmo
+   `formatOnuSerialNumber()` das traps (16 hex chars: 4 bytes de vendor ID
+   em ASCII + 4 bytes de serie em hex). O status e o inteiro Parks bruto
+   (`OnuStatus`: `INVALID`=0 .. `DISABLE`=6, ver `ONU_STATUS_MAP`) - **essa
+   primeira coleta so estabelece a base**; deixar o status atualizado
+   depois com as traps de status de ONU e trabalho futuro, ainda nao
+   implementado. Faz upsert em `Onu` por `(oltId, slotNo, portNo,
+   logicalPortNo)`, so quando ha serial (sem serial nao da pra identificar
+   a ONU de forma estavel entre walks). **Nunca deleta** ONUs que sumiram
+   do walk, ao contrario de `GponInterface` - `Alarm`/`Event.onuId` tem
+   `onDelete: Cascade`, entao apagar a ONU apagaria o historico dela junto.
+   Essa e a primeira coisa no projeto que cria linhas em `Onu` (antes desta
+   feature a tabela era sempre vazia - ver nota em "Serial da ONU" acima).
 
 **Nunca lanca**: qualquer erro (timeout, community errada, etc) vira
 `bootstrapStatus: FAILED` + `bootstrapError` com a mensagem, nunca uma
 excecao pro caller - e assim que pode ser fire-and-forget com seguranca.
-`GET /olts/:id/gpon-interfaces` expõe o resultado. Testado com um agente
-SNMP mock (`net-snmp` `createAgent`, sem uso em producao) simulando
-`ifXTable` - nao ha script de teste no repo, foi so verificacao manual.
+`GET /olts/:id/gpon-interfaces` e `GET /olts/:id/onus` expõem o resultado.
+Testado com um agente SNMP mock (`net-snmp` `createAgent`, sem uso em
+producao) simulando `ifXTable` e as 3 tabelas de ONU - nao ha script de
+teste no repo, foi so verificacao manual.
 
 `POST /olts/:id/sync-gpons` (botao "Sincronizar" na listagem de OLTs,
-`OltListPage.tsx`) refaz o mesmo walk sob demanda - pras OLTs cadastradas
-antes dessa feature existir (`bootstrapStatus` ainda `PENDING`, nunca andou
-automaticamente) ou pra tentar de novo depois de uma falha. Ao contrario do
-disparo automatico do `create()`, esse `await`a o walk inteiro antes de
-responder (o cliente pediu explicitamente e espera ver o resultado).
+`OltListPage.tsx`) refaz o bootstrap inteiro (GPONs + ONUs) sob demanda -
+pras OLTs cadastradas antes dessa feature existir (`bootstrapStatus` ainda
+`PENDING`, nunca andou automaticamente) ou pra tentar de novo depois de uma
+falha. Ao contrario do disparo automatico do `create()`, esse `await`a o
+walk inteiro antes de responder (o cliente pediu explicitamente e espera
+ver o resultado).
 
 Na arvore de OLTs da tela de Alarmes, cada OLT tem seu proprio chevron de
 expandir/minimizar (independente do collapse de cidade) que mostra as

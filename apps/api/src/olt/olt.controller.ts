@@ -39,6 +39,11 @@ export class OltController {
     return this.oltService.listGponInterfaces(id);
   }
 
+  @Get(':id/onus')
+  listOnus(@Param('id') id: string) {
+    return this.oltService.listOnus(id);
+  }
+
   @Roles('ADMIN')
   @Post(':id/sync-gpons')
   syncGpons(@Param('id') id: string) {

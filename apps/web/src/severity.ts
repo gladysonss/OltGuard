@@ -18,4 +18,11 @@ export const SEVERITY_COLOR_VAR: Record<AlarmSeverity, string> = {
   CLEAR: '--ok',
 };
 
-export const SEVERITY_ORDER: AlarmSeverity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'WARNING', 'CLEAR'];
+/**
+ * Usado no grafico de "alarmes ativos agora" - CLEAR fica de fora de proposito:
+ * o /alarms/summary so conta condition=ACTIVE, entao um alarme so tem severity
+ * CLEAR quando ja foi resolvido (junto com condition=CLEARED). Contar "Limpo"
+ * nesse grafico seria um total historico que so cresce, nao um indicador do
+ * que esta acontecendo agora.
+ */
+export const SEVERITY_ORDER: AlarmSeverity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'WARNING'];

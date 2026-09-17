@@ -8,6 +8,16 @@ export class CreateOltDto {
   @IsIP()
   ipAddress: string;
 
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  manufacturer?: string;
+
   @IsString()
   @MinLength(1)
   snmpCommunity: string;

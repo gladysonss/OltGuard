@@ -5,6 +5,8 @@ import { api } from '../api';
 const emptyForm = {
   name: '',
   ipAddress: '',
+  city: '',
+  manufacturer: '',
   snmpCommunity: '',
   snmpPort: '161',
   sshUsername: '',
@@ -30,6 +32,8 @@ export function OltFormPage() {
         setForm({
           name: olt.name,
           ipAddress: olt.ipAddress,
+          city: olt.city ?? '',
+          manufacturer: olt.manufacturer ?? '',
           snmpCommunity: '',
           snmpPort: String(olt.snmpPort),
           sshUsername: olt.sshUsername ?? '',
@@ -54,6 +58,8 @@ export function OltFormPage() {
         await api.updateOlt(id, {
           name: form.name,
           ipAddress: form.ipAddress,
+          city: form.city || undefined,
+          manufacturer: form.manufacturer || undefined,
           snmpCommunity: form.snmpCommunity || undefined,
           snmpPort: Number(form.snmpPort),
           sshUsername: form.sshUsername || undefined,
@@ -64,6 +70,8 @@ export function OltFormPage() {
         await api.createOlt({
           name: form.name,
           ipAddress: form.ipAddress,
+          city: form.city || undefined,
+          manufacturer: form.manufacturer || undefined,
           snmpCommunity: form.snmpCommunity,
           snmpPort: Number(form.snmpPort),
           sshUsername: form.sshUsername || undefined,
@@ -115,6 +123,14 @@ export function OltFormPage() {
             <Field label="Endereco IP">
               <input value={form.ipAddress} onChange={(e) => update('ipAddress', e.target.value)} placeholder="192.168.0.10" required className="mono" style={inputStyle} />
             </Field>
+            <div style={row2Style}>
+              <Field label="Cidade">
+                <input value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Ex: Sao Paulo" style={inputStyle} />
+              </Field>
+              <Field label="Fabricante">
+                <input value={form.manufacturer} onChange={(e) => update('manufacturer', e.target.value)} placeholder="Ex: Parks" style={inputStyle} />
+              </Field>
+            </div>
           </Section>
 
           <Section title="SNMP">

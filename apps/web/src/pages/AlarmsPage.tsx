@@ -20,6 +20,24 @@ const ALARM_STATUS_CONDITION: Record<AlarmStatusFilter, AlarmCondition | undefin
   all: undefined,
 };
 
+const NO_CITY_LABEL = 'Sem cidade';
+
+function groupOltsByCity(olts: Olt[]): { city: string; olts: Olt[] }[] {
+  const groups = new Map<string, Olt[]>();
+  for (const olt of olts) {
+    const city = olt.city?.trim() || NO_CITY_LABEL;
+    if (!groups.has(city)) groups.set(city, []);
+    groups.get(city)!.push(olt);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => {
+      if (a === NO_CITY_LABEL) return 1;
+      if (b === NO_CITY_LABEL) return -1;
+      return a.localeCompare(b);
+    })
+    .map(([city, cityOlts]) => ({ city, olts: cityOlts }));
+}
+
 function worstSeverityColor(alarms: Alarm[], oltId: string): string {
   const oltAlarms = alarms.filter((a) => a.oltId === oltId);
   if (oltAlarms.length === 0) return 'var(--ok)';
@@ -121,22 +139,32 @@ export function AlarmsPage() {
         >
           Todas as OLTs
         </div>
-        {olts.map((olt) => (
-          <div
-            key={olt.id}
-            onClick={() => setSelectedOltId(olt.id)}
-            style={treeNodeStyle(selectedOltId === olt.id)}
-          >
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background: worstSeverityColor(alarms, olt.id),
-                flexShrink: 0,
-              }}
-            />
-            {olt.name}
+        {groupOltsByCity(olts).map((group) => (
+          <div key={group.city}>
+            <div style={cityGroupLabelStyle}>{group.city}</div>
+            {group.olts.map((olt) => (
+              <div
+                key={olt.id}
+                onClick={() => setSelectedOltId(olt.id)}
+                style={treeNodeStyle(selectedOltId === olt.id)}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    background: worstSeverityColor(alarms, olt.id),
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{olt.name}</span>
+                  {olt.manufacturer && (
+                    <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{olt.manufacturer}</span>
+                  )}
+                </span>
+              </div>
+            ))}
           </div>
         ))}
         {olts.length === 0 && !loading && (
@@ -319,7 +347,7 @@ export function AlarmsPage() {
                   {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span>{alarm.description ?? alarm.alarmName}</span>
+                  <span>{alarm.description ?? alarm.alarmName}{alarm.serialNumber ? ` · Serial ${alarm.serialNumber}` : ''}</span>
                   <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{alarm.alarmName}</span>
                 </span>
                 <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -384,6 +412,15 @@ const sectionLabelStyle: React.CSSProperties = {
   letterSpacing: '0.05em',
   color: 'var(--text-muted)',
   padding: '10px 12px 6px',
+};
+
+const cityGroupLabelStyle: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  color: 'var(--text-muted)',
+  padding: '8px 12px 2px',
 };
 
 function treeNodeStyle(selected: boolean): React.CSSProperties {

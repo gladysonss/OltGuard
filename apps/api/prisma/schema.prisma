@@ -20,6 +20,12 @@ model Olt {
   name     String
   ipAddress String @unique
 
+  /// Cidade onde a OLT esta instalada - usado para agrupar a lista de OLTs na UI.
+  city         String?
+  /// Fabricante do equipamento (ex: Parks, Huawei, ZTE) - hoje so Parks tem
+  /// parser de traps implementado, mas o campo antecipa outros modelos.
+  manufacturer String?
+
   snmpCommunity String
   snmpPort      Int    @default(161)
 
@@ -182,6 +188,10 @@ model Alarm {
   /// ParksTrapDefinition.description em parks-trap-mapping.ts), gravada no
   /// momento do alarme para nao depender de o mapeamento nao mudar depois.
   description String?
+  /// Serial da ONU quando a trap traz esse dado (ex: lOSi) - gravado direto
+  /// aqui em vez de depender so do vinculo com Onu (onuId), que so resolve
+  /// se ja existir um registro de Onu previamente cadastrado.
+  serialNumber String?
   severity    AlarmSeverity
   condition   AlarmCondition @default(ACTIVE)
 

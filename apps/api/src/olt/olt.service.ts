@@ -9,6 +9,8 @@ const OLT_SUMMARY_SELECT = {
   id: true,
   name: true,
   ipAddress: true,
+  city: true,
+  manufacturer: true,
   snmpPort: true,
   sshUsername: true,
   sshPort: true,
@@ -34,6 +36,8 @@ export class OltService {
       data: {
         name: dto.name,
         ipAddress: dto.ipAddress,
+        city: dto.city,
+        manufacturer: dto.manufacturer,
         snmpCommunity: this.encryption.encrypt(dto.snmpCommunity),
         snmpPort: dto.snmpPort ?? 161,
         sshUsername: dto.sshUsername,
@@ -71,6 +75,8 @@ export class OltService {
       data: {
         name: dto.name,
         ipAddress: dto.ipAddress,
+        city: dto.city,
+        manufacturer: dto.manufacturer,
         snmpCommunity: dto.snmpCommunity ? this.encryption.encrypt(dto.snmpCommunity) : undefined,
         snmpPort: dto.snmpPort,
         sshUsername: dto.sshUsername,

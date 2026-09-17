@@ -45,24 +45,19 @@ model Olt {
   onus             Onu[]
   provisioningJobs ProvisioningJob[]
   alarms           Alarm[]
-  trustedIps       OltTrustedIp[]
 }
 
-/// IPs de origem adicionais aceitos para traps desta OLT, alem do ipAddress
-/// principal. Existe porque o IP de origem visto pelo receiver e as vezes
-/// o IP publico do roteador/NAT na frente da OLT, que pode mudar (IP
-/// dinamico) sem que o endereco de gerenciamento da OLT mude.
-model OltTrustedIp {
+/// Filtro de rede global (nao por OLT): IPs ou faixas CIDR autorizados a
+/// enviar traps para a aplicacao. Se a lista estiver vazia, nenhuma
+/// restricao de rede e aplicada (so a identificacao por OLT + community
+/// vale). Uma vez cadastrada pelo menos uma entrada, so origens dentro de
+/// alguma delas passam.
+model AllowedNetwork {
   id    String @id @default(uuid())
-  oltId String
-  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
-
-  ipAddress String
-  label     String?
+  cidr  String @unique
+  label String?
 
   createdAt DateTime @default(now())
-
-  @@unique([oltId, ipAddress])
 }
 
 enum OnuStatus {

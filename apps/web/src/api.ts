@@ -45,10 +45,9 @@ export interface Olt {
   _count: { onus: number };
 }
 
-export interface OltTrustedIp {
+export interface AllowedNetwork {
   id: string;
-  oltId: string;
-  ipAddress: string;
+  cidr: string;
   label: string | null;
   createdAt: string;
 }
@@ -180,11 +179,10 @@ export const api = {
     request<Olt>('/olts', { method: 'POST', body: JSON.stringify(input) }),
   updateOlt: (id: string, input: UpdateOltInput) =>
     request<Olt>(`/olts/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
-  listTrustedIps: (oltId: string) => request<OltTrustedIp[]>(`/olts/${oltId}/trusted-ips`),
-  addTrustedIp: (oltId: string, input: { ipAddress: string; label?: string }) =>
-    request<OltTrustedIp>(`/olts/${oltId}/trusted-ips`, { method: 'POST', body: JSON.stringify(input) }),
-  removeTrustedIp: (oltId: string, trustedIpId: string) =>
-    request<void>(`/olts/${oltId}/trusted-ips/${trustedIpId}`, { method: 'DELETE' }),
+  listAllowedNetworks: () => request<AllowedNetwork[]>('/allowed-networks'),
+  addAllowedNetwork: (input: { cidr: string; label?: string }) =>
+    request<AllowedNetwork>('/allowed-networks', { method: 'POST', body: JSON.stringify(input) }),
+  removeAllowedNetwork: (id: string) => request<void>(`/allowed-networks/${id}`, { method: 'DELETE' }),
   listAlarms: (params?: { oltId?: string }) => {
     const qs = params?.oltId ? `?oltId=${encodeURIComponent(params.oltId)}` : '';
     return request<Alarm[]>(`/alarms${qs}`);

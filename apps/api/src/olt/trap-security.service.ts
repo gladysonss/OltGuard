@@ -1,8 +1,9 @@
 /**
  * Filtra traps SNMP recebidas antes de qualquer processamento de evento.
- * Todo trap passa por aqui primeiro: origem desconhecida ou community errada
- * nunca chega ao parser (parks-trap-mapping.ts).
+ * Todo trap passa por aqui primeiro: origem fora do filtro de rede, origem
+ * desconhecida ou community errada nunca chegam ao parser (parks-trap-mapping.ts).
  */
+import { ipMatchesCidr } from './cidr.util';
 
 export interface IncomingTrap {
   sourceIp: string;
@@ -13,17 +14,11 @@ export interface IncomingTrap {
 export interface TrustedOlt {
   id: string;
   name: string;
-  /**
-   * IP de gerenciamento + IPs adicionais autorizados (OltTrustedIp) - o IP
-   * de origem visto pelo receiver e as vezes o IP publico do roteador/NAT
-   * na frente da OLT, que pode mudar sem que o endereco de gerenciamento
-   * mude, entao uma OLT pode ter mais de uma origem valida.
-   */
-  trustedIps: string[];
+  ipAddress: string;
   snmpCommunity: string;
 }
 
-export type TrapRejectionReason = 'UNKNOWN_SOURCE_IP' | 'COMMUNITY_MISMATCH';
+export type TrapRejectionReason = 'NETWORK_NOT_ALLOWED' | 'UNKNOWN_SOURCE_IP' | 'COMMUNITY_MISMATCH';
 
 export interface TrapValidationResult {
   accepted: boolean;
@@ -34,15 +29,25 @@ export interface TrapValidationResult {
 
 export class TrapSecurityService {
   /**
-   * @param trustedOlts snapshot em memória das OLTs cadastradas (ips + community).
-   * Recarregado periodicamente pelo caller a cada cadastro/edição de OLT —
-   * este service não acessa o banco diretamente.
+   * @param trustedOlts snapshot em memória das OLTs cadastradas (ip + community).
+   * @param allowedNetworks IPs/CIDRs globais autorizados a enviar traps. Vazio = sem
+   * restricao de rede (comportamento anterior, so identificacao por OLT vale).
+   * Ambos recarregados periodicamente pelo caller a cada cadastro/edição.
    */
-  constructor(private readonly trustedOlts: TrustedOlt[]) {}
+  constructor(
+    private readonly trustedOlts: TrustedOlt[],
+    private readonly allowedNetworks: string[],
+  ) {}
 
   validate(trap: IncomingTrap): TrapValidationResult {
-    const olt = this.trustedOlts.find((o) => o.trustedIps.includes(trap.sourceIp));
+    if (this.allowedNetworks.length > 0) {
+      const networkAllowed = this.allowedNetworks.some((cidr) => ipMatchesCidr(trap.sourceIp, cidr));
+      if (!networkAllowed) {
+        return { accepted: false, rejectionReason: 'NETWORK_NOT_ALLOWED' };
+      }
+    }
 
+    const olt = this.trustedOlts.find((o) => o.ipAddress === trap.sourceIp);
     if (!olt) {
       return { accepted: false, rejectionReason: 'UNKNOWN_SOURCE_IP' };
     }

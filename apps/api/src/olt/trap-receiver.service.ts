@@ -117,9 +117,11 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
         trapOid,
         rejectionReason: validation.rejectionReason,
         message:
-          validation.rejectionReason === 'UNKNOWN_SOURCE_IP'
-            ? `Origem ${sourceIp} nao corresponde a nenhuma OLT cadastrada`
-            : `Community incorreta para a OLT em ${sourceIp}`,
+          validation.rejectionReason === 'NETWORK_NOT_ALLOWED'
+            ? `Origem ${sourceIp} fora das redes/IPs autorizados`
+            : validation.rejectionReason === 'UNKNOWN_SOURCE_IP'
+              ? `Origem ${sourceIp} nao corresponde a nenhuma OLT cadastrada`
+              : `Community incorreta para a OLT em ${sourceIp}`,
         varbinds: displayVarbinds,
       });
       return;

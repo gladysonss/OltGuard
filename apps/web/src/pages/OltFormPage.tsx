@@ -32,7 +32,7 @@ export function OltFormPage() {
           ipAddress: olt.ipAddress,
           snmpCommunity: '',
           snmpPort: String(olt.snmpPort),
-          sshUsername: olt.sshUsername,
+          sshUsername: olt.sshUsername ?? '',
           sshPassword: '',
           sshPort: String(olt.sshPort),
         });
@@ -56,7 +56,7 @@ export function OltFormPage() {
           ipAddress: form.ipAddress,
           snmpCommunity: form.snmpCommunity || undefined,
           snmpPort: Number(form.snmpPort),
-          sshUsername: form.sshUsername,
+          sshUsername: form.sshUsername || undefined,
           sshPassword: form.sshPassword || undefined,
           sshPort: Number(form.sshPort),
         });
@@ -66,8 +66,8 @@ export function OltFormPage() {
           ipAddress: form.ipAddress,
           snmpCommunity: form.snmpCommunity,
           snmpPort: Number(form.snmpPort),
-          sshUsername: form.sshUsername,
-          sshPassword: form.sshPassword,
+          sshUsername: form.sshUsername || undefined,
+          sshPassword: form.sshPassword || undefined,
           sshPort: Number(form.sshPort),
         });
       }
@@ -93,7 +93,8 @@ export function OltFormPage() {
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{isEdit ? 'Editar OLT' : 'Cadastrar nova OLT'}</h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>
-            Os dados de acesso sao usados para SNMP (monitoramento) e SSH (provisionamento).
+            SNMP e obrigatorio (monitoramento). SSH e opcional por enquanto - so sera usado quando
+            o provisionamento remoto for implementado.
           </p>
         </div>
 
@@ -134,10 +135,10 @@ export function OltFormPage() {
             </div>
           </Section>
 
-          <Section title="SSH">
+          <Section title="SSH (opcional)">
             <div style={row2Style}>
               <Field label="Usuario">
-                <input value={form.sshUsername} onChange={(e) => update('sshUsername', e.target.value)} placeholder="admin" required style={inputStyle} />
+                <input value={form.sshUsername} onChange={(e) => update('sshUsername', e.target.value)} placeholder="admin" style={inputStyle} />
               </Field>
               <Field label="Porta SSH">
                 <input value={form.sshPort} onChange={(e) => update('sshPort', e.target.value)} type="number" required className="mono" style={inputStyle} />
@@ -149,7 +150,6 @@ export function OltFormPage() {
                 onChange={(e) => update('sshPassword', e.target.value)}
                 type="password"
                 placeholder={isEdit ? '••••••••' : undefined}
-                required={!isEdit}
                 style={inputStyle}
               />
             </Field>

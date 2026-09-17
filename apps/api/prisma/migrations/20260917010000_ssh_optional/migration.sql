@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Olt" ALTER COLUMN "sshUsername" DROP NOT NULL,
+ALTER COLUMN "sshPassword" DROP NOT NULL;
+

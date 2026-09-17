@@ -22,9 +22,12 @@ model Olt {
 
   snmpCommunity String
   snmpPort      Int    @default(161)
-  sshUsername   String
-  sshPassword   String
-  sshPort       Int    @default(22)
+
+  // SSH e opcional no v1 - so monitoramento via SNMP e obrigatorio.
+  // Provisionamento via SSH entra depois, quando essas credenciais existirem.
+  sshUsername String?
+  sshPassword String?
+  sshPort     Int     @default(22)
 
   // Estado do walk() de bootstrap — permite retomar de onde parou se falhar no meio.
   bootstrapStatus      OltBootstrapStatus @default(PENDING)

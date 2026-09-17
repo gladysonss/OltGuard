@@ -34,7 +34,7 @@ export interface Olt {
   name: string;
   ipAddress: string;
   snmpPort: number;
-  sshUsername: string;
+  sshUsername: string | null;
   sshPort: number;
   bootstrapStatus: OltBootstrapStatus;
   bootstrapError: string | null;
@@ -101,8 +101,8 @@ export interface CreateOltInput {
   ipAddress: string;
   snmpCommunity: string;
   snmpPort?: number;
-  sshUsername: string;
-  sshPassword: string;
+  sshUsername?: string;
+  sshPassword?: string;
   sshPort?: number;
 }
 

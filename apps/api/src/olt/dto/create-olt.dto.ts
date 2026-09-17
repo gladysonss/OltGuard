@@ -18,13 +18,15 @@ export class CreateOltDto {
   @Max(65535)
   snmpPort?: number;
 
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  sshUsername: string;
+  sshUsername?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  sshPassword: string;
+  sshPassword?: string;
 
   @IsOptional()
   @IsInt()

@@ -37,7 +37,7 @@ export class OltService {
         snmpCommunity: this.encryption.encrypt(dto.snmpCommunity),
         snmpPort: dto.snmpPort ?? 161,
         sshUsername: dto.sshUsername,
-        sshPassword: this.encryption.encrypt(dto.sshPassword),
+        sshPassword: dto.sshPassword ? this.encryption.encrypt(dto.sshPassword) : undefined,
         sshPort: dto.sshPort ?? 22,
       },
       select: OLT_SUMMARY_SELECT,

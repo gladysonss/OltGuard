@@ -1,7 +1,12 @@
 /**
  * Filtra traps SNMP recebidas antes de qualquer processamento de evento.
- * Todo trap passa por aqui primeiro: origem fora do filtro de rede, origem
- * desconhecida ou community errada nunca chegam ao parser (parks-trap-mapping.ts).
+ * Todo trap passa por aqui primeiro: origem fora do filtro de rede ou
+ * community desconhecida nunca chegam ao parser (parks-trap-mapping.ts).
+ *
+ * A OLT e identificada pela community SNMP, nao pelo IP de origem: varias
+ * OLTs podem sair atras do mesmo roteador/NAT e chegar ao servidor com o
+ * mesmo IP de origem, entao o IP nao serve para diferenciar uma da outra
+ * (so serve para o filtro de rede global, abaixo).
  */
 import { ipMatchesCidr } from './cidr.util';
 
@@ -14,11 +19,10 @@ export interface IncomingTrap {
 export interface TrustedOlt {
   id: string;
   name: string;
-  ipAddress: string;
   snmpCommunity: string;
 }
 
-export type TrapRejectionReason = 'NETWORK_NOT_ALLOWED' | 'UNKNOWN_SOURCE_IP' | 'COMMUNITY_MISMATCH';
+export type TrapRejectionReason = 'NETWORK_NOT_ALLOWED' | 'UNKNOWN_COMMUNITY';
 
 export interface TrapValidationResult {
   accepted: boolean;
@@ -29,9 +33,9 @@ export interface TrapValidationResult {
 
 export class TrapSecurityService {
   /**
-   * @param trustedOlts snapshot em memória das OLTs cadastradas (ip + community).
+   * @param trustedOlts snapshot em memória das OLTs cadastradas (community descriptografada).
    * @param allowedNetworks IPs/CIDRs globais autorizados a enviar traps. Vazio = sem
-   * restricao de rede (comportamento anterior, so identificacao por OLT vale).
+   * restricao de rede.
    * Ambos recarregados periodicamente pelo caller a cada cadastro/edição.
    */
   constructor(
@@ -47,13 +51,9 @@ export class TrapSecurityService {
       }
     }
 
-    const olt = this.trustedOlts.find((o) => o.ipAddress === trap.sourceIp);
+    const olt = this.trustedOlts.find((o) => o.snmpCommunity === trap.community);
     if (!olt) {
-      return { accepted: false, rejectionReason: 'UNKNOWN_SOURCE_IP' };
-    }
-
-    if (olt.snmpCommunity !== trap.community) {
-      return { accepted: false, rejectionReason: 'COMMUNITY_MISMATCH' };
+      return { accepted: false, rejectionReason: 'UNKNOWN_COMMUNITY' };
     }
 
     return { accepted: true, oltId: olt.id, oltName: olt.name };

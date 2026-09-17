@@ -116,7 +116,9 @@ export interface Alarm {
   raisedAt: string;
   clearedAt: string | null;
   olt: { id: string; name: string };
-  onu: { id: string; serialNumber: string } | null;
+  onu: { id: string; serialNumber: string; alias: string | null } | null;
+  /** Snapshot da ONU se ela ja foi removida (ver OnuRemoved) desde que o alarme foi levantado. */
+  removedOnu: { id: string; serialNumber: string; alias: string | null } | null;
 }
 
 export type AlarmSummary = Record<AlarmSeverity, number>;
@@ -143,7 +145,9 @@ export interface OltGuardEvent {
   severity: AlarmSeverity;
   occurredAt: string;
   olt: { id: string; name: string };
-  onu: { id: string; serialNumber: string } | null;
+  onu: { id: string; serialNumber: string; alias: string | null } | null;
+  /** Ver Alarm.removedOnu. */
+  removedOnu: { id: string; serialNumber: string; alias: string | null } | null;
 }
 
 export type TrapLogOutcome = 'ACCEPTED' | 'REJECTED' | 'UNMAPPED' | 'IGNORED';

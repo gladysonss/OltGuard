@@ -53,7 +53,12 @@ export class AlarmService {
         where,
         include: {
           olt: { select: { id: true, name: true } },
-          onu: { select: { id: true, serialNumber: true } },
+          // removedOnu cobre o caso da ONU ja ter sido removida (ver
+          // OnuRemoved) depois que o alarme foi levantado - sem isso a
+          // coluna de identificacao do cliente ficaria vazia pra todo
+          // alarme historico de uma posicao que ja nao existe mais.
+          onu: { select: { id: true, serialNumber: true, alias: true } },
+          removedOnu: { select: { id: true, serialNumber: true, alias: true } },
         },
         // Historico (CLEARED) ordena por quando foi resolvido; Ativos e Todos
         // por quando foi levantado.

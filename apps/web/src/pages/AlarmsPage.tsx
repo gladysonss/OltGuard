@@ -49,6 +49,17 @@ function oltDotColor(oltWorstSeverity: OltWorstSeverity, oltId: string): string 
   return worst ? `var(${SEVERITY_COLOR_VAR[worst]})` : 'var(--ok)';
 }
 
+/**
+ * Serial/alias da ONU de um Alarm/Event, pra identificar o cliente na
+ * tela - prefere a Onu ativa (onu), caindo pra OnuRemoved (removedOnu)
+ * quando ela ja saiu da OLT desde que o alarme/evento foi registrado (ver
+ * "Remocao de ONU" no CLAUDE.md).
+ */
+type OnuIdentity = { id: string; serialNumber: string; alias: string | null };
+function onuIdentity(item: { onu: OnuIdentity | null; removedOnu: OnuIdentity | null }) {
+  return item.onu ?? item.removedOnu;
+}
+
 /** Mensagem quando o walk de GPONs ainda nao achou nada pra essa OLT - explica o motivo em vez de so "vazio". */
 function gponEmptyMessage(olt: Olt): string {
   if (olt.bootstrapStatus === 'PENDING') return 'Ainda nao sincronizada (ver tela de OLTs).';
@@ -550,7 +561,7 @@ export function AlarmsPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               <div style={eventRowGridStyle('head')}>
-                <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Alarme</span><span>Levantado / Resolvido</span>
+                <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Cliente (ONU)</span><span>Alarme</span><span>Levantado / Resolvido</span>
               </div>
 
               {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
@@ -559,7 +570,9 @@ export function AlarmsPage() {
                 <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhum alarme encontrado.</div>
               )}
 
-              {alarms.map((alarm) => (
+              {alarms.map((alarm) => {
+                const onu = onuIdentity(alarm);
+                return (
                 <div key={alarm.id} style={eventRowGridStyle('row')}>
                   <span
                     style={{
@@ -576,8 +589,20 @@ export function AlarmsPage() {
                   <span className="mono" style={{ color: 'var(--text-muted)' }}>
                     {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
                   </span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
+                    {onu ? (
+                      <>
+                        <span style={{ color: onu.alias ? 'var(--text)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {onu.alias ?? '(sem alias)'}
+                        </span>
+                        <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{onu.serialNumber}</span>
+                      </>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>{alarm.serialNumber ?? '-'}</span>
+                    )}
+                  </span>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span>{alarm.description ?? alarm.alarmName}{alarm.serialNumber ? ` · Serial ${alarm.serialNumber}` : ''}</span>
+                    <span>{alarm.description ?? alarm.alarmName}</span>
                     <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{alarm.alarmName}</span>
                   </span>
                   <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -587,7 +612,8 @@ export function AlarmsPage() {
                     </span>
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <PaginationBar page={page} pageSize={pageSize} total={alarmsTotal} onPageChange={setPage} onPageSizeChange={handlePageSizeChange} />
           </div>
@@ -597,7 +623,7 @@ export function AlarmsPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               <div style={eventLogRowGridStyle('head')}>
-                <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Evento</span><span>Ocorrido em</span>
+                <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Cliente (ONU)</span><span>Evento</span><span>Ocorrido em</span>
               </div>
 
               {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
@@ -606,7 +632,9 @@ export function AlarmsPage() {
                 <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhum evento registrado ainda.</div>
               )}
 
-              {events.map((ev) => (
+              {events.map((ev) => {
+                const onu = onuIdentity(ev);
+                return (
                 <div key={ev.id} style={eventLogRowGridStyle('row')}>
                   <span
                     style={{
@@ -623,6 +651,18 @@ export function AlarmsPage() {
                   <span className="mono" style={{ color: 'var(--text-muted)' }}>
                     {ev.slotNo}{ev.portNo ? `/${ev.portNo}` : ''}{ev.logicalPortNo ? `/${ev.logicalPortNo}` : ''}
                   </span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
+                    {onu ? (
+                      <>
+                        <span style={{ color: onu.alias ? 'var(--text)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {onu.alias ?? '(sem alias)'}
+                        </span>
+                        <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{onu.serialNumber}</span>
+                      </>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>-</span>
+                    )}
+                  </span>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <span>{ev.description ?? ev.eventName}</span>
                     <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{ev.eventName}</span>
@@ -631,7 +671,8 @@ export function AlarmsPage() {
                     {new Date(ev.occurredAt).toLocaleString('pt-BR')}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <PaginationBar page={page} pageSize={pageSize} total={eventsTotal} onPageChange={setPage} onPageSizeChange={handlePageSizeChange} />
           </div>
@@ -919,7 +960,7 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '110px 1fr 0.7fr 2.4fr 1.2fr',
+    gridTemplateColumns: '110px 1fr 0.7fr 1.3fr 2.1fr 1.2fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',
@@ -934,7 +975,7 @@ function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
 function eventLogRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '110px 1fr 0.7fr 2.4fr 1.1fr',
+    gridTemplateColumns: '110px 1fr 0.7fr 1.3fr 2.1fr 1.1fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',

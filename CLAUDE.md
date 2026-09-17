@@ -255,6 +255,14 @@ filtro mais especifico de todos - quando presente, substitui
 `oltPort`/`oltId`/`slotNo`/`portNo` por completo (uma ONU so pertence a uma
 posicao).
 
+`GET /alarms` e `GET /events` tambem incluem `onu`/`removedOnu`
+(`{id, serialNumber, alias}`) na resposta - usado pela coluna "Cliente
+(ONU)" nas duas telas (`onuIdentity()` em `AlarmsPage.tsx`, que prefere
+`onu` e cai pra `removedOnu` quando a ONU ja foi removida desde que o
+alarme/evento foi registrado). Sem o fallback pra `removedOnu` a coluna
+ficaria vazia pra todo alarme historico de uma posicao que ja nao existe
+mais na OLT.
+
 ## Modelo de dados (destaques)
 
 - **Alarm**: um por ocorrencia (raised → cleared). Indice unico PARCIAL

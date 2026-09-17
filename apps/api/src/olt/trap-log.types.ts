@@ -1,6 +1,7 @@
 export type TrapLogOutcome = 'ACCEPTED' | 'REJECTED' | 'UNMAPPED' | 'IGNORED';
 
 export interface TrapLogEntry {
+  seq: number;
   timestamp: string;
   sourceIp: string;
   community?: string;

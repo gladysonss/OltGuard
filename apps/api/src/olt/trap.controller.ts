@@ -2,6 +2,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   MessageEvent,
@@ -40,16 +41,26 @@ export class TrapController {
   /**
    * EventSource nao consegue mandar header Authorization, entao esse endpoint
    * e publico na rota e autentica manualmente via query param `token`.
+   *
+   * O EventSource do navegador reconecta sozinho quando a conexao cai
+   * (timeout de proxy, rede instavel etc.) e manda de volta o `id` do
+   * ultimo evento recebido no header Last-Event-ID. Usamos isso pra so
+   * reenviar o historico a partir dali, em vez do buffer inteiro de novo -
+   * sem isso cada reconexao duplicava tudo que ja tinha aparecido na tela.
    */
   @Public()
   @Sse('stream')
-  async stream(@Query('token') token: string): Promise<Observable<MessageEvent>> {
+  async stream(
+    @Query('token') token: string,
+    @Headers('last-event-id') lastEventId?: string,
+  ): Promise<Observable<MessageEvent>> {
     await this.authenticateAdmin(token);
 
-    const history$ = from(this.trapReceiver.getRecentLog());
+    const lastSeq = lastEventId ? Number(lastEventId) : undefined;
+    const history$ = from(this.trapReceiver.getLogSince(lastSeq));
     const live$ = this.trapReceiver.log$;
 
-    return concat(history$, live$).pipe(map((entry) => ({ data: entry })));
+    return concat(history$, live$).pipe(map((entry) => ({ data: entry, id: String(entry.seq) })));
   }
 
   private async authenticateAdmin(token: string) {

@@ -63,7 +63,10 @@ export function TrapTerminalPage() {
     source.onmessage = (event) => {
       if (pausedRef.current) return;
       const entry: TrapLogEntry = JSON.parse(event.data);
-      setEntries((prev) => [...prev.slice(-499), entry]);
+      setEntries((prev) => {
+        if (prev.some((e) => e.seq === entry.seq)) return prev;
+        return [...prev.slice(-499), entry];
+      });
     };
 
     return () => source.close();
@@ -134,10 +137,10 @@ export function TrapTerminalPage() {
             Aguardando traps... configure a OLT para enviar para este servidor na porta configurada.
           </div>
         )}
-        {entries.map((entry, i) => {
+        {entries.map((entry) => {
           const raw = formatRaw(entry);
           return (
-            <div key={i} style={{ marginBottom: 4 }}>
+            <div key={entry.seq} style={{ marginBottom: 4 }}>
               <div style={{ display: 'flex', gap: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                 <span
                   style={{

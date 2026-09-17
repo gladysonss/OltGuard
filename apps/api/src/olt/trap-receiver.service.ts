@@ -27,6 +27,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
 
   private readonly logSubject = new Subject<TrapLogEntry>();
   private readonly logBuffer: TrapLogEntry[] = [];
+  private seqCounter = 0;
   readonly log$ = this.logSubject.asObservable();
 
   constructor(
@@ -54,16 +55,31 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     return [...this.logBuffer];
   }
 
+  /**
+   * Usado no reconecte do SSE (Last-Event-ID) para so reenviar o que o
+   * cliente ainda nao viu, em vez do buffer inteiro - o EventSource do
+   * navegador reconecta sozinho quando a conexao cai (timeout de proxy,
+   * rede instavel etc.), e sem isso cada reconexao duplicava o historico
+   * inteiro na tela.
+   */
+  getLogSince(seq: number | undefined): TrapLogEntry[] {
+    if (seq === undefined) {
+      return this.getRecentLog();
+    }
+    return this.logBuffer.filter((entry) => entry.seq > seq);
+  }
+
   clearLog() {
     this.logBuffer.length = 0;
   }
 
-  private emit(entry: TrapLogEntry) {
-    this.logBuffer.push(entry);
+  private emit(entry: Omit<TrapLogEntry, 'seq'>) {
+    const withSeq: TrapLogEntry = { ...entry, seq: ++this.seqCounter };
+    this.logBuffer.push(withSeq);
     if (this.logBuffer.length > LOG_BUFFER_SIZE) {
       this.logBuffer.shift();
     }
-    this.logSubject.next(entry);
+    this.logSubject.next(withSeq);
   }
 
   private handleNotification(error: Error | null, notification: any) {

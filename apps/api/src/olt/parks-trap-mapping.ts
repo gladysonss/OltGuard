@@ -54,6 +54,7 @@ export enum OltInternalEvent {
   OnuSignalDegrade = 'onu.signal.degrade',
   OnuPowerLoss = 'onu.power_loss',
   OnuStatusChanged = 'onu.status_changed',
+  OnuLanLoss = 'onu.lan.loss',
   PonLinkDown = 'pon_link.down',
 }
 
@@ -140,6 +141,13 @@ export const PARKS_TRAP_MAP: Record<string, ParksTrapDefinition> = {
     oid: `${TRAP_GROUP_OID.oltOnuAlarmIndication}.21`,
     severity: 'major',
     event: OltInternalEvent.OnuPowerLoss,
+    isAlarm: true,
+  },
+  [`${TRAP_GROUP_OID.oltOnuAlarmIndication}.23`]: {
+    mibName: 'lANLOS',
+    oid: `${TRAP_GROUP_OID.oltOnuAlarmIndication}.23`,
+    severity: 'major',
+    event: OltInternalEvent.OnuLanLoss,
     isAlarm: true,
   },
   [`${TRAP_GROUP_OID.oltSystemAvcIndication}.1`]: {

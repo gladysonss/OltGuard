@@ -4,6 +4,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { QueryAlarmsDto } from './dto/query-alarms.dto';
 import { ConfirmAlarmDto } from './dto/confirm-alarm.dto';
 
+const DEFAULT_PAGE_SIZE = 50;
+
+const SEVERITY_RANK: Record<AlarmSeverity, number> = {
+  CLEAR: 0,
+  INFO: 1,
+  WARNING: 2,
+  MINOR: 3,
+  MAJOR: 4,
+  CRITICAL: 5,
+};
+
 @Injectable()
 export class AlarmService {
   constructor(private readonly prisma: PrismaService) {}
@@ -11,36 +22,45 @@ export class AlarmService {
   async findAll(query: QueryAlarmsDto) {
     // condition omitido = Todos (ativos + historico). ACTIVE ou CLEARED filtra so um dos dois.
     const condition = query.condition;
-    return this.prisma.alarm.findMany({
-      where: {
-        oltId: query.oltId,
-        slotNo: query.slotNo,
-        portNo: query.portNo,
-        logicalPortNo: query.logicalPortNo,
-        severity: query.severity?.length ? { in: query.severity } : undefined,
-        condition,
-        raisedAt:
-          query.from || query.to
-            ? { gte: query.from ? new Date(query.from) : undefined, lte: query.to ? new Date(query.to) : undefined }
-            : undefined,
-      },
-      include: {
-        olt: { select: { id: true, name: true } },
-        onu: { select: { id: true, serialNumber: true } },
-      },
-      // Historico (CLEARED) ordena por quando foi resolvido; Ativos e Todos por
-      // quando foi levantado. CLEARED e Todos sao limitados pra nao devolver a
-      // tabela inteira conforme ela cresce.
-      orderBy: condition === AlarmCondition.CLEARED ? { clearedAt: 'desc' } : { raisedAt: 'desc' },
-      take: condition === AlarmCondition.ACTIVE ? undefined : 200,
-    });
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
+    const where = {
+      oltId: query.oltId?.length ? { in: query.oltId } : undefined,
+      slotNo: query.slotNo,
+      portNo: query.portNo,
+      logicalPortNo: query.logicalPortNo,
+      severity: query.severity?.length ? { in: query.severity } : undefined,
+      condition,
+      raisedAt:
+        query.from || query.to
+          ? { gte: query.from ? new Date(query.from) : undefined, lte: query.to ? new Date(query.to) : undefined }
+          : undefined,
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.alarm.findMany({
+        where,
+        include: {
+          olt: { select: { id: true, name: true } },
+          onu: { select: { id: true, serialNumber: true } },
+        },
+        // Historico (CLEARED) ordena por quando foi resolvido; Ativos e Todos
+        // por quando foi levantado.
+        orderBy: condition === AlarmCondition.CLEARED ? { clearedAt: 'desc' } : { raisedAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.alarm.count({ where }),
+    ]);
+
+    return { data, total, page, pageSize };
   }
 
   /** Contagem de alarmes ativos por severidade - alimenta o grafico de barras. */
-  async summary(oltId?: string) {
+  async summary(oltIds?: string[]) {
     const groups = await this.prisma.alarm.groupBy({
       by: ['severity'],
-      where: { condition: AlarmCondition.ACTIVE, oltId },
+      where: { condition: AlarmCondition.ACTIVE, oltId: oltIds?.length ? { in: oltIds } : undefined },
       _count: { _all: true },
     });
 
@@ -52,6 +72,29 @@ export class AlarmService {
       counts[group.severity] = group._count._all;
     }
     return counts;
+  }
+
+  /**
+   * Pior severidade ativa por OLT - usado pra colorir o indicador de cada OLT
+   * na arvore da tela de Alarmes. Precisa ser independente de paginacao/
+   * filtros da lista principal, senao uma OLT sem alarme na pagina atual
+   * apareceria como "sem problema" mesmo tendo alarmes criticos ativos.
+   */
+  async summaryByOlt(): Promise<Record<string, AlarmSeverity>> {
+    const groups = await this.prisma.alarm.groupBy({
+      by: ['oltId', 'severity'],
+      where: { condition: AlarmCondition.ACTIVE },
+      _count: { _all: true },
+    });
+
+    const worst: Record<string, AlarmSeverity> = {};
+    for (const group of groups) {
+      const current = worst[group.oltId];
+      if (!current || SEVERITY_RANK[group.severity] > SEVERITY_RANK[current]) {
+        worst[group.oltId] = group.severity;
+      }
+    }
+    return worst;
   }
 
   private async findOneActive(id: string) {

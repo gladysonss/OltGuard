@@ -21,23 +21,27 @@ export const TRAP_GROUP_OID = {
  * OIDs dos objetos carregados como varbinds em cada trap (indicationObjects,
  * ver GPON-OLT-FAULT.txt secao 3.1.1). Usados pelo trap receiver para extrair
  * slot/porta/ONU/severidade/condicao independente da ordem dos varbinds.
+ *
+ * Sao objetos escalares (nao de tabela), entao o OID que chega no varbind
+ * sempre tem o sufixo de instancia ".0" - sem ele o lookup no Map de varbinds
+ * nunca bate e o valor vem sempre undefined.
  */
 export const INDICATION_OBJECT_OID = {
-  oltAlarmSeqNo: `${INDICATION_OBJECTS}.1`,
-  oltAlarmOccurrenceTime: `${INDICATION_OBJECTS}.2`,
-  oltAlarmSeverity: `${INDICATION_OBJECTS}.3`,
-  oltAlarmCondition: `${INDICATION_OBJECTS}.4`,
-  oltAlarmSlotNo: `${INDICATION_OBJECTS}.5`,
-  oltAlarmPortNo: `${INDICATION_OBJECTS}.6`,
-  oltAlarmLogicalPortNo: `${INDICATION_OBJECTS}.7`,
-  oltAlarmPhysicalPortNo: `${INDICATION_OBJECTS}.8`,
-  oltEventSeqNo: `${INDICATION_OBJECTS}.9`,
-  oltEventOccurrenceTime: `${INDICATION_OBJECTS}.10`,
-  oltEventSlotNo: `${INDICATION_OBJECTS}.11`,
-  oltEventPortNo: `${INDICATION_OBJECTS}.12`,
-  oltEventLogicalPortNo: `${INDICATION_OBJECTS}.13`,
-  oltEventPhysicalPortNo: `${INDICATION_OBJECTS}.14`,
-  oltOnuSerialNumber: `${INDICATION_OBJECTS}.17`,
+  oltAlarmSeqNo: `${INDICATION_OBJECTS}.1.0`,
+  oltAlarmOccurrenceTime: `${INDICATION_OBJECTS}.2.0`,
+  oltAlarmSeverity: `${INDICATION_OBJECTS}.3.0`,
+  oltAlarmCondition: `${INDICATION_OBJECTS}.4.0`,
+  oltAlarmSlotNo: `${INDICATION_OBJECTS}.5.0`,
+  oltAlarmPortNo: `${INDICATION_OBJECTS}.6.0`,
+  oltAlarmLogicalPortNo: `${INDICATION_OBJECTS}.7.0`,
+  oltAlarmPhysicalPortNo: `${INDICATION_OBJECTS}.8.0`,
+  oltEventSeqNo: `${INDICATION_OBJECTS}.9.0`,
+  oltEventOccurrenceTime: `${INDICATION_OBJECTS}.10.0`,
+  oltEventSlotNo: `${INDICATION_OBJECTS}.11.0`,
+  oltEventPortNo: `${INDICATION_OBJECTS}.12.0`,
+  oltEventLogicalPortNo: `${INDICATION_OBJECTS}.13.0`,
+  oltEventPhysicalPortNo: `${INDICATION_OBJECTS}.14.0`,
+  oltOnuSerialNumber: `${INDICATION_OBJECTS}.17.0`,
 } as const;
 
 export enum OltInternalEvent {
@@ -137,6 +141,13 @@ export const PARKS_TRAP_MAP: Record<string, ParksTrapDefinition> = {
     severity: 'major',
     event: OltInternalEvent.OnuPowerLoss,
     isAlarm: true,
+  },
+  [`${TRAP_GROUP_OID.oltSystemAvcIndication}.1`]: {
+    mibName: 'pRIMARYSTATUS',
+    oid: `${TRAP_GROUP_OID.oltSystemAvcIndication}.1`,
+    severity: 'info',
+    event: OltInternalEvent.OnuStatusChanged,
+    isAlarm: false,
   },
   [`${TRAP_GROUP_OID.oltSystemAvcIndication}.3`]: {
     mibName: 'oNUOPERSTATUS',

@@ -4,6 +4,7 @@ import { Subject } from 'rxjs';
 import { OltRegistryService } from './olt-registry.service';
 import { AlarmIngestService, type ParsedTrapAlarm } from '../alarm/alarm-ingest.service';
 import { INDICATION_OBJECT_OID, PARKS_TRAP_MAP } from './parks-trap-mapping';
+import { formatOnuSerialNumber } from './onu-serial.util';
 import type { TrapLogEntry } from './trap-log.types';
 
 // net-snmp nao publica types; ver node_modules/net-snmp/README.md para o formato
@@ -186,7 +187,8 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     const logicalPortNo =
       getInt(INDICATION_OBJECT_OID.oltAlarmLogicalPortNo) ??
       getInt(INDICATION_OBJECT_OID.oltEventLogicalPortNo);
-    const serialNumber = getString(INDICATION_OBJECT_OID.oltOnuSerialNumber);
+    const serialNumberRaw = getString(INDICATION_OBJECT_OID.oltOnuSerialNumber);
+    const serialNumber = serialNumberRaw ? formatOnuSerialNumber(serialNumberRaw) : undefined;
     const conditionRaw = getInt(INDICATION_OBJECT_OID.oltAlarmCondition);
     const condition: 'SET' | 'CLEAR' | undefined = definition.isAlarm
       ? conditionRaw === 0

@@ -248,10 +248,12 @@ export function AlarmsPage() {
           borderRight: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'auto',
+          minHeight: 0,
+          overflow: 'hidden',
           background: 'var(--surface)',
         }}
       >
+        <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         <div style={sectionLabelStyle}>OLTs</div>
         <div
           onClick={() => setSelectedOltIds(new Set())}
@@ -379,31 +381,34 @@ export function AlarmsPage() {
             Nenhuma OLT cadastrada ainda.
           </div>
         )}
-
-        <div style={{ ...sectionLabelStyle, marginTop: 6, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-          Alarmes
         </div>
-        <div style={{ padding: '4px 12px 16px', display: 'flex', gap: 10 }}>
-          {SEVERITY_ORDER.map((sev) => {
-            const count = summary?.[sev] ?? 0;
-            const heightPct = Math.max(6, (count / maxCount) * 100);
-            return (
-              <div key={sev} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
-                <div style={{ width: '100%', height: 90, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                  <div
-                    style={{
-                      width: 22,
-                      borderRadius: '4px 4px 0 0',
-                      height: `${heightPct}%`,
-                      background: `var(${SEVERITY_COLOR_VAR[sev]})`,
-                    }}
-                  />
+
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--border)' }}>
+          <div style={{ ...sectionLabelStyle, paddingTop: 14 }}>
+            Alarmes
+          </div>
+          <div style={{ padding: '4px 12px 16px', display: 'flex', gap: 10 }}>
+            {SEVERITY_ORDER.map((sev) => {
+              const count = summary?.[sev] ?? 0;
+              const heightPct = Math.max(6, (count / maxCount) * 100);
+              return (
+                <div key={sev} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <div style={{ width: '100%', height: 90, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                    <div
+                      style={{
+                        width: 22,
+                        borderRadius: '4px 4px 0 0',
+                        height: `${heightPct}%`,
+                        background: `var(${SEVERITY_COLOR_VAR[sev]})`,
+                      }}
+                    />
+                  </div>
+                  <span className="mono" style={{ fontSize: 12 }}>{count}</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{SEVERITY_LABEL[sev]}</span>
                 </div>
-                <span className="mono" style={{ fontSize: 12 }}>{count}</span>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{SEVERITY_LABEL[sev]}</span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </aside>
 

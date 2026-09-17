@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption.service';
 import { OltRegistryService } from './olt-registry.service';
+import { OltBootstrapService } from './olt-bootstrap.service';
 import { CreateOltDto } from './dto/create-olt.dto';
 import { UpdateOltDto } from './dto/update-olt.dto';
 
@@ -30,6 +31,7 @@ export class OltService {
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
     private readonly registry: OltRegistryService,
+    private readonly bootstrap: OltBootstrapService,
   ) {}
 
   async create(dto: CreateOltDto) {
@@ -48,6 +50,10 @@ export class OltService {
       select: OLT_SUMMARY_SELECT,
     });
     await this.registry.refresh();
+    // Fire-and-forget: walkGpons nunca lanca (erro vira bootstrapStatus
+    // FAILED), entao nao precisa bloquear a resposta do cadastro nem tratar
+    // rejeicao aqui.
+    void this.bootstrap.walkGpons(olt.id);
     return olt;
   }
 
@@ -94,5 +100,10 @@ export class OltService {
     await this.findOne(id);
     await this.prisma.olt.delete({ where: { id } });
     await this.registry.refresh();
+  }
+
+  async listGponInterfaces(oltId: string) {
+    await this.findOne(oltId);
+    return this.prisma.gponInterface.findMany({ where: { oltId }, orderBy: { ifIndex: 'asc' } });
   }
 }

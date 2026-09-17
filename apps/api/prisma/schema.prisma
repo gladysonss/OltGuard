@@ -76,6 +76,27 @@ model Olt {
   provisioningJobs ProvisioningJob[]
   alarms           Alarm[]
   events           Event[]
+  gponInterfaces   GponInterface[]
+}
+
+/// Interface GPON descoberta via SNMP walk em ifName (IF-MIB::ifXTable, OID
+/// 1.3.6.1.2.1.31.1.1.1.1) - primeiro passo do bootstrap da OLT (ver
+/// OltBootstrapService), disparado automaticamente ao cadastrar a OLT.
+/// So guarda as interfaces cujo nome comeca com "gpon" (convencao Parks pra
+/// porta PON, ex: "gpon0/1") - as demais (uplink, management etc) sao
+/// ignoradas. Recriada do zero a cada walk (delete + insert), nao ha merge
+/// incremental ainda.
+model GponInterface {
+  id    String @id @default(uuid())
+  oltId String
+  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
+
+  ifIndex Int
+  ifName  String
+
+  createdAt DateTime @default(now())
+
+  @@unique([oltId, ifIndex])
 }
 
 /// Filtro de rede global (nao por OLT): IPs ou faixas CIDR autorizados a

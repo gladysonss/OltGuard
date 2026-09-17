@@ -63,6 +63,33 @@ codigo hoje (nenhum `onu.create` no projeto), entao esse vinculo relacional
 sempre resolve `null` na pratica. `AlarmsPage.tsx` mostra o serial na
 descricao do alarme quando presente.
 
+## Bootstrap da OLT (walk SNMP)
+
+`Olt` tem um ciclo de bootstrap proprio, separado do pipeline de traps
+acima: `bootstrapStatus` (`PENDING → WALKING → ACTIVE`/`FAILED`),
+`bootstrapLastOid`, `bootstrapStartedAt`/`CompletedAt`/`Error`. Disparado
+fire-and-forget (`void this.bootstrap.walkGpons(olt.id)`, nunca `await`ado)
+por `OltService.create()` assim que a OLT e cadastrada - o cadastro nao
+espera o walk terminar.
+
+`OltBootstrapService.walkGpons()` (passo 1 do bootstrap, mais passos vem
+depois - mapear slot/porta de cada GPON, andar pelas ONUs de cada uma):
+anda `ifName` (IF-MIB::ifXTable, OID `1.3.6.1.2.1.31.1.1.1.1` - retorna o
+nome de toda interface da OLT, indexado por `ifIndex`) via
+`walkSubtree()`/`createSnmpSession()` (`snmp-client.util.ts`, wrapper fino
+sobre `net-snmp` `session.subtree()`, SNMPv2c so) e filtra so os nomes que
+comecam com `gpon` (case-insensitive - convencao Parks pra porta PON, ex:
+`gpon0/1`; outras interfaces como uplink/mgmt sao descartadas). O resultado
+substitui (delete + insert, sem merge incremental ainda) as linhas de
+`GponInterface` (`oltId`, `ifIndex`, `ifName`) daquela OLT.
+
+**Nunca lanca**: qualquer erro (timeout, community errada, etc) vira
+`bootstrapStatus: FAILED` + `bootstrapError` com a mensagem, nunca uma
+excecao pro caller - e assim que pode ser fire-and-forget com seguranca.
+`GET /olts/:id/gpon-interfaces` expõe o resultado. Testado com um agente
+SNMP mock (`net-snmp` `createAgent`, sem uso em producao) simulando
+`ifXTable` - nao ha script de teste no repo, foi so verificacao manual.
+
 ## Modelo de dados (destaques)
 
 - **Alarm**: um por ocorrencia (raised → cleared). Indice unico PARCIAL

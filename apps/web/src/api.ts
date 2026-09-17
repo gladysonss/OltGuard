@@ -86,6 +86,14 @@ export interface Alarm {
 }
 
 export type AlarmSummary = Record<AlarmSeverity, number>;
+export type OltWorstSeverity = Record<string, AlarmSeverity>;
+
+export interface Paginated<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
 
 export interface OltGuardEvent {
   id: string;
@@ -226,7 +234,7 @@ export const api = {
   removeCity: (id: string) => request<void>(`/cities/${id}`, { method: 'DELETE' }),
   clearTraps: () => request<void>('/traps/recent', { method: 'DELETE' }),
   listAlarms: (params?: {
-    oltId?: string;
+    oltId?: string[];
     condition?: AlarmCondition;
     severity?: AlarmSeverity[];
     slotNo?: number;
@@ -234,9 +242,11 @@ export const api = {
     logicalPortNo?: number;
     from?: string;
     to?: string;
+    page?: number;
+    pageSize?: number;
   }) => {
     const search = new URLSearchParams();
-    if (params?.oltId) search.set('oltId', params.oltId);
+    if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
     if (params?.condition) search.set('condition', params.condition);
     if (params?.severity?.length) search.set('severity', params.severity.join(','));
     if (params?.slotNo) search.set('slotNo', String(params.slotNo));
@@ -244,20 +254,27 @@ export const api = {
     if (params?.logicalPortNo) search.set('logicalPortNo', String(params.logicalPortNo));
     if (params?.from) search.set('from', params.from);
     if (params?.to) search.set('to', params.to);
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
     const qs = search.toString();
-    return request<Alarm[]>(`/alarms${qs ? `?${qs}` : ''}`);
+    return request<Paginated<Alarm>>(`/alarms${qs ? `?${qs}` : ''}`);
   },
-  alarmSummary: (oltId?: string) => {
-    const qs = oltId ? `?oltId=${encodeURIComponent(oltId)}` : '';
+  alarmSummary: (oltId?: string[]) => {
+    const qs = oltId?.length ? `?oltId=${encodeURIComponent(oltId.join(','))}` : '';
     return request<AlarmSummary>(`/alarms/summary${qs}`);
   },
+  alarmSummaryByOlt: () => request<OltWorstSeverity>('/alarms/summary-by-olt'),
   confirmAlarm: (id: string) => request<Alarm>(`/alarms/${id}/confirm`, { method: 'PATCH', body: '{}' }),
   clearAlarm: (id: string) => request<Alarm>(`/alarms/${id}/clear`, { method: 'PATCH' }),
   confirmAndClearAlarm: (id: string) =>
     request<Alarm>(`/alarms/${id}/confirm-and-clear`, { method: 'PATCH', body: '{}' }),
-  listEvents: (params?: { oltId?: string }) => {
-    const qs = params?.oltId ? `?oltId=${encodeURIComponent(params.oltId)}` : '';
-    return request<OltGuardEvent[]>(`/events${qs}`);
+  listEvents: (params?: { oltId?: string[]; page?: number; pageSize?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    const qs = search.toString();
+    return request<Paginated<OltGuardEvent>>(`/events${qs ? `?${qs}` : ''}`);
   },
 };
 

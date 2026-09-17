@@ -14,7 +14,12 @@ export class AlarmController {
 
   @Get('summary')
   summary(@Query('oltId') oltId?: string) {
-    return this.alarmService.summary(oltId);
+    return this.alarmService.summary(oltId?.split(','));
+  }
+
+  @Get('summary-by-olt')
+  summaryByOlt() {
+    return this.alarmService.summaryByOlt();
   }
 
   @Patch(':id/confirm')

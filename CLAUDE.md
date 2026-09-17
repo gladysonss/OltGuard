@@ -87,7 +87,25 @@ descricao do alarme quando presente.
   o cliente precisa trocar a cidade das OLTs antes.
 - A arvore de OLTs na tela de Alarmes (`AlarmsPage.tsx`) agrupa por
   `city.name` (ou "Sem cidade"), mostrando `manufacturer` como subtitulo de
-  cada OLT.
+  cada OLT. Cada grupo pode ser minimizado (estado local, nao persiste) e
+  tem checkbox proprio (selecao multipla de OLTs, com estado indeterminado
+  quando so parte das OLTs da cidade esta selecionada) - filtra `Alarm`/
+  `Event` por varias OLTs ao mesmo tempo, nao so uma.
+
+## Paginacao e filtro por OLT (alarmes/eventos)
+
+`GET /alarms` e `GET /events` sao paginados (`page`/`pageSize`, resposta
+`{ data, total, page, pageSize }`) - `pageSize` vai ate 500
+(`QueryAlarmsDto`/`QueryEventsDto`). O filtro de OLT aceita uma ou varias
+(`?oltId=abc` ou `?oltId=abc,def`, mesma convencao de `?severity=A,B`).
+
+O indicador de severidade de cada OLT na arvore (`AlarmsPage.tsx`) **nao**
+vem da lista paginada/filtrada de alarmes - viria errado assim que a
+paginacao ou a selecao de OLT excluisse o alarme mais grave de uma OLT da
+pagina atual. Vem de `GET /alarms/summary-by-olt`
+(`AlarmService.summaryByOlt()`), que agrupa por `oltId` sem filtro nenhum
+(sempre `condition: ACTIVE`, todas as OLTs) e devolve so a pior severidade
+de cada uma.
 
 ## Frontend
 

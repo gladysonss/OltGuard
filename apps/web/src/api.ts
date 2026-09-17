@@ -64,6 +64,32 @@ export interface GponInterface {
   createdAt: string;
 }
 
+export const ONU_STATUSES = [
+  'INVALID',
+  'INACTIVE',
+  'ACTIVATE_PENDING',
+  'ACTIVE',
+  'DEACTIVATE_PENDING',
+  'DISABLE_PENDING',
+  'DISABLE',
+] as const;
+export type OnuStatus = (typeof ONU_STATUSES)[number];
+
+export interface Onu {
+  id: string;
+  oltId: string;
+  serialNumber: string;
+  alias: string | null;
+  slotNo: number;
+  portNo: number;
+  logicalPortNo: number;
+  status: OnuStatus;
+  lastSeenAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  olt: { id: string; name: string };
+}
+
 export interface AllowedNetwork {
   id: string;
   cidr: string;
@@ -291,6 +317,16 @@ export const api = {
     if (params?.pageSize) search.set('pageSize', String(params.pageSize));
     const qs = search.toString();
     return request<Paginated<OltGuardEvent>>(`/events${qs ? `?${qs}` : ''}`);
+  },
+  listOnus: (params?: { oltId?: string[]; oltPort?: string[]; status?: OnuStatus; page?: number; pageSize?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
+    if (params?.oltPort?.length) search.set('oltPort', params.oltPort.join(','));
+    if (params?.status) search.set('status', params.status);
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    const qs = search.toString();
+    return request<Paginated<Onu>>(`/onus${qs ? `?${qs}` : ''}`);
   },
 };
 

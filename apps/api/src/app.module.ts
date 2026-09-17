@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { OltModule } from './olt/olt.module';
 import { AlarmModule } from './alarm/alarm.module';
 import { EventModule } from './event/event.module';
+import { OnuModule } from './onu/onu.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -20,6 +21,7 @@ import { UserModule } from './user/user.module';
     OltModule,
     AlarmModule,
     EventModule,
+    OnuModule,
     UserModule,
   ],
   controllers: [AppController],

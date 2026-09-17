@@ -136,13 +136,13 @@ texto, sem como saber slot/porta). A chave de selecao e
 
 Quando ha alguma GPON selecionada, ela **substitui** a selecao de OLT
 inteira no filtro (mais especifica) - o front manda `oltPort` em vez de
-`oltId` pra `/alarms`, `/alarms/summary` e `/events`. No backend,
+`oltId` pra `/alarms`, `/alarms/summary`, `/events` e `/onus`. No backend,
 `parseOltPortKeys()` (`apps/api/src/common/olt-port.util.ts`) decodifica
 cada chave `"oltId:slotNo:portNo"` e monta um `OR` de `{oltId, slotNo,
 portNo}` no `where` do Prisma (`AlarmService.findAll`/`summary`,
-`EventService.findAll`) - e como da pra combinar GPONs de OLTs e slots
-diferentes numa unica selecao, ao contrario de um filtro `slotNo`/`portNo`
-de valor unico.
+`EventService.findAll`, `OnuService.findAll`) - e como da pra combinar
+GPONs de OLTs e slots diferentes numa unica selecao, ao contrario de um
+filtro `slotNo`/`portNo` de valor unico.
 
 ## Modelo de dados (destaques)
 
@@ -173,12 +173,17 @@ de valor unico.
   quando so parte das OLTs da cidade esta selecionada) - filtra `Alarm`/
   `Event` por varias OLTs ao mesmo tempo, nao so uma.
 
-## Paginacao e filtro por OLT (alarmes/eventos)
+## Paginacao e filtro por OLT (alarmes/eventos/ONUs)
 
-`GET /alarms` e `GET /events` sao paginados (`page`/`pageSize`, resposta
-`{ data, total, page, pageSize }`) - `pageSize` vai ate 500
-(`QueryAlarmsDto`/`QueryEventsDto`). O filtro de OLT aceita uma ou varias
-(`?oltId=abc` ou `?oltId=abc,def`, mesma convencao de `?severity=A,B`).
+`GET /alarms`, `GET /events` e `GET /onus` sao paginados (`page`/`pageSize`,
+resposta `{ data, total, page, pageSize }`) - `pageSize` vai ate 500
+(`QueryAlarmsDto`/`QueryEventsDto`/`QueryOnusDto`). O filtro de OLT aceita
+uma ou varias (`?oltId=abc` ou `?oltId=abc,def`, mesma convencao de
+`?severity=A,B`) ou `?oltPort=oltId:slot:porta,...` pra GPON individual (ver
+"Selecao de GPON individual" acima - vale pros 3 endpoints).
+`OnuModule` (`apps/api/src/onu/`) e um modulo a parte, nao dentro de
+`OltModule` - segue o mesmo padrao de `EventModule` (recurso paginavel e
+filtravel tipo log), so que consultando a tabela `Onu` em vez de `Event`.
 
 O indicador de severidade de cada OLT na arvore (`AlarmsPage.tsx`) **nao**
 vem da lista paginada/filtrada de alarmes - viria errado assim que a
@@ -192,6 +197,12 @@ de cada uma.
 
 - Sem CSS framework - estilo inline (`React.CSSProperties`) com tema escuro
   via custom properties (`var(--surface)`, `var(--text-muted)`, etc.).
+- `AlarmsPage.tsx` tem 3 abas (Alarmes/Eventos/ONUs) que reusam a mesma
+  arvore de OLTs/GPONs do menu lateral pra filtrar - so a aba Alarmes tem o
+  painel de filtros extra (severidade/slot/porta/data), que nao faz sentido
+  pras outras. `onu-status.ts` (`ONU_STATUS_LABEL`/`ONU_STATUS_COLOR_VAR`)
+  e o equivalente de `severity.ts` pro status da ONU (ver "Bootstrap da
+  OLT" acima pros valores).
 - `SEVERITY_ORDER` (`severity.ts`) **nao inclui `CLEAR`** de proposito: e
   usado so no grafico de barras de "alarmes ativos agora" na tela de
   Alarmes, que reflete o estado atual (via `/alarms/summary`, que so conta

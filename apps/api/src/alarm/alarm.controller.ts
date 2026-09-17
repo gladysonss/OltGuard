@@ -13,8 +13,8 @@ export class AlarmController {
   }
 
   @Get('summary')
-  summary(@Query('oltId') oltId?: string) {
-    return this.alarmService.summary(oltId?.split(','));
+  summary(@Query('oltId') oltId?: string, @Query('oltPort') oltPort?: string) {
+    return this.alarmService.summary(oltId?.split(','), oltPort?.split(','));
   }
 
   @Get('summary-by-olt')

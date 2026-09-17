@@ -105,6 +105,24 @@ componente - reabrir nao rebusca. Se a OLT ainda nao tem nenhuma GPON,
 mostra o motivo baseado em `bootstrapStatus` (nao sincronizada / sincronizando
 / falhou, com a mensagem de erro) em vez de um vazio sem explicacao.
 
+### Selecao de GPON individual (filtro por slot/porta)
+
+Cada GPON na sub-arvore tem checkbox proprio - so aparece quando `ifName`
+bate no formato `gpon{slot}/{porta}` (`parseGponName()` em
+`AlarmsPage.tsx`; se o nome nao bate nesse padrao, a GPON aparece so como
+texto, sem como saber slot/porta). A chave de selecao e
+`"{oltId}:{slotNo}:{portNo}"` (`gponKey()`) - guardada em `selectedGponKeys`.
+
+Quando ha alguma GPON selecionada, ela **substitui** a selecao de OLT
+inteira no filtro (mais especifica) - o front manda `oltPort` em vez de
+`oltId` pra `/alarms`, `/alarms/summary` e `/events`. No backend,
+`parseOltPortKeys()` (`apps/api/src/common/olt-port.util.ts`) decodifica
+cada chave `"oltId:slotNo:portNo"` e monta um `OR` de `{oltId, slotNo,
+portNo}` no `where` do Prisma (`AlarmService.findAll`/`summary`,
+`EventService.findAll`) - e como da pra combinar GPONs de OLTs e slots
+diferentes numa unica selecao, ao contrario de um filtro `slotNo`/`portNo`
+de valor unico.
+
 ## Modelo de dados (destaques)
 
 - **Alarm**: um por ocorrencia (raised → cleared). Indice unico PARCIAL

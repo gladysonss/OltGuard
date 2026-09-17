@@ -10,6 +10,18 @@ export class QueryAlarmsDto {
   @IsString({ each: true })
   oltId?: string[];
 
+  /**
+   * Selecao de GPON individual na arvore da tela de Alarmes - uma ou varias
+   * chaves "oltId:slotNo:portNo" (?oltPort=abc:1:1,abc:1:2). Quando presente,
+   * substitui oltId/slotNo/portNo (ver AlarmService.findAll) - e um filtro
+   * mais especifico, entao nao faz sentido combinar com os outros.
+   */
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.split(',') : value))
+  @IsArray()
+  @IsString({ each: true })
+  oltPort?: string[];
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

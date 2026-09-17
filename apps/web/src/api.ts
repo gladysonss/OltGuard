@@ -79,6 +79,7 @@ export type TrapLogOutcome = 'ACCEPTED' | 'REJECTED' | 'UNMAPPED' | 'IGNORED';
 export interface TrapLogEntry {
   timestamp: string;
   sourceIp: string;
+  community?: string;
   outcome: TrapLogOutcome;
   trapOid?: string;
   mibName?: string;
@@ -183,6 +184,7 @@ export const api = {
   addAllowedNetwork: (input: { cidr: string; label?: string }) =>
     request<AllowedNetwork>('/allowed-networks', { method: 'POST', body: JSON.stringify(input) }),
   removeAllowedNetwork: (id: string) => request<void>(`/allowed-networks/${id}`, { method: 'DELETE' }),
+  clearTraps: () => request<void>('/traps/recent', { method: 'DELETE' }),
   listAlarms: (params?: { oltId?: string }) => {
     const qs = params?.oltId ? `?oltId=${encodeURIComponent(params.oltId)}` : '';
     return request<Alarm[]>(`/alarms${qs}`);

@@ -1,4 +1,14 @@
-import { Controller, Get, MessageEvent, Query, Sse, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  MessageEvent,
+  Query,
+  Sse,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { concat, from, map, Observable } from 'rxjs';
@@ -18,6 +28,13 @@ export class TrapController {
   @Get('recent')
   recent() {
     return this.trapReceiver.getRecentLog();
+  }
+
+  @Roles('ADMIN')
+  @Delete('recent')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  clear() {
+    this.trapReceiver.clearLog();
   }
 
   /**

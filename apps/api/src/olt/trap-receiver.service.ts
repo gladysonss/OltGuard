@@ -54,6 +54,10 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     return [...this.logBuffer];
   }
 
+  clearLog() {
+    this.logBuffer.length = 0;
+  }
+
   private emit(entry: TrapLogEntry) {
     this.logBuffer.push(entry);
     if (this.logBuffer.length > LOG_BUFFER_SIZE) {
@@ -99,6 +103,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       this.emit({
         timestamp: new Date().toISOString(),
         sourceIp,
+        community,
         outcome: 'IGNORED',
         message: 'Pacote sem snmpTrapOID - nao e uma trap valida',
         varbinds: displayVarbinds,
@@ -113,6 +118,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       this.emit({
         timestamp: new Date().toISOString(),
         sourceIp,
+        community,
         outcome: 'REJECTED',
         trapOid,
         rejectionReason: validation.rejectionReason,
@@ -131,6 +137,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       this.emit({
         timestamp: new Date().toISOString(),
         sourceIp,
+        community,
         outcome: 'UNMAPPED',
         trapOid,
         oltId: validation.oltId,
@@ -185,6 +192,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     this.emit({
       timestamp: new Date().toISOString(),
       sourceIp,
+      community,
       outcome: 'ACCEPTED',
       trapOid,
       mibName: definition.mibName,

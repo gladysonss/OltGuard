@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { API_BASE, getAuthToken, type TrapLogEntry, type TrapLogOutcome } from '../api';
+import { api, API_BASE, getAuthToken, type TrapLogEntry, type TrapLogOutcome } from '../api';
 
 const OUTCOME_COLOR: Record<TrapLogOutcome, string> = {
   ACCEPTED: 'var(--ok)',
@@ -30,12 +30,22 @@ function formatLine(entry: TrapLogEntry): string {
   return `${parts.join('  ')}  -  ${entry.message}`;
 }
 
+function formatRaw(entry: TrapLogEntry): string {
+  const parts: string[] = [];
+  if (entry.community !== undefined) parts.push(`community="${entry.community}"`);
+  for (const vb of entry.varbinds) {
+    parts.push(`${vb.oid} = ${vb.value}`);
+  }
+  return parts.join('   ');
+}
+
 export function TrapTerminalPage() {
   const [entries, setEntries] = useState<TrapLogEntry[]>([]);
   const [connected, setConnected] = useState(false);
   const [paused, setPaused] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -63,6 +73,18 @@ export function TrapTerminalPage() {
     bottomRef.current?.scrollIntoView({ block: 'end' });
   }, [entries]);
 
+  async function handleClear() {
+    setClearing(true);
+    try {
+      await api.clearTraps();
+    } catch {
+      // segue limpando a visualizacao local mesmo se a chamada falhar
+    } finally {
+      setEntries([]);
+      setClearing(false);
+    }
+  }
+
   return (
     <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, padding: '18px 22px', gap: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -87,7 +109,7 @@ export function TrapTerminalPage() {
           <button onClick={() => setPaused((p) => !p)} style={secondaryBtnStyle}>
             {paused ? 'Retomar' : 'Pausar'}
           </button>
-          <button onClick={() => setEntries([])} style={secondaryBtnStyle}>
+          <button onClick={handleClear} disabled={clearing} style={secondaryBtnStyle}>
             Limpar
           </button>
         </div>
@@ -112,21 +134,39 @@ export function TrapTerminalPage() {
             Aguardando traps... configure a OLT para enviar para este servidor na porta configurada.
           </div>
         )}
-        {entries.map((entry, i) => (
-          <div key={i} style={{ display: 'flex', gap: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-            <span
-              style={{
-                color: OUTCOME_COLOR[entry.outcome],
-                fontWeight: 700,
-                flexShrink: 0,
-                width: 96,
-              }}
-            >
-              {OUTCOME_LABEL[entry.outcome]}
-            </span>
-            <span style={{ color: 'var(--text)' }}>{formatLine(entry)}</span>
-          </div>
-        ))}
+        {entries.map((entry, i) => {
+          const raw = formatRaw(entry);
+          return (
+            <div key={i} style={{ marginBottom: 4 }}>
+              <div style={{ display: 'flex', gap: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                <span
+                  style={{
+                    color: OUTCOME_COLOR[entry.outcome],
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    width: 96,
+                  }}
+                >
+                  {OUTCOME_LABEL[entry.outcome]}
+                </span>
+                <span style={{ color: 'var(--text)' }}>{formatLine(entry)}</span>
+              </div>
+              {raw && (
+                <div
+                  style={{
+                    marginLeft: 104,
+                    color: 'var(--text-muted)',
+                    fontSize: 11.5,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  {raw}
+                </div>
+              )}
+            </div>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
     </main>

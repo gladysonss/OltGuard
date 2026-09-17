@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AlarmCondition, AlarmSeverity, AlarmSource, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { OltInternalEvent } from '../olt/parks-trap-mapping';
 
 const SEVERITY_MAP: Record<'info' | 'minor' | 'major' | 'critical', AlarmSeverity> = {
   info: AlarmSeverity.INFO,
@@ -15,6 +16,9 @@ export interface ParsedTrapAlarm {
   mibName: string;
   /** Explicacao em portugues do que o alarme/evento significa (ver ParksTrapDefinition.description). */
   description: string;
+  /** Categoria interna do trap (ver ParksTrapDefinition.event) - usada pra achar traps
+   * especificos sem depender do nome cru da MIB (ex: OnuProvisioned pra criar a ONU). */
+  event: OltInternalEvent;
   severity: 'info' | 'minor' | 'major' | 'critical';
   isAlarm: boolean;
   /** undefined para traps de evento (sem par de limpeza); presente para traps de alarme. */

@@ -59,6 +59,9 @@ export function TopMenu() {
             <NavLink to="/terminal-traps" style={({ isActive }) => menuItemStyle(isActive)}>
               Terminal de Traps
             </NavLink>
+            <NavLink to="/configuracoes" style={({ isActive }) => menuItemStyle(isActive)}>
+              Configuracoes
+            </NavLink>
           </>
         )}
       </nav>

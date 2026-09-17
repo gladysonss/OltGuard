@@ -45,6 +45,14 @@ export interface Olt {
   _count: { onus: number };
 }
 
+export interface OltTrustedIp {
+  id: string;
+  oltId: string;
+  ipAddress: string;
+  label: string | null;
+  createdAt: string;
+}
+
 export interface Alarm {
   id: string;
   oltId: string;
@@ -172,6 +180,11 @@ export const api = {
     request<Olt>('/olts', { method: 'POST', body: JSON.stringify(input) }),
   updateOlt: (id: string, input: UpdateOltInput) =>
     request<Olt>(`/olts/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  listTrustedIps: (oltId: string) => request<OltTrustedIp[]>(`/olts/${oltId}/trusted-ips`),
+  addTrustedIp: (oltId: string, input: { ipAddress: string; label?: string }) =>
+    request<OltTrustedIp>(`/olts/${oltId}/trusted-ips`, { method: 'POST', body: JSON.stringify(input) }),
+  removeTrustedIp: (oltId: string, trustedIpId: string) =>
+    request<void>(`/olts/${oltId}/trusted-ips/${trustedIpId}`, { method: 'DELETE' }),
   listAlarms: (params?: { oltId?: string }) => {
     const qs = params?.oltId ? `?oltId=${encodeURIComponent(params.oltId)}` : '';
     return request<Alarm[]>(`/alarms${qs}`);

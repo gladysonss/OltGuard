@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { UsersPage } from './pages/UsersPage';
 import { AccountPage } from './pages/AccountPage';
 import { TrapTerminalPage } from './pages/TrapTerminalPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { useAuth } from './auth/AuthContext';
 
 export function App() {
@@ -34,6 +35,7 @@ export function App() {
         <Route path="/usuarios" element={adminOnly(<UsersPage />)} />
         <Route path="/minha-conta" element={<AccountPage />} />
         <Route path="/terminal-traps" element={adminOnly(<TrapTerminalPage />)} />
+        <Route path="/configuracoes" element={adminOnly(<SettingsPage />)} />
       </Routes>
     </div>
   );

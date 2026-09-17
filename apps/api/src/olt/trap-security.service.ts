@@ -13,7 +13,13 @@ export interface IncomingTrap {
 export interface TrustedOlt {
   id: string;
   name: string;
-  ipAddress: string;
+  /**
+   * IP de gerenciamento + IPs adicionais autorizados (OltTrustedIp) - o IP
+   * de origem visto pelo receiver e as vezes o IP publico do roteador/NAT
+   * na frente da OLT, que pode mudar sem que o endereco de gerenciamento
+   * mude, entao uma OLT pode ter mais de uma origem valida.
+   */
+  trustedIps: string[];
   snmpCommunity: string;
 }
 
@@ -28,14 +34,14 @@ export interface TrapValidationResult {
 
 export class TrapSecurityService {
   /**
-   * @param trustedOlts snapshot em memória das OLTs cadastradas (ip + community).
+   * @param trustedOlts snapshot em memória das OLTs cadastradas (ips + community).
    * Recarregado periodicamente pelo caller a cada cadastro/edição de OLT —
    * este service não acessa o banco diretamente.
    */
   constructor(private readonly trustedOlts: TrustedOlt[]) {}
 
   validate(trap: IncomingTrap): TrapValidationResult {
-    const olt = this.trustedOlts.find((o) => o.ipAddress === trap.sourceIp);
+    const olt = this.trustedOlts.find((o) => o.trustedIps.includes(trap.sourceIp));
 
     if (!olt) {
       return { accepted: false, rejectionReason: 'UNKNOWN_SOURCE_IP' };

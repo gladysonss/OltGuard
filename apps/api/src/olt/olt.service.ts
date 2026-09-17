@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption.service';
+import { OltRegistryService } from './olt-registry.service';
 import { CreateOltDto } from './dto/create-olt.dto';
 import { UpdateOltDto } from './dto/update-olt.dto';
 
@@ -25,10 +26,11 @@ export class OltService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
+    private readonly registry: OltRegistryService,
   ) {}
 
   async create(dto: CreateOltDto) {
-    return this.prisma.olt.create({
+    const olt = await this.prisma.olt.create({
       data: {
         name: dto.name,
         ipAddress: dto.ipAddress,
@@ -40,6 +42,8 @@ export class OltService {
       },
       select: OLT_SUMMARY_SELECT,
     });
+    await this.registry.refresh();
+    return olt;
   }
 
   async findAll() {
@@ -62,7 +66,7 @@ export class OltService {
 
   async update(id: string, dto: UpdateOltDto) {
     await this.findOne(id);
-    return this.prisma.olt.update({
+    const olt = await this.prisma.olt.update({
       where: { id },
       data: {
         name: dto.name,
@@ -75,10 +79,13 @@ export class OltService {
       },
       select: OLT_SUMMARY_SELECT,
     });
+    await this.registry.refresh();
+    return olt;
   }
 
   async remove(id: string) {
     await this.findOne(id);
     await this.prisma.olt.delete({ where: { id } });
+    await this.registry.refresh();
   }
 }

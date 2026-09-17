@@ -42,6 +42,24 @@ model Olt {
   onus             Onu[]
   provisioningJobs ProvisioningJob[]
   alarms           Alarm[]
+  trustedIps       OltTrustedIp[]
+}
+
+/// IPs de origem adicionais aceitos para traps desta OLT, alem do ipAddress
+/// principal. Existe porque o IP de origem visto pelo receiver e as vezes
+/// o IP publico do roteador/NAT na frente da OLT, que pode mudar (IP
+/// dinamico) sem que o endereco de gerenciamento da OLT mude.
+model OltTrustedIp {
+  id    String @id @default(uuid())
+  oltId String
+  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
+
+  ipAddress String
+  label     String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([oltId, ipAddress])
 }
 
 enum OnuStatus {

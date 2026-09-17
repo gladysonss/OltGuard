@@ -204,6 +204,24 @@ export class OltBootstrapService {
       walkSubtree(session, ONU_STATUS_OID),
     ]);
 
+    // Diagnostico temporario: essas 3 tabelas nunca foram validadas contra
+    // uma OLT Parks real (so contra um agente SNMP simulado nos testes) -
+    // se uma OLT real devolver 0 ONUs, esse log mostra exatamente o que
+    // cada walk recebeu (nada, ou algo que nao bateu com o formato
+    // esperado) sem precisar reproduzir o problema de novo.
+    this.logger.debug(
+      `walkOnus (OLT ${oltId}): alias=${aliasVarbinds.length} serial=${serialVarbinds.length} status=${statusVarbinds.length} varbind(s) retornado(s)`,
+    );
+    for (const [label, varbinds] of [
+      ['alias', aliasVarbinds],
+      ['serial', serialVarbinds],
+      ['status', statusVarbinds],
+    ] as const) {
+      for (const vb of varbinds.slice(0, 3)) {
+        this.logger.debug(`walkOnus sample ${label}: ${vb.oid} = ${JSON.stringify(vb.value)}`);
+      }
+    }
+
     const aliasByKey = indexByPosition(aliasVarbinds, ONU_ALIAS_OID);
     const serialByKey = indexByPosition(serialVarbinds, ONU_SERIAL_OID);
     const statusRawByKey = indexByPosition(statusVarbinds, ONU_STATUS_OID);

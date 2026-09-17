@@ -33,6 +33,8 @@ export interface Olt {
   id: string;
   name: string;
   ipAddress: string;
+  city: string | null;
+  manufacturer: string | null;
   snmpPort: number;
   sshUsername: string | null;
   sshPort: number;
@@ -120,6 +122,8 @@ export interface TrapLogEntry {
 export interface CreateOltInput {
   name: string;
   ipAddress: string;
+  city?: string;
+  manufacturer?: string;
   snmpCommunity: string;
   snmpPort?: number;
   sshUsername?: string;
@@ -130,6 +134,8 @@ export interface CreateOltInput {
 export interface UpdateOltInput {
   name?: string;
   ipAddress?: string;
+  city?: string;
+  manufacturer?: string;
   snmpCommunity?: string;
   snmpPort?: number;
   sshUsername?: string;

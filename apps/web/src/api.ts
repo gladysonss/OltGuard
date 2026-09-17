@@ -63,6 +63,7 @@ export interface Alarm {
   trapOid: string;
   alarmName: string;
   description: string | null;
+  serialNumber: string | null;
   severity: AlarmSeverity;
   condition: AlarmCondition;
   confirmed: boolean;

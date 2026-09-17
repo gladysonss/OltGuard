@@ -319,7 +319,7 @@ export function AlarmsPage() {
                   {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span>{alarm.description ?? alarm.alarmName}</span>
+                  <span>{alarm.description ?? alarm.alarmName}{alarm.serialNumber ? ` · Serial ${alarm.serialNumber}` : ''}</span>
                   <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{alarm.alarmName}</span>
                 </span>
                 <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11.5, display: 'flex', flexDirection: 'column', gap: 2 }}>

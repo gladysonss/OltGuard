@@ -130,7 +130,10 @@ export class AlarmIngestService {
     const existing = await this.prisma.alarm.findFirst({ where });
 
     if (existing) {
-      return this.prisma.alarm.update({ where: { id: existing.id }, data: { raisedAt: new Date() } });
+      return this.prisma.alarm.update({
+        where: { id: existing.id },
+        data: { raisedAt: new Date(), serialNumber: trap.serialNumber ?? undefined },
+      });
     }
 
     try {
@@ -145,6 +148,7 @@ export class AlarmIngestService {
           trapOid: trap.trapOid,
           alarmName: trap.mibName,
           description: trap.description,
+          serialNumber: trap.serialNumber,
           severity: SEVERITY_MAP[trap.severity],
           condition: AlarmCondition.ACTIVE,
           raisedAt: new Date(),
@@ -154,7 +158,10 @@ export class AlarmIngestService {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         const winner = await this.prisma.alarm.findFirst({ where });
         if (winner) {
-          return this.prisma.alarm.update({ where: { id: winner.id }, data: { raisedAt: new Date() } });
+          return this.prisma.alarm.update({
+            where: { id: winner.id },
+            data: { raisedAt: new Date(), serialNumber: trap.serialNumber ?? undefined },
+          });
         }
       }
       throw err;

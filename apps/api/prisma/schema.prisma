@@ -73,6 +73,7 @@ model Olt {
   updatedAt DateTime @updatedAt
 
   onus             Onu[]
+  onusRemoved      OnuRemoved[]
   provisioningJobs ProvisioningJob[]
   alarms           Alarm[]
   events           Event[]
@@ -154,6 +155,37 @@ model Onu {
   @@index([oltId, status])
 }
 
+/// Snapshot de uma Onu que sumiu de um walk de reconciliacao (ver
+/// OltBootstrapService) - a posicao (slot/pon/posicao) e o serial que ela
+/// tinha no momento da remocao. Serial e posicao podem ser reaproveitados
+/// depois por outro cliente/ONU, entao isso e o unico jeito de saber "quem
+/// esteve aqui antes" sem reinterpretar a linha atual da Onu. Alarm/Event
+/// que apontavam pra essa Onu sao migrados pra ca (removedOnuId) no mesmo
+/// momento em que a linha de Onu e apagada, preservando o historico deles
+/// em vez de perde-lo com a Onu.
+model OnuRemoved {
+  id    String @id @default(uuid())
+  oltId String
+  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
+
+  serialNumber  String
+  alias         String?
+  slotNo        Int
+  portNo        Int
+  logicalPortNo Int
+  status        OnuStatus
+
+  onuCreatedAt DateTime
+  lastSeenAt   DateTime?
+  removedAt    DateTime  @default(now())
+
+  alarms Alarm[]
+  events Event[]
+
+  @@index([oltId])
+  @@index([serialNumber])
+}
+
 enum SignalReadingSource {
   TRAP
   RECONCILIATION
@@ -227,7 +259,15 @@ model Alarm {
   olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
 
   onuId String?
-  onu   Onu?   @relation(fields: [onuId], references: [id], onDelete: Cascade)
+  onu   Onu?   @relation(fields: [onuId], references: [id], onDelete: SetNull)
+
+  /// Preenchido no lugar de onuId quando a Onu e removida por reconciliacao
+  /// (ver OnuRemoved) - o alarme migra pra ca em vez de ser apagado junto
+  /// com a Onu (por isso onu.onDelete e SetNull, nao Cascade: a remocao
+  /// controlada sempre desvincula onuId antes de apagar a linha, mas o
+  /// SetNull fica como rede de seguranca se algo apagar a Onu direto).
+  removedOnuId String?
+  removedOnu   OnuRemoved? @relation(fields: [removedOnuId], references: [id], onDelete: SetNull)
 
   source AlarmSource
   slotNo Int
@@ -280,7 +320,12 @@ model Event {
   olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
 
   onuId String?
-  onu   Onu?   @relation(fields: [onuId], references: [id], onDelete: Cascade)
+  onu   Onu?   @relation(fields: [onuId], references: [id], onDelete: SetNull)
+
+  /// Ver Alarm.removedOnuId - mesma ideia: evento migra pra ca quando a Onu
+  /// e removida por reconciliacao, em vez de ser apagado junto.
+  removedOnuId String?
+  removedOnu   OnuRemoved? @relation(fields: [removedOnuId], references: [id], onDelete: SetNull)
 
   source AlarmSource
   slotNo Int

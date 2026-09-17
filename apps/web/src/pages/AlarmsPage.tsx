@@ -114,6 +114,7 @@ export function AlarmsPage() {
   const [filters, setFilters] = useState<AlarmFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [onuAlarmsFor, setOnuAlarmsFor] = useState<Onu | null>(null);
 
   const reload = useCallback(async () => {
     setError(null);
@@ -640,7 +641,7 @@ export function AlarmsPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               <div style={onuRowGridStyle('head')}>
-                <span>Status</span><span>OLT</span><span>Slot/PON/Posicao</span><span>Serial</span><span>Alias</span><span>Visto por ultimo</span>
+                <span>Status</span><span>OLT</span><span>Slot/PON/Posicao</span><span>Serial</span><span>Alias</span><span>Visto por ultimo</span><span></span>
               </div>
 
               {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
@@ -671,6 +672,9 @@ export function AlarmsPage() {
                   <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {onu.lastSeenAt ? new Date(onu.lastSeenAt).toLocaleString('pt-BR') : '-'}
                   </span>
+                  <button style={secondaryBtnStyle} onClick={() => setOnuAlarmsFor(onu)}>
+                    Ver alarmes
+                  </button>
                 </div>
               ))}
             </div>
@@ -678,6 +682,137 @@ export function AlarmsPage() {
           </div>
         )}
       </main>
+
+      {onuAlarmsFor && <OnuAlarmsModal onu={onuAlarmsFor} onClose={() => setOnuAlarmsFor(null)} />}
+    </div>
+  );
+}
+
+type OnuAlarmsFilter = 'active' | 'history';
+
+/**
+ * Alarmes/eventos so daquela posicao (onuId) - nao cruza serial entre
+ * posicoes/clientes diferentes (ver discussao de design: a aba ONUs mostra
+ * o que esta ativo na OLT agora, entao o historico aqui e so dessa ocupante
+ * atual da posicao, nao de quem passou por ela antes).
+ */
+function OnuAlarmsModal({ onu, onClose }: { onu: Onu; onClose: () => void }) {
+  const [filter, setFilter] = useState<OnuAlarmsFilter>('active');
+  const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [events, setEvents] = useState<OltGuardEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const loadAlarms = api.listAlarms({
+      onuId: onu.id,
+      condition: filter === 'active' ? 'ACTIVE' : undefined,
+      pageSize: 200,
+    });
+    const loadEvents = filter === 'history' ? api.listEvents({ onuId: onu.id, pageSize: 200 }) : Promise.resolve(null);
+    Promise.all([loadAlarms, loadEvents])
+      .then(([alarmsRes, eventsRes]) => {
+        if (cancelled) return;
+        setAlarms(alarmsRes.data);
+        setEvents(eventsRes?.data ?? []);
+      })
+      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [onu.id, filter]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+          width: 'min(720px, 92vw)', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>
+              Alarmes da ONU {onu.slotNo}/{onu.portNo}/{onu.logicalPortNo}
+            </div>
+            <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {onu.olt.name} - {onu.serialNumber}
+            </div>
+          </div>
+          <button style={secondaryBtnStyle} onClick={onClose}>Fechar</button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+          <button style={tabBtnStyle(filter === 'active')} onClick={() => setFilter('active')}>Ativo</button>
+          <button style={tabBtnStyle(filter === 'history')} onClick={() => setFilter('history')}>Historico</button>
+        </div>
+
+        <div style={{ overflow: 'auto', padding: '4px 0' }}>
+          {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
+          {error && <div style={{ padding: 16, fontSize: 13, color: 'var(--critical)' }}>{error}</div>}
+
+          {!loading && !error && alarms.length === 0 && events.length === 0 && (
+            <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>
+              {filter === 'active' ? 'Nenhum alarme ativo pra essa ONU.' : 'Nenhum historico pra essa ONU.'}
+            </div>
+          )}
+
+          {alarms.map((alarm) => (
+            <div key={`alarm-${alarm.id}`} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '2px 7px', borderRadius: 5, fontSize: 10.5, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.03em',
+                    background: `var(${SEVERITY_COLOR_VAR[alarm.severity]})`, color: '#171a21',
+                  }}
+                >
+                  {SEVERITY_LABEL[alarm.severity]}
+                </span>
+                <span style={{ fontSize: 12.5 }}>{alarm.description ?? alarm.alarmName}</span>
+              </div>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                {alarm.condition === 'CLEARED' && alarm.clearedAt
+                  ? `Resolvido em ${new Date(alarm.clearedAt).toLocaleString('pt-BR')}`
+                  : `Levantado em ${new Date(alarm.raisedAt).toLocaleString('pt-BR')}`}
+              </span>
+            </div>
+          ))}
+
+          {events.map((ev) => (
+            <div key={`event-${ev.id}`} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '2px 7px', borderRadius: 5, fontSize: 10.5, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.03em',
+                    background: `var(${SEVERITY_COLOR_VAR[ev.severity]})`, color: '#171a21',
+                  }}
+                >
+                  {SEVERITY_LABEL[ev.severity]}
+                </span>
+                <span style={{ fontSize: 12.5 }}>{ev.description ?? ev.eventName}</span>
+              </div>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                {new Date(ev.occurredAt).toLocaleString('pt-BR')}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -814,7 +949,7 @@ function eventLogRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
 function onuRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '130px 1fr 1fr 1.4fr 1.4fr 1.1fr',
+    gridTemplateColumns: '130px 1fr 1fr 1.4fr 1.4fr 1.1fr auto',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',

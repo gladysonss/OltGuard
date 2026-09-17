@@ -20,6 +20,15 @@ export class QueryEventsDto {
   @IsString({ each: true })
   oltPort?: string[];
 
+  /** Ver QueryAlarmsDto.onuId/removedOnuId - mesma ideia pro botao "Ver alarmes" da aba ONUs. */
+  @IsOptional()
+  @IsString()
+  onuId?: string;
+
+  @IsOptional()
+  @IsString()
+  removedOnuId?: string;
+
   /** 1-indexado. Padrao 1. */
   @IsOptional()
   @Type(() => Number)

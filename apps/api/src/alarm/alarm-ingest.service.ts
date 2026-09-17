@@ -37,11 +37,7 @@ export class AlarmIngestService {
 
   async ingest(trap: ParsedTrapAlarm) {
     const source = this.resolveSource(trap);
-    const onu = trap.serialNumber
-      ? await this.prisma.onu.findFirst({
-          where: { oltId: trap.oltId, serialNumber: trap.serialNumber },
-        })
-      : null;
+    const onu = await this.resolveOnu(trap);
 
     if (!trap.isAlarm) {
       return this.recordEvent(trap, source, onu?.id ?? null);
@@ -75,6 +71,34 @@ export class AlarmIngestService {
         description: trap.description,
         severity: SEVERITY_MAP[trap.severity],
         occurredAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * So a trap lOSi carrega o serial da ONU (oltOnuSerialNumber) - todas as
+   * outras traps de ONU (a maioria, incluindo oNUDNi/oNUDNi CLEAR, sDi,
+   * lANLOS etc) so trazem slot/pon/posicao. Sem esse fallback por posicao,
+   * o vinculo onuId so existiria pra uma unica trap, e o botao "Ver
+   * alarmes" da aba ONUs (que filtra por onuId) ficaria vazio pra quase
+   * todo alarme de ONU.
+   */
+  private async resolveOnu(trap: ParsedTrapAlarm) {
+    if (trap.serialNumber) {
+      const bySerial = await this.prisma.onu.findFirst({
+        where: { oltId: trap.oltId, serialNumber: trap.serialNumber },
+      });
+      if (bySerial) return bySerial;
+    }
+    if (trap.portNo === undefined || trap.logicalPortNo === undefined) return null;
+    return this.prisma.onu.findUnique({
+      where: {
+        oltId_slotNo_portNo_logicalPortNo: {
+          oltId: trap.oltId,
+          slotNo: trap.slotNo,
+          portNo: trap.portNo,
+          logicalPortNo: trap.logicalPortNo,
+        },
       },
     });
   }

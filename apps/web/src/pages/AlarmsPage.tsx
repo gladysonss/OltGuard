@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Alarm, type AlarmSeverity, type AlarmSummary, type Olt } from '../api';
+import { api, type Alarm, type AlarmSeverity, type AlarmSummary, type Olt, type OltGuardEvent } from '../api';
 import { SEVERITY_COLOR_VAR, SEVERITY_LABEL, SEVERITY_ORDER } from '../severity';
+
+type View = 'alarms' | 'events';
 
 const SEVERITY_RANK: Record<AlarmSeverity, number> = {
   CRITICAL: 5,
@@ -23,8 +25,10 @@ function worstSeverityColor(alarms: Alarm[], oltId: string): string {
 export function AlarmsPage() {
   const [olts, setOlts] = useState<Olt[]>([]);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [events, setEvents] = useState<OltGuardEvent[]>([]);
   const [summary, setSummary] = useState<AlarmSummary | null>(null);
   const [selectedOltId, setSelectedOltId] = useState<string | undefined>(undefined);
+  const [view, setView] = useState<View>('alarms');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -32,14 +36,16 @@ export function AlarmsPage() {
   const reload = useCallback(async () => {
     setError(null);
     try {
-      const [oltsRes, alarmsRes, summaryRes] = await Promise.all([
+      const [oltsRes, alarmsRes, summaryRes, eventsRes] = await Promise.all([
         api.listOlts(),
         api.listAlarms({ oltId: selectedOltId }),
         api.alarmSummary(selectedOltId),
+        api.listEvents({ oltId: selectedOltId }),
       ]);
       setOlts(oltsRes);
       setAlarms(alarmsRes);
       setSummary(summaryRes);
+      setEvents(eventsRes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados');
     } finally {
@@ -140,8 +146,15 @@ export function AlarmsPage() {
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: '18px 22px', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>Eventos</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3 }}>
+              <button onClick={() => setView('alarms')} style={tabBtnStyle(view === 'alarms')}>
+                Alarmes
+              </button>
+              <button onClick={() => setView('events')} style={tabBtnStyle(view === 'events')}>
+                Eventos
+              </button>
+            </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {selectedOltId ? olts.find((o) => o.id === selectedOltId)?.name : 'Todas as OLTs'}
             </div>
@@ -155,58 +168,98 @@ export function AlarmsPage() {
           </div>
         )}
 
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
-          <div style={eventRowGridStyle('head')}>
-            <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Alarme</span><span>Confirmacao</span><span>Data</span><span>Acoes</span>
-          </div>
-
-          {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
-
-          {!loading && alarms.length === 0 && (
-            <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhum alarme ativo.</div>
-          )}
-
-          {alarms.map((alarm) => (
-            <div key={alarm.id} style={eventRowGridStyle('row')}>
-              <span
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '3px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700,
-                  textTransform: 'uppercase', letterSpacing: '0.03em',
-                  background: `var(${SEVERITY_COLOR_VAR[alarm.severity]})`,
-                  color: '#171a21',
-                }}
-              >
-                {SEVERITY_LABEL[alarm.severity]}
-              </span>
-              <span>{alarm.olt.name}</span>
-              <span className="mono" style={{ color: 'var(--text-muted)' }}>
-                {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
-              </span>
-              <span className="mono">{alarm.alarmName}</span>
-              <span style={{ color: 'var(--text-muted)' }}>{alarm.confirmed ? 'Confirmado' : 'Nao confirmado'}</span>
-              <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                {new Date(alarm.raisedAt).toLocaleString('pt-BR')}
-              </span>
-              <span style={{ display: 'flex', gap: 6 }}>
-                <button
-                  disabled={actioningId === alarm.id || alarm.confirmed}
-                  onClick={() => runAction(alarm.id, 'confirm')}
-                  style={secondaryBtnStyle}
-                >
-                  Confirmar
-                </button>
-                <button
-                  disabled={actioningId === alarm.id}
-                  onClick={() => runAction(alarm.id, 'confirm-and-clear')}
-                  style={primaryBtnStyle}
-                >
-                  Limpar
-                </button>
-              </span>
+        {view === 'alarms' && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <div style={eventRowGridStyle('head')}>
+              <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Alarme</span><span>Confirmacao</span><span>Data</span><span>Acoes</span>
             </div>
-          ))}
-        </div>
+
+            {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
+
+            {!loading && alarms.length === 0 && (
+              <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhum alarme ativo.</div>
+            )}
+
+            {alarms.map((alarm) => (
+              <div key={alarm.id} style={eventRowGridStyle('row')}>
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '3px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.03em',
+                    background: `var(${SEVERITY_COLOR_VAR[alarm.severity]})`,
+                    color: '#171a21',
+                  }}
+                >
+                  {SEVERITY_LABEL[alarm.severity]}
+                </span>
+                <span>{alarm.olt.name}</span>
+                <span className="mono" style={{ color: 'var(--text-muted)' }}>
+                  {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
+                </span>
+                <span className="mono">{alarm.alarmName}</span>
+                <span style={{ color: 'var(--text-muted)' }}>{alarm.confirmed ? 'Confirmado' : 'Nao confirmado'}</span>
+                <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                  {new Date(alarm.raisedAt).toLocaleString('pt-BR')}
+                </span>
+                <span style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    disabled={actioningId === alarm.id || alarm.confirmed}
+                    onClick={() => runAction(alarm.id, 'confirm')}
+                    style={secondaryBtnStyle}
+                  >
+                    Confirmar
+                  </button>
+                  <button
+                    disabled={actioningId === alarm.id}
+                    onClick={() => runAction(alarm.id, 'confirm-and-clear')}
+                    style={primaryBtnStyle}
+                  >
+                    Limpar
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {view === 'events' && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <div style={eventLogRowGridStyle('head')}>
+              <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Evento</span><span>Ocorrido em</span>
+            </div>
+
+            {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
+
+            {!loading && events.length === 0 && (
+              <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Nenhum evento registrado ainda.</div>
+            )}
+
+            {events.map((ev) => (
+              <div key={ev.id} style={eventLogRowGridStyle('row')}>
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '3px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.03em',
+                    background: `var(${SEVERITY_COLOR_VAR[ev.severity]})`,
+                    color: '#171a21',
+                  }}
+                >
+                  {SEVERITY_LABEL[ev.severity]}
+                </span>
+                <span>{ev.olt.name}</span>
+                <span className="mono" style={{ color: 'var(--text-muted)' }}>
+                  {ev.slotNo}{ev.portNo ? `/${ev.portNo}` : ''}{ev.logicalPortNo ? `/${ev.logicalPortNo}` : ''}
+                </span>
+                <span className="mono">{ev.eventName}</span>
+                <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                  {new Date(ev.occurredAt).toLocaleString('pt-BR')}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
@@ -236,10 +289,39 @@ function treeNodeStyle(selected: boolean): React.CSSProperties {
   };
 }
 
+function tabBtnStyle(active: boolean): React.CSSProperties {
+  return {
+    fontFamily: 'var(--font-sans)',
+    fontSize: 12.5,
+    fontWeight: 600,
+    padding: '6px 14px',
+    borderRadius: 6,
+    border: 'none',
+    cursor: 'pointer',
+    background: active ? 'var(--surface-3)' : 'transparent',
+    color: active ? 'var(--text)' : 'var(--text-muted)',
+  };
+}
+
 function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
     gridTemplateColumns: '110px 1.1fr 0.8fr 1.2fr 1fr 1fr 1.4fr',
+    alignItems: 'center',
+    gap: 12,
+    padding: '9px 14px',
+    fontSize: kind === 'head' ? 10.5 : 12.5,
+    textTransform: kind === 'head' ? 'uppercase' : 'none',
+    letterSpacing: kind === 'head' ? '0.05em' : 'normal',
+    color: kind === 'head' ? 'var(--text-muted)' : 'var(--text)',
+    borderBottom: '1px solid var(--border)',
+  };
+}
+
+function eventLogRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
+  return {
+    display: 'grid',
+    gridTemplateColumns: '110px 1.1fr 0.8fr 1.6fr 1.2fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',

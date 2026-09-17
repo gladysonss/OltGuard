@@ -74,6 +74,22 @@ export interface Alarm {
 
 export type AlarmSummary = Record<AlarmSeverity, number>;
 
+export interface OltGuardEvent {
+  id: string;
+  oltId: string;
+  onuId: string | null;
+  source: AlarmSource;
+  slotNo: number;
+  portNo: number | null;
+  logicalPortNo: number | null;
+  trapOid: string;
+  eventName: string;
+  severity: AlarmSeverity;
+  occurredAt: string;
+  olt: { id: string; name: string };
+  onu: { id: string; serialNumber: string } | null;
+}
+
 export type TrapLogOutcome = 'ACCEPTED' | 'REJECTED' | 'UNMAPPED' | 'IGNORED';
 
 export interface TrapLogEntry {
@@ -198,6 +214,10 @@ export const api = {
   clearAlarm: (id: string) => request<Alarm>(`/alarms/${id}/clear`, { method: 'PATCH' }),
   confirmAndClearAlarm: (id: string) =>
     request<Alarm>(`/alarms/${id}/confirm-and-clear`, { method: 'PATCH', body: '{}' }),
+  listEvents: (params?: { oltId?: string }) => {
+    const qs = params?.oltId ? `?oltId=${encodeURIComponent(params.oltId)}` : '';
+    return request<OltGuardEvent[]>(`/events${qs}`);
+  },
 };
 
 export const userApi = {

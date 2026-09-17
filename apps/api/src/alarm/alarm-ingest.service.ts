@@ -37,11 +37,39 @@ export class AlarmIngestService {
         })
       : null;
 
-    if (trap.isAlarm && trap.condition === 'CLEAR') {
+    if (!trap.isAlarm) {
+      return this.recordEvent(trap, source, onu?.id ?? null);
+    }
+
+    if (trap.condition === 'CLEAR') {
       return this.clearMatchingAlarm(trap, source);
     }
 
     return this.raiseOrRefreshAlarm(trap, source, onu?.id ?? null);
+  }
+
+  /**
+   * Traps dos grupos "Event"/"Avc" (isAlarm: false) nao tem par de limpeza -
+   * cada ocorrencia vira uma linha nova aqui, sem estado ACTIVE/CLEARED como
+   * o Alarm tem. Mantidas separadas pra nao entupir a tela de Alarmes com
+   * coisas que nao sao problemas em aberto (ver GPON-OLT-FAULT.mib: grupos
+   * "Alarm" tem oltAlarmCondition, grupos "Event"/"Avc" nao).
+   */
+  private async recordEvent(trap: ParsedTrapAlarm, source: AlarmSource, onuId: string | null) {
+    return this.prisma.event.create({
+      data: {
+        oltId: trap.oltId,
+        onuId,
+        source,
+        slotNo: trap.slotNo,
+        portNo: trap.portNo,
+        logicalPortNo: trap.logicalPortNo,
+        trapOid: trap.trapOid,
+        eventName: trap.mibName,
+        severity: SEVERITY_MAP[trap.severity],
+        occurredAt: new Date(),
+      },
+    });
   }
 
   private resolveSource(trap: ParsedTrapAlarm): AlarmSource {

@@ -45,6 +45,7 @@ model Olt {
   onus             Onu[]
   provisioningJobs ProvisioningJob[]
   alarms           Alarm[]
+  events           Event[]
 }
 
 /// Filtro de rede global (nao por OLT): IPs ou faixas CIDR autorizados a
@@ -89,6 +90,7 @@ model Onu {
 
   signalReadings SignalReading[]
   alarms         Alarm[]
+  events         Event[]
 
   @@unique([oltId, slotNo, portNo, logicalPortNo])
   @@index([oltId, status])
@@ -192,6 +194,34 @@ model Alarm {
 
   @@index([oltId, condition])
   @@index([oltId, slotNo, portNo])
+}
+
+/// Ocorrencia pontual sem par de limpeza (ex: ONU descoberta, mudanca de
+/// status, protection switch) - vem dos grupos "Event"/"Avc" da
+/// GPON-OLT-FAULT.mib (isAlarm: false em parks-trap-mapping.ts), ao
+/// contrario da Alarm, que tem estado (ACTIVE/CLEARED) e vem dos grupos
+/// "Alarm". Cada trap gera uma linha nova aqui, sem merge/dedup.
+model Event {
+  id    String @id @default(uuid())
+  oltId String
+  olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
+
+  onuId String?
+  onu   Onu?   @relation(fields: [onuId], references: [id], onDelete: Cascade)
+
+  source AlarmSource
+  slotNo Int
+  portNo Int?
+  logicalPortNo Int?
+
+  trapOid   String
+  eventName String
+  severity  AlarmSeverity
+
+  occurredAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([oltId, occurredAt])
 }
 
 enum UserRole {

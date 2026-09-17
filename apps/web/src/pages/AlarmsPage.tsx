@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import {
   api,
   type Alarm,
   type AlarmCondition,
   type AlarmSeverity,
   type AlarmSummary,
+  type GponInterface,
   type Olt,
   type OltGuardEvent,
   type OltWorstSeverity,
@@ -46,6 +47,14 @@ function oltDotColor(oltWorstSeverity: OltWorstSeverity, oltId: string): string 
   return worst ? `var(${SEVERITY_COLOR_VAR[worst]})` : 'var(--ok)';
 }
 
+/** Mensagem quando o walk de GPONs ainda nao achou nada pra essa OLT - explica o motivo em vez de so "vazio". */
+function gponEmptyMessage(olt: Olt): string {
+  if (olt.bootstrapStatus === 'PENDING') return 'Ainda nao sincronizada (ver tela de OLTs).';
+  if (olt.bootstrapStatus === 'WALKING') return 'Sincronizando...';
+  if (olt.bootstrapStatus === 'FAILED') return `Falha na sincronizacao: ${olt.bootstrapError ?? 'erro desconhecido'}`;
+  return 'Nenhuma GPON encontrada.';
+}
+
 const ALL_SEVERITIES: AlarmSeverity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'WARNING', 'INFO'];
 
 interface AlarmFilters {
@@ -73,6 +82,10 @@ export function AlarmsPage() {
   const [oltWorstSeverity, setOltWorstSeverity] = useState<OltWorstSeverity>({});
   const [selectedOltIds, setSelectedOltIds] = useState<Set<string>>(new Set());
   const [collapsedCities, setCollapsedCities] = useState<Set<string>>(new Set());
+  const [expandedOltIds, setExpandedOltIds] = useState<Set<string>>(new Set());
+  const [gponInterfacesByOlt, setGponInterfacesByOlt] = useState<
+    Record<string, GponInterface[] | 'loading' | 'error'>
+  >({});
   const [alarmStatusFilter, setAlarmStatusFilter] = useState<AlarmStatusFilter>('active');
   const [view, setView] = useState<View>('alarms');
   const [loading, setLoading] = useState(true);
@@ -166,6 +179,29 @@ export function AlarmsPage() {
     });
   }
 
+  async function loadGponInterfaces(oltId: string) {
+    setGponInterfacesByOlt((prev) => ({ ...prev, [oltId]: 'loading' }));
+    try {
+      const data = await api.listGponInterfaces(oltId);
+      setGponInterfacesByOlt((prev) => ({ ...prev, [oltId]: data }));
+    } catch {
+      setGponInterfacesByOlt((prev) => ({ ...prev, [oltId]: 'error' }));
+    }
+  }
+
+  function toggleOltExpand(oltId: string) {
+    const expanding = !expandedOltIds.has(oltId);
+    setExpandedOltIds((prev) => {
+      const next = new Set(prev);
+      if (expanding) next.add(oltId);
+      else next.delete(oltId);
+      return next;
+    });
+    if (expanding && !(oltId in gponInterfacesByOlt)) {
+      loadGponInterfaces(oltId);
+    }
+  }
+
   function handlePageSizeChange(size: number) {
     setPageSize(size);
     setPage(1);
@@ -223,36 +259,69 @@ export function AlarmsPage() {
                 </span>
               </div>
               {!collapsed &&
-                group.olts.map((olt) => (
-                  <div
-                    key={olt.id}
-                    onClick={() => toggleOltSelection(olt.id)}
-                    style={treeNodeStyle(selectedOltIds.has(olt.id))}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedOltIds.has(olt.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={() => toggleOltSelection(olt.id)}
-                      style={checkboxStyle}
-                    />
-                    <span
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        background: oltDotColor(oltWorstSeverity, olt.id),
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{olt.name}</span>
-                      {olt.manufacturer && (
-                        <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{olt.manufacturer}</span>
+                group.olts.map((olt) => {
+                  const oltExpanded = expandedOltIds.has(olt.id);
+                  const gponState = gponInterfacesByOlt[olt.id];
+                  return (
+                    <Fragment key={olt.id}>
+                      <div
+                        onClick={() => toggleOltSelection(olt.id)}
+                        style={treeNodeStyle(selectedOltIds.has(olt.id))}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleOltExpand(olt.id);
+                          }}
+                          style={collapseBtnStyle}
+                          aria-label={oltExpanded ? 'Minimizar GPONs' : 'Mostrar GPONs'}
+                        >
+                          {oltExpanded ? '▾' : '▸'}
+                        </button>
+                        <input
+                          type="checkbox"
+                          checked={selectedOltIds.has(olt.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => toggleOltSelection(olt.id)}
+                          style={checkboxStyle}
+                        />
+                        <span
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: '50%',
+                            background: oltDotColor(oltWorstSeverity, olt.id),
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{olt.name}</span>
+                          {olt.manufacturer && (
+                            <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{olt.manufacturer}</span>
+                          )}
+                        </span>
+                      </div>
+                      {oltExpanded && (
+                        <div style={gponSubTreeStyle}>
+                          {gponState === 'loading' && <div style={gponEmptyStyle}>Carregando...</div>}
+                          {gponState === 'error' && (
+                            <div style={{ ...gponEmptyStyle, color: 'var(--crit)' }}>Falha ao carregar GPONs.</div>
+                          )}
+                          {Array.isArray(gponState) && gponState.length === 0 && (
+                            <div style={gponEmptyStyle}>{gponEmptyMessage(olt)}</div>
+                          )}
+                          {Array.isArray(gponState) &&
+                            gponState.map((g) => (
+                              <div key={g.id} style={gponItemStyle}>
+                                {g.ifName}
+                              </div>
+                            ))}
+                        </div>
                       )}
-                    </span>
-                  </div>
-                ))}
+                    </Fragment>
+                  );
+                })}
             </div>
           );
         })}
@@ -539,6 +608,26 @@ const checkboxStyle: React.CSSProperties = {
   accentColor: 'var(--accent)',
   cursor: 'pointer',
   flexShrink: 0,
+};
+
+const gponSubTreeStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '2px 12px 4px 40px',
+};
+
+const gponItemStyle: React.CSSProperties = {
+  fontSize: 11.5,
+  fontFamily: 'var(--font-mono)',
+  color: 'var(--text-muted)',
+  padding: '3px 0',
+};
+
+const gponEmptyStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: 'var(--text-muted)',
+  fontStyle: 'italic',
+  padding: '3px 0',
 };
 
 function treeNodeStyle(selected: boolean): React.CSSProperties {

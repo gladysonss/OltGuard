@@ -90,6 +90,21 @@ excecao pro caller - e assim que pode ser fire-and-forget com seguranca.
 SNMP mock (`net-snmp` `createAgent`, sem uso em producao) simulando
 `ifXTable` - nao ha script de teste no repo, foi so verificacao manual.
 
+`POST /olts/:id/sync-gpons` (botao "Sincronizar" na listagem de OLTs,
+`OltListPage.tsx`) refaz o mesmo walk sob demanda - pras OLTs cadastradas
+antes dessa feature existir (`bootstrapStatus` ainda `PENDING`, nunca andou
+automaticamente) ou pra tentar de novo depois de uma falha. Ao contrario do
+disparo automatico do `create()`, esse `await`a o walk inteiro antes de
+responder (o cliente pediu explicitamente e espera ver o resultado).
+
+Na arvore de OLTs da tela de Alarmes, cada OLT tem seu proprio chevron de
+expandir/minimizar (independente do collapse de cidade) que mostra as
+`GponInterface` daquela OLT como sub-itens, buscadas sob demanda (lazy, so
+no primeiro expand) e cacheadas em `gponInterfacesByOlt` no estado do
+componente - reabrir nao rebusca. Se a OLT ainda nao tem nenhuma GPON,
+mostra o motivo baseado em `bootstrapStatus` (nao sincronizada / sincronizando
+/ falhou, com a mensagem de erro) em vez de um vazio sem explicacao.
+
 ## Modelo de dados (destaques)
 
 - **Alarm**: um por ocorrencia (raised → cleared). Indice unico PARCIAL

@@ -106,4 +106,18 @@ export class OltService {
     await this.findOne(oltId);
     return this.prisma.gponInterface.findMany({ where: { oltId }, orderBy: { ifIndex: 'asc' } });
   }
+
+  /**
+   * Sincronizacao manual do walk de GPONs - pras OLTs cadastradas antes
+   * dessa feature existir (bootstrapStatus ainda PENDING, nunca andou) ou
+   * pra tentar de novo depois de uma falha. Ao contrario do disparo
+   * automatico em create() (fire-and-forget), aqui o caller pediu
+   * explicitamente e espera ver o resultado, entao awaita o walk inteiro
+   * antes de responder.
+   */
+  async syncGpons(oltId: string) {
+    await this.findOne(oltId);
+    await this.bootstrap.walkGpons(oltId);
+    return this.findOne(oltId);
+  }
 }

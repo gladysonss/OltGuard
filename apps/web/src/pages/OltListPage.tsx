@@ -13,6 +13,7 @@ export function OltListPage() {
   const [olts, setOlts] = useState<Olt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -21,6 +22,19 @@ export function OltListPage() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Falha ao carregar OLTs'))
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleSync(oltId: string) {
+    setSyncingId(oltId);
+    setError(null);
+    try {
+      const updated = await api.syncOltGpons(oltId);
+      setOlts((prev) => prev.map((o) => (o.id === oltId ? updated : o)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao sincronizar OLT');
+    } finally {
+      setSyncingId(null);
+    }
+  }
 
   return (
     <main style={{ flex: 1, overflow: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -59,6 +73,7 @@ export function OltListPage() {
             <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{olt.city?.name ?? '—'}</span>
             <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{olt.manufacturer}</span>
             <span
+              title={olt.bootstrapStatus === 'FAILED' ? olt.bootstrapError ?? undefined : undefined}
               style={{
                 color: olt.bootstrapStatus === 'FAILED' ? 'var(--crit)' : 'var(--text-muted)',
                 fontSize: 12.5,
@@ -70,9 +85,18 @@ export function OltListPage() {
             <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
               {olt.reconciliationEnabled ? `A cada ${olt.reconciliationIntervalMinutes} min` : 'Desligada'}
             </span>
-            <Link to={`/olts/${olt.id}/editar`} style={secondaryBtnStyle}>
-              Editar
-            </Link>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => handleSync(olt.id)}
+                disabled={syncingId === olt.id}
+                style={secondaryBtnStyle}
+              >
+                {syncingId === olt.id ? 'Sincronizando...' : 'Sincronizar'}
+              </button>
+              <Link to={`/olts/${olt.id}/editar`} style={secondaryBtnStyle}>
+                Editar
+              </Link>
+            </div>
           </div>
         ))}
       </div>
@@ -82,7 +106,7 @@ export function OltListPage() {
 
 const headRowStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1.2fr 1fr 0.9fr 0.9fr 0.9fr 0.5fr 1.1fr 0.7fr',
+  gridTemplateColumns: '1.1fr 1fr 0.8fr 0.8fr 0.8fr 0.5fr 1fr 1.1fr',
   gap: 12,
   padding: '10px 16px',
   fontSize: 10.5,
@@ -94,7 +118,7 @@ const headRowStyle: React.CSSProperties = {
 
 const rowStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1.2fr 1fr 0.9fr 0.9fr 0.9fr 0.5fr 1.1fr 0.7fr',
+  gridTemplateColumns: '1.1fr 1fr 0.8fr 0.8fr 0.8fr 0.5fr 1fr 1.1fr',
   gap: 12,
   alignItems: 'center',
   padding: '10px 16px',

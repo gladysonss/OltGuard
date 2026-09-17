@@ -40,6 +40,12 @@ export class OltController {
   }
 
   @Roles('ADMIN')
+  @Post(':id/sync-gpons')
+  syncGpons(@Param('id') id: string) {
+    return this.oltService.syncGpons(id);
+  }
+
+  @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateOltDto) {
     return this.oltService.update(id, dto);

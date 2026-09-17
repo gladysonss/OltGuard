@@ -139,13 +139,18 @@ export class AlarmService {
     });
   }
 
+  /**
+   * So marca condition: CLEARED (+ clearedAt) - a severidade original
+   * (ex: MAJOR, CRITICAL) e mantida, nao vira CLEAR. Quem indica que o
+   * alarme foi resolvido e o condition, nao a severidade; sobrescrever a
+   * severidade perderia a informacao de quao grave o problema era.
+   */
   async clear(id: string) {
     await this.findOneActive(id);
     return this.prisma.alarm.update({
       where: { id },
       data: {
         condition: AlarmCondition.CLEARED,
-        severity: AlarmSeverity.CLEAR,
         clearedAt: new Date(),
       },
     });
@@ -160,7 +165,6 @@ export class AlarmService {
         confirmedAt: new Date(),
         confirmedByUserId: dto.confirmedByUserId,
         condition: AlarmCondition.CLEARED,
-        severity: AlarmSeverity.CLEAR,
         clearedAt: new Date(),
       },
     });

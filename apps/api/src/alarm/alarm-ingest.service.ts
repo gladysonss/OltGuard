@@ -127,9 +127,12 @@ export class AlarmIngestService {
       return null;
     }
 
+    // So marca condition: CLEARED - a severidade original e mantida (ver
+    // AlarmService.clear, mesmo motivo). Quem indica resolvido e o
+    // condition, nao a severidade.
     return this.prisma.alarm.update({
       where: { id: active.id },
-      data: { condition: AlarmCondition.CLEARED, severity: AlarmSeverity.CLEAR, clearedAt: new Date() },
+      data: { condition: AlarmCondition.CLEARED, clearedAt: new Date() },
     });
   }
 

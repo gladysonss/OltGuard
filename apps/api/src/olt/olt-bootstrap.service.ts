@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AlarmCondition, AlarmSeverity, OltBootstrapStatus, OnuStatus } from '@prisma/client';
+import { AlarmCondition, OltBootstrapStatus, OnuStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption.service';
 import { createSnmpSession, getOid, walkSubtree, type SnmpVarbind } from './snmp-client.util';
@@ -340,9 +340,11 @@ export class OltBootstrapService {
           },
         });
 
+        // So marca condition: CLEARED - severidade original mantida (ver
+        // AlarmService.clear, mesmo motivo em todo lugar que fecha alarme).
         await tx.alarm.updateMany({
           where: { onuId: onu.id, condition: AlarmCondition.ACTIVE },
-          data: { condition: AlarmCondition.CLEARED, severity: AlarmSeverity.CLEAR, clearedAt: new Date() },
+          data: { condition: AlarmCondition.CLEARED, clearedAt: new Date() },
         });
         await tx.alarm.updateMany({
           where: { onuId: onu.id },

@@ -112,15 +112,19 @@ model AllowedNetwork {
   createdAt DateTime @default(now())
 }
 
+/// Estado administrativo da ONU exatamente como a Parks reporta (walk SNMP
+/// em oltOnuStatus, ver OltBootstrapService.walkOnus) - nao e um enum
+/// generico multi-vendor porque hoje so a Parks e suportada (mesma logica de
+/// Olt.manufacturer) e cada fabricante nomeia/ordena esses estados de um
+/// jeito diferente.
 enum OnuStatus {
-  UNKNOWN
-  DISCOVERED
-  PROVISIONED
-  ONLINE
-  OFFLINE
-  DOWN
-  BLACKLISTED
-  SIGNAL_DEGRADED
+  INVALID
+  INACTIVE
+  ACTIVATE_PENDING
+  ACTIVE
+  DEACTIVATE_PENDING
+  DISABLE_PENDING
+  DISABLE
 }
 
 model Onu {
@@ -129,11 +133,14 @@ model Onu {
   olt   Olt    @relation(fields: [oltId], references: [id], onDelete: Cascade)
 
   serialNumber  String
+  /// Nome/apelido configurado na OLT pro assinante (oltOnuAlias) - opcional,
+  /// muitas ONUs nao tem alias configurado.
+  alias         String?
   slotNo        Int
   portNo        Int
   logicalPortNo Int
 
-  status     OnuStatus @default(UNKNOWN)
+  status     OnuStatus @default(INACTIVE)
   lastSeenAt DateTime?
 
   createdAt DateTime @default(now())

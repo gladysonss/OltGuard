@@ -1,11 +1,62 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OltBootstrapStatus } from '@prisma/client';
+import { OltBootstrapStatus, OnuStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption.service';
-import { createSnmpSession, walkSubtree } from './snmp-client.util';
+import { createSnmpSession, walkSubtree, type SnmpVarbind } from './snmp-client.util';
+import { formatOnuSerialNumber } from './onu-serial.util';
 
 /** ifName (IF-MIB::ifXTable) - nome de cada interface da OLT, indexado por ifIndex. */
 const IF_NAME_OID = '1.3.6.1.2.1.31.1.1.1.1';
+
+/**
+ * OIDs da Parks pra cada ONU cadastrada na OLT - tabelas indexadas por
+ * slot.pon.posicao (os 3 ultimos numeros do OID de cada instancia, ex:
+ * ".62.1.1.1" = alias da ONU 1/1/1). Guardamos aqui so o prefixo da coluna
+ * (sem os 3 indices), que e o que se anda com walkSubtree().
+ */
+const ONU_ALIAS_OID = '1.3.6.1.4.1.6771.10.1.5.1.62.1';
+const ONU_SERIAL_OID = '1.3.6.1.4.1.6771.10.1.5.1.18.1';
+const ONU_STATUS_OID = '1.3.6.1.4.1.6771.10.1.5.1.5.1';
+
+/** oltOnuStatus - estado administrativo da ONU reportado pela Parks. */
+const ONU_STATUS_MAP: Record<number, OnuStatus> = {
+  0: OnuStatus.INVALID,
+  1: OnuStatus.INACTIVE,
+  2: OnuStatus.ACTIVATE_PENDING,
+  3: OnuStatus.ACTIVE,
+  4: OnuStatus.DEACTIVATE_PENDING,
+  5: OnuStatus.DISABLE_PENDING,
+  6: OnuStatus.DISABLE,
+};
+
+interface OnuPosition {
+  slotNo: number;
+  portNo: number;
+  logicalPortNo: number;
+}
+
+function onuPositionKey(pos: OnuPosition): string {
+  return `${pos.slotNo}.${pos.portNo}.${pos.logicalPortNo}`;
+}
+
+/** Extrai slot.pon.posicao dos 3 ultimos numeros do OID (ver ONU_*_OID acima). */
+function parseOnuPosition(oid: string, baseOid: string): OnuPosition | null {
+  const suffix = oid.slice(baseOid.length + 1);
+  const parts = suffix.split('.').map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
+  const [slotNo, portNo, logicalPortNo] = parts;
+  return { slotNo, portNo, logicalPortNo };
+}
+
+function indexByPosition(varbinds: SnmpVarbind[], baseOid: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const vb of varbinds) {
+    const pos = parseOnuPosition(vb.oid, baseOid);
+    if (!pos) continue;
+    map.set(onuPositionKey(pos), vb.value.trim());
+  }
+  return map;
+}
 
 @Injectable()
 export class OltBootstrapService {
@@ -17,11 +68,12 @@ export class OltBootstrapService {
   ) {}
 
   /**
-   * Passo 1 do bootstrap de uma OLT: anda ifName (IF-MIB) e guarda so as
-   * interfaces GPON (nome comecando com "gpon", case-insensitive - convencao
-   * Parks pra porta PON, ex: "gpon0/1"). Disparado fire-and-forget na criacao
-   * da OLT (ver OltService.create) - por isso nunca lanca, so registra o
-   * resultado em bootstrapStatus/bootstrapError.
+   * Bootstrap de uma OLT: passo 1 anda ifName (IF-MIB) e guarda so as
+   * interfaces GPON; passo 2 anda alias/serial/status de cada ONU
+   * cadastrada na OLT. Disparado fire-and-forget na criacao da OLT (ver
+   * OltService.create) e sob demanda pelo botao "Sincronizar" (ver
+   * OltService.syncGpons) - por isso nunca lanca, so registra o resultado
+   * em bootstrapStatus/bootstrapError.
    */
   async walkGpons(oltId: string): Promise<void> {
     const olt = await this.prisma.olt.findUnique({ where: { id: oltId } });
@@ -44,35 +96,100 @@ export class OltBootstrapService {
     });
 
     try {
-      const varbinds = await walkSubtree(session, IF_NAME_OID);
-      const gpons = varbinds
-        .map((vb) => ({
-          ifIndex: Number(vb.oid.slice(IF_NAME_OID.length + 1)),
-          ifName: vb.value.trim(),
-        }))
-        .filter((iface) => iface.ifName.toLowerCase().startsWith('gpon'));
-
-      await this.prisma.$transaction([
-        this.prisma.gponInterface.deleteMany({ where: { oltId } }),
-        ...(gpons.length
-          ? [this.prisma.gponInterface.createMany({ data: gpons.map((g) => ({ ...g, oltId })) })]
-          : []),
-      ]);
+      const gponCount = await this.walkGponInterfaces(oltId, session);
+      const onuCount = await this.walkOnus(oltId, session);
 
       await this.prisma.olt.update({
         where: { id: oltId },
         data: { bootstrapStatus: OltBootstrapStatus.ACTIVE, bootstrapCompletedAt: new Date() },
       });
-      this.logger.log(`Walk de GPONs concluido para OLT ${olt.name}: ${gpons.length} encontrada(s)`);
+      this.logger.log(
+        `Bootstrap concluido para OLT ${olt.name}: ${gponCount} GPON(s), ${onuCount} ONU(s)`,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await this.prisma.olt.update({
         where: { id: oltId },
         data: { bootstrapStatus: OltBootstrapStatus.FAILED, bootstrapError: message },
       });
-      this.logger.error(`Walk de GPONs falhou para OLT ${olt.name}: ${message}`);
+      this.logger.error(`Bootstrap falhou para OLT ${olt.name}: ${message}`);
     } finally {
       session.close();
     }
+  }
+
+  /**
+   * Passo 1: anda ifName e substitui (delete + insert) as GponInterface da
+   * OLT pelas que comecam com "gpon" (case-insensitive - convencao Parks).
+   */
+  private async walkGponInterfaces(oltId: string, session: ReturnType<typeof createSnmpSession>): Promise<number> {
+    const varbinds = await walkSubtree(session, IF_NAME_OID);
+    const gpons = varbinds
+      .map((vb) => ({
+        ifIndex: Number(vb.oid.slice(IF_NAME_OID.length + 1)),
+        ifName: vb.value.trim(),
+      }))
+      .filter((iface) => iface.ifName.toLowerCase().startsWith('gpon'));
+
+    await this.prisma.$transaction([
+      this.prisma.gponInterface.deleteMany({ where: { oltId } }),
+      ...(gpons.length
+        ? [this.prisma.gponInterface.createMany({ data: gpons.map((g) => ({ ...g, oltId })) })]
+        : []),
+    ]);
+
+    return gpons.length;
+  }
+
+  /**
+   * Passo 2: anda alias/serial/status de cada ONU (3 tabelas Parks
+   * indexadas por slot.pon.posicao) e faz upsert em Onu por
+   * (oltId, slotNo, portNo, logicalPortNo). So cria/atualiza uma ONU quando
+   * ha serial (sem serial nao da pra identificar ela de forma estavel entre
+   * walks). Ao contrario de GponInterface, nunca deleta ONUs que sumiram do
+   * walk - Alarm/Event tem onDelete: Cascade em onuId, entao apagar a ONU
+   * apagaria o historico de alarmes dela junto.
+   */
+  private async walkOnus(oltId: string, session: ReturnType<typeof createSnmpSession>): Promise<number> {
+    const [aliasVarbinds, serialVarbinds, statusVarbinds] = await Promise.all([
+      walkSubtree(session, ONU_ALIAS_OID),
+      walkSubtree(session, ONU_SERIAL_OID),
+      walkSubtree(session, ONU_STATUS_OID),
+    ]);
+
+    const aliasByKey = indexByPosition(aliasVarbinds, ONU_ALIAS_OID);
+    const serialByKey = indexByPosition(serialVarbinds, ONU_SERIAL_OID);
+    const statusRawByKey = indexByPosition(statusVarbinds, ONU_STATUS_OID);
+
+    let count = 0;
+    for (const [key, serialRaw] of serialByKey) {
+      const [slotNo, portNo, logicalPortNo] = key.split('.').map(Number);
+      const serialNumber = formatOnuSerialNumber(serialRaw);
+      const alias = aliasByKey.get(key) || null;
+      const statusRaw = statusRawByKey.get(key);
+      const status = statusRaw !== undefined ? ONU_STATUS_MAP[Number(statusRaw)] : undefined;
+
+      await this.prisma.onu.upsert({
+        where: { oltId_slotNo_portNo_logicalPortNo: { oltId, slotNo, portNo, logicalPortNo } },
+        create: {
+          oltId,
+          slotNo,
+          portNo,
+          logicalPortNo,
+          serialNumber,
+          alias,
+          status: status ?? OnuStatus.INACTIVE,
+          lastSeenAt: new Date(),
+        },
+        update: {
+          serialNumber,
+          alias,
+          status,
+          lastSeenAt: new Date(),
+        },
+      });
+      count += 1;
+    }
+    return count;
   }
 }

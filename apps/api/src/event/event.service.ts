@@ -28,7 +28,9 @@ export class EventService {
         where,
         include: {
           olt: { select: { id: true, name: true } },
-          onu: { select: { id: true, serialNumber: true } },
+          // Ver AlarmService.findAll - mesmo motivo pro removedOnu.
+          onu: { select: { id: true, serialNumber: true, alias: true } },
+          removedOnu: { select: { id: true, serialNumber: true, alias: true } },
         },
         orderBy: { occurredAt: 'desc' },
         skip: (page - 1) * pageSize,

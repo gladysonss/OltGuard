@@ -56,3 +56,26 @@ export function walkSubtree(session: ReturnType<typeof createSnmpSession>, baseO
     );
   });
 }
+
+/**
+ * GET de um unico OID - usado quando so falta um dado pontual (ex: alias de
+ * uma ONU recem-provisionada via trap) e nao vale a pena andar a tabela
+ * inteira de novo. Devolve undefined se o OID nao existir (noSuchInstance
+ * etc) em vez de rejeitar - so erro de rede/timeout rejeita a promise.
+ */
+export function getOid(session: ReturnType<typeof createSnmpSession>, oid: string): Promise<string | undefined> {
+  return new Promise((resolve, reject) => {
+    session.get([oid], (error: Error | null, varbinds: { oid: string; type: number; value: unknown }[]) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      const vb = varbinds[0];
+      if (!vb || snmp.isVarbindError(vb)) {
+        resolve(undefined);
+        return;
+      }
+      resolve(Buffer.isBuffer(vb.value) ? vb.value.toString('utf8') : String(vb.value));
+    });
+  });
+}

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OltBootstrapStatus, OnuStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption.service';
-import { createSnmpSession, walkSubtree, type SnmpVarbind } from './snmp-client.util';
+import { createSnmpSession, getOid, walkSubtree, type SnmpVarbind } from './snmp-client.util';
 import { formatOnuSerialNumber } from './onu-serial.util';
 
 /** ifName (IF-MIB::ifXTable) - nome de cada interface da OLT, indexado por ifIndex. */
@@ -29,7 +29,7 @@ const ONU_STATUS_MAP: Record<number, OnuStatus> = {
   6: OnuStatus.DISABLE,
 };
 
-interface OnuPosition {
+export interface OnuPosition {
   slotNo: number;
   portNo: number;
   logicalPortNo: number;
@@ -116,6 +116,53 @@ export class OltBootstrapService {
     } finally {
       session.close();
     }
+  }
+
+  /**
+   * Cria/atualiza uma unica ONU a partir da trap pROVISIONED (ver
+   * TrapReceiverService) - ela ja traz slot/pon/posicao e serial, so falta
+   * o alias, que essa trap nao carrega. Em vez de andar as 3 tabelas
+   * inteiras de novo (walkOnus), faz so um GET pontual no alias dessa ONU.
+   * Fire-and-forget (chamado sem `await` no trap receiver) - nunca lanca,
+   * so loga se o GET do alias falhar (a ONU ainda e salva sem alias, que
+   * fica pra um proximo "Sincronizar" preencher).
+   */
+  async upsertOnuFromProvisionedTrap(oltId: string, position: OnuPosition, serialNumber: string): Promise<void> {
+    const olt = await this.prisma.olt.findUnique({ where: { id: oltId } });
+    if (!olt) return;
+
+    const session = createSnmpSession({
+      ipAddress: olt.ipAddress,
+      snmpPort: olt.snmpPort,
+      community: this.encryption.decrypt(olt.snmpCommunity),
+    });
+
+    let alias: string | null = null;
+    try {
+      const aliasOid = `${ONU_ALIAS_OID}.${position.slotNo}.${position.portNo}.${position.logicalPortNo}`;
+      alias = (await getOid(session, aliasOid))?.trim() || null;
+    } catch (err) {
+      this.logger.warn(
+        `Falha ao buscar alias da ONU recem-provisionada (OLT ${olt.name}, ` +
+          `${position.slotNo}/${position.portNo}/${position.logicalPortNo}): ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      session.close();
+    }
+
+    await this.prisma.onu.upsert({
+      where: {
+        oltId_slotNo_portNo_logicalPortNo: {
+          oltId,
+          slotNo: position.slotNo,
+          portNo: position.portNo,
+          logicalPortNo: position.logicalPortNo,
+        },
+      },
+      create: { oltId, ...position, serialNumber, alias, status: OnuStatus.ACTIVE, lastSeenAt: new Date() },
+      update: { serialNumber, alias, status: OnuStatus.ACTIVE, lastSeenAt: new Date() },
+    });
   }
 
   /**

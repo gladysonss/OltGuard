@@ -110,6 +110,30 @@ Testado com um agente SNMP mock (`net-snmp` `createAgent`, sem uso em
 producao) simulando `ifXTable` e as 3 tabelas de ONU - nao ha script de
 teste no repo, foi so verificacao manual.
 
+### Criacao incremental de ONU via trap (sem esperar sincronizar)
+
+A trap `pROVISIONED` (`oltOnuEventIndication.7`, `OltInternalEvent.OnuProvisioned`)
+ja traz slot/pon/posicao e serial da ONU que acabou de ser provisionada -
+`TrapReceiverService` usa isso pra criar/atualizar a `Onu` na hora
+(fire-and-forget, ver `bootstrap.upsertOnuFromProvisionedTrap()`), sem esperar o
+cliente clicar em "Sincronizar" de novo. Como a trap nao carrega o alias,
+esse metodo faz so um `GET` pontual (`snmp-client.util.ts` `getOid()`, sem
+andar a tabela inteira) no OID exato dessa ONU. Se o GET falhar, a ONU e
+salva mesmo assim sem alias (`status: ACTIVE` por definicao - a trap so
+dispara quando o provisionamento deu certo) - o alias fica pra um proximo
+walk completo preencher. `ParsedTrapAlarm.event` (o `OltInternalEvent` de
+`ParksTrapDefinition`, ate entao nao propagado) foi adicionado especifica-
+mente pra dar esse match sem depender do nome cru da MIB (`mibName`).
+
+**Nao ha trap de remocao de ONU nesta MIB** (`GPON-OLT-FAULT.mib`) -
+conferido: nenhum `NOTIFICATION-TYPE` dos grupos ONU (`oltOnuAlarmIndication`,
+`oltOnuEventIndication`) fala de remover/desregistrar uma ONU. Os traps mais
+proximos sao `bLACKLISt` (ONU entrou em lista negra, mas continua existindo)
+e `oNUDNi`/ONU DOWN (alarme, ONU so ficou offline). Uma ONU que sai
+fisicamente da rede so aparece como "sumiu do walk" (`walkOnus` nao a acha
+mais) - e por isso o walk **nao deleta** ONUs ausentes (ver acima); nao ha
+como saber via trap que ela foi removida de verdade.
+
 `POST /olts/:id/sync-gpons` (botao "Sincronizar" na listagem de OLTs,
 `OltListPage.tsx`) refaz o bootstrap inteiro (GPONs + ONUs) sob demanda -
 pras OLTs cadastradas antes dessa feature existir (`bootstrapStatus` ainda

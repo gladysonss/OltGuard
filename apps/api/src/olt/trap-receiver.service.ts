@@ -2,8 +2,9 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { Subject } from 'rxjs';
 import { OltRegistryService } from './olt-registry.service';
+import { OltBootstrapService } from './olt-bootstrap.service';
 import { AlarmIngestService, type ParsedTrapAlarm } from '../alarm/alarm-ingest.service';
-import { INDICATION_OBJECT_OID, PARKS_TRAP_MAP } from './parks-trap-mapping';
+import { INDICATION_OBJECT_OID, PARKS_TRAP_MAP, OltInternalEvent } from './parks-trap-mapping';
 import { formatOnuSerialNumber } from './onu-serial.util';
 import type { TrapLogEntry } from './trap-log.types';
 
@@ -35,6 +36,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly registry: OltRegistryService,
     private readonly alarmIngest: AlarmIngestService,
+    private readonly bootstrap: OltBootstrapService,
   ) {}
 
   onModuleInit() {
@@ -201,6 +203,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       trapOid,
       mibName: definition.mibName,
       description: definition.description,
+      event: definition.event,
       severity: definition.severity,
       isAlarm: definition.isAlarm,
       condition,
@@ -233,5 +236,23 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
     this.alarmIngest
       .ingest(parsed)
       .catch((err) => this.logger.error(`Falha ao gravar alarme: ${err.message}`));
+
+    // pROVISIONED ja traz slot/pon/posicao + serial da ONU - da pra criar o
+    // registro dela sem esperar a proxima sincronizacao manual/completa, so
+    // faltando um GET pontual do alias (ver OltBootstrapService).
+    if (
+      parsed.event === OltInternalEvent.OnuProvisioned &&
+      parsed.serialNumber &&
+      parsed.portNo !== undefined &&
+      parsed.logicalPortNo !== undefined
+    ) {
+      void this.bootstrap
+        .upsertOnuFromProvisionedTrap(
+          parsed.oltId,
+          { slotNo: parsed.slotNo, portNo: parsed.portNo, logicalPortNo: parsed.logicalPortNo },
+          parsed.serialNumber,
+        )
+        .catch((err) => this.logger.error(`Falha ao registrar ONU provisionada: ${err.message}`));
+    }
   }
 }

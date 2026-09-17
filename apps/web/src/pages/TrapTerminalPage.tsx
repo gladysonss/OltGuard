@@ -64,7 +64,7 @@ export function TrapTerminalPage() {
   }, [entries]);
 
   return (
-    <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: '18px 22px', gap: 12 }}>
+    <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, padding: '18px 22px', gap: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 600 }}>Terminal de Traps</div>

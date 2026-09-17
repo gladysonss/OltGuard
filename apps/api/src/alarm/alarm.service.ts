@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AlarmCondition, AlarmSeverity } from '@prisma/client';
+import { AlarmCondition, AlarmSeverity, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { parseOltPortKeys } from '../common/olt-port.util';
 import { QueryAlarmsDto } from './dto/query-alarms.dto';
 import { ConfirmAlarmDto } from './dto/confirm-alarm.dto';
 
@@ -24,10 +25,18 @@ export class AlarmService {
     const condition = query.condition;
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
-    const where = {
-      oltId: query.oltId?.length ? { in: query.oltId } : undefined,
-      slotNo: query.slotNo,
-      portNo: query.portNo,
+    const oltPorts = parseOltPortKeys(query.oltPort);
+    const where: Prisma.AlarmWhereInput = {
+      // oltPort (GPON individual selecionada na arvore) e mais especifico
+      // que oltId/slotNo/portNo separados - quando presente, substitui os
+      // dois em vez de combinar.
+      ...(oltPorts.length
+        ? { OR: oltPorts.map((p) => ({ oltId: p.oltId, slotNo: p.slotNo, portNo: p.portNo })) }
+        : {
+            oltId: query.oltId?.length ? { in: query.oltId } : undefined,
+            slotNo: query.slotNo,
+            portNo: query.portNo,
+          }),
       logicalPortNo: query.logicalPortNo,
       severity: query.severity?.length ? { in: query.severity } : undefined,
       condition,
@@ -57,10 +66,16 @@ export class AlarmService {
   }
 
   /** Contagem de alarmes ativos por severidade - alimenta o grafico de barras. */
-  async summary(oltIds?: string[]) {
+  async summary(oltIds?: string[], oltPortKeys?: string[]) {
+    const oltPorts = parseOltPortKeys(oltPortKeys);
     const groups = await this.prisma.alarm.groupBy({
       by: ['severity'],
-      where: { condition: AlarmCondition.ACTIVE, oltId: oltIds?.length ? { in: oltIds } : undefined },
+      where: {
+        condition: AlarmCondition.ACTIVE,
+        ...(oltPorts.length
+          ? { OR: oltPorts.map((p) => ({ oltId: p.oltId, slotNo: p.slotNo, portNo: p.portNo })) }
+          : { oltId: oltIds?.length ? { in: oltIds } : undefined }),
+      },
       _count: { _all: true },
     });
 

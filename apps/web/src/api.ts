@@ -245,6 +245,7 @@ export const api = {
   clearTraps: () => request<void>('/traps/recent', { method: 'DELETE' }),
   listAlarms: (params?: {
     oltId?: string[];
+    oltPort?: string[];
     condition?: AlarmCondition;
     severity?: AlarmSeverity[];
     slotNo?: number;
@@ -257,6 +258,7 @@ export const api = {
   }) => {
     const search = new URLSearchParams();
     if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
+    if (params?.oltPort?.length) search.set('oltPort', params.oltPort.join(','));
     if (params?.condition) search.set('condition', params.condition);
     if (params?.severity?.length) search.set('severity', params.severity.join(','));
     if (params?.slotNo) search.set('slotNo', String(params.slotNo));
@@ -269,18 +271,22 @@ export const api = {
     const qs = search.toString();
     return request<Paginated<Alarm>>(`/alarms${qs ? `?${qs}` : ''}`);
   },
-  alarmSummary: (oltId?: string[]) => {
-    const qs = oltId?.length ? `?oltId=${encodeURIComponent(oltId.join(','))}` : '';
-    return request<AlarmSummary>(`/alarms/summary${qs}`);
+  alarmSummary: (oltId?: string[], oltPort?: string[]) => {
+    const search = new URLSearchParams();
+    if (oltId?.length) search.set('oltId', oltId.join(','));
+    if (oltPort?.length) search.set('oltPort', oltPort.join(','));
+    const qs = search.toString();
+    return request<AlarmSummary>(`/alarms/summary${qs ? `?${qs}` : ''}`);
   },
   alarmSummaryByOlt: () => request<OltWorstSeverity>('/alarms/summary-by-olt'),
   confirmAlarm: (id: string) => request<Alarm>(`/alarms/${id}/confirm`, { method: 'PATCH', body: '{}' }),
   clearAlarm: (id: string) => request<Alarm>(`/alarms/${id}/clear`, { method: 'PATCH' }),
   confirmAndClearAlarm: (id: string) =>
     request<Alarm>(`/alarms/${id}/confirm-and-clear`, { method: 'PATCH', body: '{}' }),
-  listEvents: (params?: { oltId?: string[]; page?: number; pageSize?: number }) => {
+  listEvents: (params?: { oltId?: string[]; oltPort?: string[]; page?: number; pageSize?: number }) => {
     const search = new URLSearchParams();
     if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
+    if (params?.oltPort?.length) search.set('oltPort', params.oltPort.join(','));
     if (params?.page) search.set('page', String(params.page));
     if (params?.pageSize) search.set('pageSize', String(params.pageSize));
     const qs = search.toString();

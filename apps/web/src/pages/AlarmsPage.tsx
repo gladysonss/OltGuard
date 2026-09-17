@@ -55,6 +55,21 @@ function gponEmptyMessage(olt: Olt): string {
   return 'Nenhuma GPON encontrada.';
 }
 
+/**
+ * O nome da interface segue a convencao Parks "gpon{slot}/{porta}" (ex:
+ * "gpon1/16") - so da pra filtrar Alarm/Event por essa GPON especifica
+ * quando o nome bate nesse formato (senao nao ha como saber slot/porta).
+ */
+function parseGponName(ifName: string): { slotNo: number; portNo: number } | null {
+  const match = /^gpon(\d+)\/(\d+)$/i.exec(ifName.trim());
+  if (!match) return null;
+  return { slotNo: Number(match[1]), portNo: Number(match[2]) };
+}
+
+function gponKey(oltId: string, slotNo: number, portNo: number): string {
+  return `${oltId}:${slotNo}:${portNo}`;
+}
+
 const ALL_SEVERITIES: AlarmSeverity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'WARNING', 'INFO'];
 
 interface AlarmFilters {
@@ -81,6 +96,7 @@ export function AlarmsPage() {
   const [summary, setSummary] = useState<AlarmSummary | null>(null);
   const [oltWorstSeverity, setOltWorstSeverity] = useState<OltWorstSeverity>({});
   const [selectedOltIds, setSelectedOltIds] = useState<Set<string>>(new Set());
+  const [selectedGponKeys, setSelectedGponKeys] = useState<Set<string>>(new Set());
   const [collapsedCities, setCollapsedCities] = useState<Set<string>>(new Set());
   const [expandedOltIds, setExpandedOltIds] = useState<Set<string>>(new Set());
   const [gponInterfacesByOlt, setGponInterfacesByOlt] = useState<
@@ -98,11 +114,16 @@ export function AlarmsPage() {
   const reload = useCallback(async () => {
     setError(null);
     try {
-      const oltId = selectedOltIds.size ? [...selectedOltIds] : undefined;
+      // Selecionar GPONs especificas e mais preciso que selecionar OLTs
+      // inteiras - quando ha alguma, ela manda no filtro de escopo (ver
+      // AlarmService.findAll/EventService.findAll no backend).
+      const oltPort = selectedGponKeys.size ? [...selectedGponKeys] : undefined;
+      const oltId = !oltPort && selectedOltIds.size ? [...selectedOltIds] : undefined;
       const [oltsRes, alarmsRes, summaryRes, eventsRes, worstRes] = await Promise.all([
         api.listOlts(),
         api.listAlarms({
           oltId,
+          oltPort,
           condition: ALARM_STATUS_CONDITION[alarmStatusFilter],
           severity: filters.severity.length ? filters.severity : undefined,
           slotNo: filters.slotNo ? Number(filters.slotNo) : undefined,
@@ -113,8 +134,8 @@ export function AlarmsPage() {
           page,
           pageSize,
         }),
-        api.alarmSummary(oltId),
-        api.listEvents({ oltId, page, pageSize }),
+        api.alarmSummary(oltId, oltPort),
+        api.listEvents({ oltId, oltPort, page, pageSize }),
         api.alarmSummaryByOlt(),
       ]);
       setOlts(oltsRes);
@@ -129,18 +150,18 @@ export function AlarmsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedOltIds, alarmStatusFilter, filters, page, pageSize]);
+  }, [selectedOltIds, selectedGponKeys, alarmStatusFilter, filters, page, pageSize]);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
-  // Qualquer mudanca de escopo (selecao de OLT, filtro, aba) invalida a
+  // Qualquer mudanca de escopo (selecao de OLT/GPON, filtro, aba) invalida a
   // pagina atual - senao o usuario pode ficar "preso" numa pagina que nao
   // existe mais pro novo resultado.
   useEffect(() => {
     setPage(1);
-  }, [selectedOltIds, alarmStatusFilter, filters, view]);
+  }, [selectedOltIds, selectedGponKeys, alarmStatusFilter, filters, view]);
 
   function toggleSeverity(sev: AlarmSeverity) {
     setFilters((f) => ({
@@ -154,6 +175,15 @@ export function AlarmsPage() {
       const next = new Set(prev);
       if (next.has(oltId)) next.delete(oltId);
       else next.add(oltId);
+      return next;
+    });
+  }
+
+  function toggleGponSelection(key: string) {
+    setSelectedGponKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }
@@ -312,11 +342,30 @@ export function AlarmsPage() {
                             <div style={gponEmptyStyle}>{gponEmptyMessage(olt)}</div>
                           )}
                           {Array.isArray(gponState) &&
-                            gponState.map((g) => (
-                              <div key={g.id} style={gponItemStyle}>
-                                {g.ifName}
-                              </div>
-                            ))}
+                            gponState.map((g) => {
+                              const parsed = parseGponName(g.ifName);
+                              const key = parsed ? gponKey(olt.id, parsed.slotNo, parsed.portNo) : null;
+                              return (
+                                <div
+                                  key={g.id}
+                                  onClick={() => key && toggleGponSelection(key)}
+                                  style={gponItemStyle(key !== null)}
+                                >
+                                  {key ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedGponKeys.has(key)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={() => toggleGponSelection(key)}
+                                      style={checkboxStyle}
+                                    />
+                                  ) : (
+                                    <span style={{ width: 13, flexShrink: 0 }} />
+                                  )}
+                                  {g.ifName}
+                                </div>
+                              );
+                            })}
                         </div>
                       )}
                     </Fragment>
@@ -370,11 +419,13 @@ export function AlarmsPage() {
               </button>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              {selectedOltIds.size === 0
-                ? 'Todas as OLTs'
-                : selectedOltIds.size === 1
-                  ? olts.find((o) => selectedOltIds.has(o.id))?.name
-                  : `${selectedOltIds.size} OLTs selecionadas`}
+              {selectedGponKeys.size > 0
+                ? `${selectedGponKeys.size} GPON${selectedGponKeys.size > 1 ? 's' : ''} selecionada${selectedGponKeys.size > 1 ? 's' : ''}`
+                : selectedOltIds.size === 0
+                  ? 'Todas as OLTs'
+                  : selectedOltIds.size === 1
+                    ? olts.find((o) => selectedOltIds.has(o.id))?.name
+                    : `${selectedOltIds.size} OLTs selecionadas`}
             </div>
             {view === 'alarms' && (
               <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3 }}>
@@ -595,12 +646,18 @@ const cityGroupHeaderStyle: React.CSSProperties = {
 };
 
 const collapseBtnStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  color: 'var(--text-muted)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 20,
+  height: 20,
+  flexShrink: 0,
+  background: 'var(--surface-2)',
+  border: '1px solid var(--border)',
+  borderRadius: 5,
+  color: 'var(--text)',
   cursor: 'pointer',
-  fontSize: 10,
-  padding: 2,
+  fontSize: 12,
   lineHeight: 1,
 };
 
@@ -613,15 +670,22 @@ const checkboxStyle: React.CSSProperties = {
 const gponSubTreeStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  padding: '2px 12px 4px 40px',
+  padding: '2px 12px 4px 36px',
 };
 
-const gponItemStyle: React.CSSProperties = {
-  fontSize: 11.5,
-  fontFamily: 'var(--font-mono)',
-  color: 'var(--text-muted)',
-  padding: '3px 0',
-};
+function gponItemStyle(selectable: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 11.5,
+    fontFamily: 'var(--font-mono)',
+    color: 'var(--text-muted)',
+    padding: '4px 6px',
+    borderRadius: 5,
+    cursor: selectable ? 'pointer' : 'default',
+  };
+}
 
 const gponEmptyStyle: React.CSSProperties = {
   fontSize: 11,

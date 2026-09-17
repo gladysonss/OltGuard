@@ -29,6 +29,23 @@ function worstSeverityColor(alarms: Alarm[], oltId: string): string {
   return `var(${SEVERITY_COLOR_VAR[worst.severity]})`;
 }
 
+const ALL_SEVERITIES: AlarmSeverity[] = ['CRITICAL', 'MAJOR', 'MINOR', 'WARNING', 'INFO'];
+
+interface AlarmFilters {
+  severity: AlarmSeverity[];
+  slotNo: string;
+  portNo: string;
+  logicalPortNo: string;
+  from: string;
+  to: string;
+}
+
+const EMPTY_FILTERS: AlarmFilters = { severity: [], slotNo: '', portNo: '', logicalPortNo: '', from: '', to: '' };
+
+function hasActiveFilters(f: AlarmFilters): boolean {
+  return f.severity.length > 0 || f.slotNo !== '' || f.portNo !== '' || f.logicalPortNo !== '' || f.from !== '' || f.to !== '';
+}
+
 export function AlarmsPage() {
   const [olts, setOlts] = useState<Olt[]>([]);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
@@ -39,13 +56,24 @@ export function AlarmsPage() {
   const [view, setView] = useState<View>('alarms');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<AlarmFilters>(EMPTY_FILTERS);
 
   const reload = useCallback(async () => {
     setError(null);
     try {
       const [oltsRes, alarmsRes, summaryRes, eventsRes] = await Promise.all([
         api.listOlts(),
-        api.listAlarms({ oltId: selectedOltId, condition: ALARM_STATUS_CONDITION[alarmStatusFilter] }),
+        api.listAlarms({
+          oltId: selectedOltId,
+          condition: ALARM_STATUS_CONDITION[alarmStatusFilter],
+          severity: filters.severity.length ? filters.severity : undefined,
+          slotNo: filters.slotNo ? Number(filters.slotNo) : undefined,
+          portNo: filters.portNo ? Number(filters.portNo) : undefined,
+          logicalPortNo: filters.logicalPortNo ? Number(filters.logicalPortNo) : undefined,
+          from: filters.from ? new Date(filters.from).toISOString() : undefined,
+          to: filters.to ? new Date(filters.to).toISOString() : undefined,
+        }),
         api.alarmSummary(selectedOltId),
         api.listEvents({ oltId: selectedOltId }),
       ]);
@@ -58,11 +86,18 @@ export function AlarmsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedOltId, alarmStatusFilter]);
+  }, [selectedOltId, alarmStatusFilter, filters]);
 
   useEffect(() => {
     reload();
   }, [reload]);
+
+  function toggleSeverity(sev: AlarmSeverity) {
+    setFilters((f) => ({
+      ...f,
+      severity: f.severity.includes(sev) ? f.severity.filter((s) => s !== sev) : [...f.severity, sev],
+    }));
+  }
 
   const maxCount = summary ? Math.max(1, ...Object.values(summary)) : 1;
 
@@ -165,8 +200,88 @@ export function AlarmsPage() {
               </div>
             )}
           </div>
-          <button onClick={() => reload()} style={secondaryBtnStyle}>Atualizar</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {view === 'alarms' && (
+              <button onClick={() => setShowFilters((s) => !s)} style={hasActiveFilters(filters) ? primaryBtnStyle : secondaryBtnStyle}>
+                Filtros{hasActiveFilters(filters) ? ` (${
+                  [filters.severity.length > 0, filters.slotNo !== '', filters.portNo !== '', filters.logicalPortNo !== '', filters.from !== '' || filters.to !== '']
+                    .filter(Boolean).length
+                })` : ''}
+              </button>
+            )}
+            <button onClick={() => reload()} style={secondaryBtnStyle}>Atualizar</button>
+          </div>
         </div>
+
+        {view === 'alarms' && showFilters && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={filterLabelStyle}>Severidade</span>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {ALL_SEVERITIES.map((sev) => (
+                  <button
+                    key={sev}
+                    onClick={() => toggleSeverity(sev)}
+                    style={severityChipStyle(sev, filters.severity.includes(sev))}
+                  >
+                    {SEVERITY_LABEL[sev]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={filterLabelStyle}>Slot</span>
+              <input
+                type="number"
+                min={1}
+                value={filters.slotNo}
+                onChange={(e) => setFilters((f) => ({ ...f, slotNo: e.target.value }))}
+                style={filterInputStyle}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={filterLabelStyle}>PON (porta)</span>
+              <input
+                type="number"
+                min={1}
+                value={filters.portNo}
+                onChange={(e) => setFilters((f) => ({ ...f, portNo: e.target.value }))}
+                style={filterInputStyle}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={filterLabelStyle}>ONU (posicao)</span>
+              <input
+                type="number"
+                min={1}
+                value={filters.logicalPortNo}
+                onChange={(e) => setFilters((f) => ({ ...f, logicalPortNo: e.target.value }))}
+                style={filterInputStyle}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={filterLabelStyle}>Levantado de</span>
+              <input
+                type="datetime-local"
+                value={filters.from}
+                onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+                style={filterInputStyle}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={filterLabelStyle}>Levantado ate</span>
+              <input
+                type="datetime-local"
+                value={filters.to}
+                onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+                style={filterInputStyle}
+              />
+            </div>
+            <button onClick={() => setFilters(EMPTY_FILTERS)} disabled={!hasActiveFilters(filters)} style={secondaryBtnStyle}>
+              Limpar filtros
+            </button>
+          </div>
+        )}
 
         {error && (
           <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--crit-soft)', color: 'var(--crit)', fontSize: 13 }}>
@@ -342,3 +457,44 @@ const secondaryBtnStyle: React.CSSProperties = {
   color: 'var(--text)',
   cursor: 'pointer',
 };
+
+const primaryBtnStyle: React.CSSProperties = {
+  ...secondaryBtnStyle,
+  background: 'var(--accent)',
+  borderColor: 'var(--accent)',
+  color: '#171a21',
+};
+
+const filterLabelStyle: React.CSSProperties = {
+  fontSize: 10.5,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  color: 'var(--text-muted)',
+};
+
+const filterInputStyle: React.CSSProperties = {
+  background: 'var(--surface-2)',
+  border: '1px solid var(--border)',
+  borderRadius: 6,
+  padding: '6px 8px',
+  color: 'var(--text)',
+  fontSize: 12.5,
+  fontFamily: 'var(--font-mono)',
+  width: 150,
+};
+
+function severityChipStyle(sev: AlarmSeverity, active: boolean): React.CSSProperties {
+  return {
+    fontFamily: 'var(--font-sans)',
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+    padding: '4px 9px',
+    borderRadius: 5,
+    border: `1px solid var(${SEVERITY_COLOR_VAR[sev]})`,
+    background: active ? `var(${SEVERITY_COLOR_VAR[sev]})` : 'transparent',
+    color: active ? '#171a21' : `var(${SEVERITY_COLOR_VAR[sev]})`,
+    cursor: 'pointer',
+  };
+}

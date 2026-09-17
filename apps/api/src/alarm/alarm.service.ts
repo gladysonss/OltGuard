@@ -16,8 +16,13 @@ export class AlarmService {
         oltId: query.oltId,
         slotNo: query.slotNo,
         portNo: query.portNo,
-        severity: query.severity,
+        logicalPortNo: query.logicalPortNo,
+        severity: query.severity?.length ? { in: query.severity } : undefined,
         condition,
+        raisedAt:
+          query.from || query.to
+            ? { gte: query.from ? new Date(query.from) : undefined, lte: query.to ? new Date(query.to) : undefined }
+            : undefined,
       },
       include: {
         olt: { select: { id: true, name: true } },

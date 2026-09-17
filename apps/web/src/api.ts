@@ -205,10 +205,25 @@ export const api = {
     request<AllowedNetwork>('/allowed-networks', { method: 'POST', body: JSON.stringify(input) }),
   removeAllowedNetwork: (id: string) => request<void>(`/allowed-networks/${id}`, { method: 'DELETE' }),
   clearTraps: () => request<void>('/traps/recent', { method: 'DELETE' }),
-  listAlarms: (params?: { oltId?: string; condition?: AlarmCondition }) => {
+  listAlarms: (params?: {
+    oltId?: string;
+    condition?: AlarmCondition;
+    severity?: AlarmSeverity[];
+    slotNo?: number;
+    portNo?: number;
+    logicalPortNo?: number;
+    from?: string;
+    to?: string;
+  }) => {
     const search = new URLSearchParams();
     if (params?.oltId) search.set('oltId', params.oltId);
     if (params?.condition) search.set('condition', params.condition);
+    if (params?.severity?.length) search.set('severity', params.severity.join(','));
+    if (params?.slotNo) search.set('slotNo', String(params.slotNo));
+    if (params?.portNo) search.set('portNo', String(params.portNo));
+    if (params?.logicalPortNo) search.set('logicalPortNo', String(params.logicalPortNo));
+    if (params?.from) search.set('from', params.from);
+    if (params?.to) search.set('to', params.to);
     const qs = search.toString();
     return request<Alarm[]>(`/alarms${qs ? `?${qs}` : ''}`);
   },

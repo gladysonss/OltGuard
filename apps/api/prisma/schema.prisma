@@ -196,6 +196,13 @@ model Alarm {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // So um alarme ACTIVE por (oltId, trapOid, source, slotNo, portNo,
+  // logicalPortNo) - impede duplicata quando duas traps de SET quase
+  // simultaneas pro mesmo problema colidem na corrida find-then-create do
+  // AlarmIngestService. E um indice unico PARCIAL com COALESCE nos campos
+  // opcionais (Postgres nao aplica unicidade entre NULLs), que o Prisma
+  // Schema DSL nao representa - existe so na migration
+  // 20260917070000_alarm_active_dedup, ver alarm-ingest.service.ts.
   @@index([oltId, condition])
   @@index([oltId, slotNo, portNo])
 }

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AlarmCondition, AlarmSeverity, AlarmSource } from '@prisma/client';
+import { AlarmCondition, AlarmSeverity, AlarmSource, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const SEVERITY_MAP: Record<'info' | 'minor' | 'major' | 'critical', AlarmSeverity> = {
@@ -105,38 +105,59 @@ export class AlarmIngestService {
     });
   }
 
+  private findActiveWhere(trap: ParsedTrapAlarm, source: AlarmSource) {
+    return {
+      oltId: trap.oltId,
+      trapOid: trap.trapOid,
+      source,
+      slotNo: trap.slotNo,
+      portNo: trap.portNo ?? null,
+      logicalPortNo: trap.logicalPortNo ?? null,
+      condition: AlarmCondition.ACTIVE,
+    };
+  }
+
+  /**
+   * Duas traps de SET quase simultaneas pro mesmo alarme (comum - firmware
+   * reenvia trap "ainda ativa" periodicamente) podiam passar pelo find sem
+   * ver a outra ainda, e as duas criarem uma linha ACTIVE - o banco tem um
+   * indice unico parcial (ver migration alarm_active_dedup) que rejeita a
+   * segunda tentativa de create com erro P2002; nesse caso so atualiza a
+   * linha que a outra chamada acabou de criar, em vez de duplicar.
+   */
   private async raiseOrRefreshAlarm(trap: ParsedTrapAlarm, source: AlarmSource, onuId: string | null) {
-    const existing = await this.prisma.alarm.findFirst({
-      where: {
-        oltId: trap.oltId,
-        trapOid: trap.trapOid,
-        source,
-        slotNo: trap.slotNo,
-        portNo: trap.portNo ?? null,
-        logicalPortNo: trap.logicalPortNo ?? null,
-        condition: AlarmCondition.ACTIVE,
-      },
-    });
+    const where = this.findActiveWhere(trap, source);
+    const existing = await this.prisma.alarm.findFirst({ where });
 
     if (existing) {
       return this.prisma.alarm.update({ where: { id: existing.id }, data: { raisedAt: new Date() } });
     }
 
-    return this.prisma.alarm.create({
-      data: {
-        oltId: trap.oltId,
-        onuId,
-        source,
-        slotNo: trap.slotNo,
-        portNo: trap.portNo,
-        logicalPortNo: trap.logicalPortNo,
-        trapOid: trap.trapOid,
-        alarmName: trap.mibName,
-        description: trap.description,
-        severity: SEVERITY_MAP[trap.severity],
-        condition: AlarmCondition.ACTIVE,
-        raisedAt: new Date(),
-      },
-    });
+    try {
+      return await this.prisma.alarm.create({
+        data: {
+          oltId: trap.oltId,
+          onuId,
+          source,
+          slotNo: trap.slotNo,
+          portNo: trap.portNo,
+          logicalPortNo: trap.logicalPortNo,
+          trapOid: trap.trapOid,
+          alarmName: trap.mibName,
+          description: trap.description,
+          severity: SEVERITY_MAP[trap.severity],
+          condition: AlarmCondition.ACTIVE,
+          raisedAt: new Date(),
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const winner = await this.prisma.alarm.findFirst({ where });
+        if (winner) {
+          return this.prisma.alarm.update({ where: { id: winner.id }, data: { raisedAt: new Date() } });
+        }
+      }
+      throw err;
+    }
   }
 }

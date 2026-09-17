@@ -221,7 +221,10 @@ export function AlarmsPage() {
                 <span className="mono" style={{ color: 'var(--text-muted)' }}>
                   {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
                 </span>
-                <span className="mono">{alarm.alarmName}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span>{alarm.description ?? alarm.alarmName}</span>
+                  <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{alarm.alarmName}</span>
+                </span>
                 <span style={{ color: 'var(--text-muted)' }}>{alarm.confirmed ? 'Confirmado' : 'Nao confirmado'}</span>
                 <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                   {new Date(alarm.raisedAt).toLocaleString('pt-BR')}
@@ -276,7 +279,10 @@ export function AlarmsPage() {
                 <span className="mono" style={{ color: 'var(--text-muted)' }}>
                   {ev.slotNo}{ev.portNo ? `/${ev.portNo}` : ''}{ev.logicalPortNo ? `/${ev.logicalPortNo}` : ''}
                 </span>
-                <span className="mono">{ev.eventName}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span>{ev.description ?? ev.eventName}</span>
+                  <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{ev.eventName}</span>
+                </span>
                 <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                   {new Date(ev.occurredAt).toLocaleString('pt-BR')}
                 </span>
@@ -330,7 +336,7 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '110px 1.1fr 0.8fr 1.2fr 1fr 1fr 1.4fr',
+    gridTemplateColumns: '110px 1fr 0.7fr 2.2fr 0.9fr 1fr 1.4fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',
@@ -345,7 +351,7 @@ function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
 function eventLogRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '110px 1.1fr 0.8fr 1.6fr 1.2fr',
+    gridTemplateColumns: '110px 1fr 0.7fr 2.4fr 1.1fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',

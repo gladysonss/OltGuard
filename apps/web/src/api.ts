@@ -64,6 +64,7 @@ export interface Alarm {
   logicalPortNo: number | null;
   trapOid: string;
   alarmName: string;
+  description: string | null;
   severity: AlarmSeverity;
   condition: AlarmCondition;
   confirmed: boolean;
@@ -88,6 +89,7 @@ export interface OltGuardEvent {
   logicalPortNo: number | null;
   trapOid: string;
   eventName: string;
+  description: string | null;
   severity: AlarmSeverity;
   occurredAt: string;
   olt: { id: string; name: string };
@@ -104,6 +106,7 @@ export interface TrapLogEntry {
   outcome: TrapLogOutcome;
   trapOid?: string;
   mibName?: string;
+  description?: string;
   oltId?: string;
   oltName?: string;
   severity?: string;

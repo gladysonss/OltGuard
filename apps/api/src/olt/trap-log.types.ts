@@ -8,6 +8,7 @@ export interface TrapLogEntry {
   outcome: TrapLogOutcome;
   trapOid?: string;
   mibName?: string;
+  description?: string;
   oltId?: string;
   oltName?: string;
   severity?: string;

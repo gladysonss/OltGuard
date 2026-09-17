@@ -13,6 +13,8 @@ export interface ParsedTrapAlarm {
   oltId: string;
   trapOid: string;
   mibName: string;
+  /** Explicacao em portugues do que o alarme/evento significa (ver ParksTrapDefinition.description). */
+  description: string;
   severity: 'info' | 'minor' | 'major' | 'critical';
   isAlarm: boolean;
   /** undefined para traps de evento (sem par de limpeza); presente para traps de alarme. */
@@ -66,6 +68,7 @@ export class AlarmIngestService {
         logicalPortNo: trap.logicalPortNo,
         trapOid: trap.trapOid,
         eventName: trap.mibName,
+        description: trap.description,
         severity: SEVERITY_MAP[trap.severity],
         occurredAt: new Date(),
       },
@@ -129,6 +132,7 @@ export class AlarmIngestService {
         logicalPortNo: trap.logicalPortNo,
         trapOid: trap.trapOid,
         alarmName: trap.mibName,
+        description: trap.description,
         severity: SEVERITY_MAP[trap.severity],
         condition: AlarmCondition.ACTIVE,
         raisedAt: new Date(),

@@ -200,6 +200,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       oltId: validation.oltId!,
       trapOid,
       mibName: definition.mibName,
+      description: definition.description,
       severity: definition.severity,
       isAlarm: definition.isAlarm,
       condition,
@@ -216,6 +217,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       outcome: 'ACCEPTED',
       trapOid,
       mibName: definition.mibName,
+      description: definition.description,
       oltId: validation.oltId,
       oltName: validation.oltName,
       severity: definition.severity,
@@ -224,7 +226,7 @@ export class TrapReceiverService implements OnModuleInit, OnModuleDestroy {
       portNo,
       logicalPortNo,
       serialNumber,
-      message: `${definition.mibName}${condition ? ` (${condition})` : ''} - OLT ${validation.oltName}`,
+      message: `${definition.description}${condition ? ` (${condition})` : ''} - OLT ${validation.oltName} [${definition.mibName}]`,
       varbinds: displayVarbinds,
     });
 

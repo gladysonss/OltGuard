@@ -182,10 +182,14 @@ model Alarm {
   portNo Int?
   logicalPortNo Int?
 
-  trapOid   String
-  alarmName String
-  severity  AlarmSeverity
-  condition AlarmCondition @default(ACTIVE)
+  trapOid     String
+  alarmName   String
+  /// Explicacao em portugues do que o alarme significa na pratica (ver
+  /// ParksTrapDefinition.description em parks-trap-mapping.ts), gravada no
+  /// momento do alarme para nao depender de o mapeamento nao mudar depois.
+  description String?
+  severity    AlarmSeverity
+  condition   AlarmCondition @default(ACTIVE)
 
   confirmed       Boolean   @default(false)
   confirmedAt     DateTime?
@@ -220,9 +224,11 @@ model Event {
   portNo Int?
   logicalPortNo Int?
 
-  trapOid   String
-  eventName String
-  severity  AlarmSeverity
+  trapOid     String
+  eventName   String
+  /// Ver Alarm.description - mesma ideia, gravada no momento do evento.
+  description String?
+  severity    AlarmSeverity
 
   occurredAt DateTime
   createdAt  DateTime @default(now())

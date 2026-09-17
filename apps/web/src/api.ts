@@ -272,6 +272,7 @@ export const api = {
   listAlarms: (params?: {
     oltId?: string[];
     oltPort?: string[];
+    onuId?: string;
     condition?: AlarmCondition;
     severity?: AlarmSeverity[];
     slotNo?: number;
@@ -285,6 +286,7 @@ export const api = {
     const search = new URLSearchParams();
     if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
     if (params?.oltPort?.length) search.set('oltPort', params.oltPort.join(','));
+    if (params?.onuId) search.set('onuId', params.onuId);
     if (params?.condition) search.set('condition', params.condition);
     if (params?.severity?.length) search.set('severity', params.severity.join(','));
     if (params?.slotNo) search.set('slotNo', String(params.slotNo));
@@ -309,10 +311,11 @@ export const api = {
   clearAlarm: (id: string) => request<Alarm>(`/alarms/${id}/clear`, { method: 'PATCH' }),
   confirmAndClearAlarm: (id: string) =>
     request<Alarm>(`/alarms/${id}/confirm-and-clear`, { method: 'PATCH', body: '{}' }),
-  listEvents: (params?: { oltId?: string[]; oltPort?: string[]; page?: number; pageSize?: number }) => {
+  listEvents: (params?: { oltId?: string[]; oltPort?: string[]; onuId?: string; page?: number; pageSize?: number }) => {
     const search = new URLSearchParams();
     if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
     if (params?.oltPort?.length) search.set('oltPort', params.oltPort.join(','));
+    if (params?.onuId) search.set('onuId', params.onuId);
     if (params?.page) search.set('page', String(params.page));
     if (params?.pageSize) search.set('pageSize', String(params.pageSize));
     const qs = search.toString();

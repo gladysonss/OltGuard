@@ -22,6 +22,20 @@ export class QueryAlarmsDto {
   @IsString({ each: true })
   oltPort?: string[];
 
+  /**
+   * Alarmes de uma ONU especifica (botao "Ver alarmes" na aba ONUs) - por
+   * onuId (posicao atual, ver AlarmsPage.tsx) ou removedOnuId (posicao ja
+   * removida - so acessivel se o front souber o id do snapshot em
+   * OnuRemoved). Mais especifico que oltPort/oltId, substitui os dois.
+   */
+  @IsOptional()
+  @IsString()
+  onuId?: string;
+
+  @IsOptional()
+  @IsString()
+  removedOnuId?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

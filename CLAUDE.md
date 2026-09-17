@@ -95,16 +95,15 @@ os dois passos abaixo numa sessao SNMP so, ver `snmp-client.util.ts`
    producao). O serial usa o mesmo
    `formatOnuSerialNumber()` das traps (16 hex chars: 4 bytes de vendor ID
    em ASCII + 4 bytes de serie em hex). O status e o inteiro Parks bruto
-   (`OnuStatus`: `INVALID`=0 .. `DISABLE`=6, ver `ONU_STATUS_MAP`) - **essa
-   primeira coleta so estabelece a base**; deixar o status atualizado
-   depois com as traps de status de ONU e trabalho futuro, ainda nao
-   implementado. Faz upsert em `Onu` por `(oltId, slotNo, portNo,
+   (`OnuStatus`: `INVALID`=0 .. `DISABLE`=6, ver `ONU_STATUS_MAP`) - so serve
+   de base inicial/fallback, ja que o valor que importa no dia a dia
+   ("a ONU esta ativa ou nao") e mantido em tempo real pelas traps (ver
+   "Status em tempo real via trap" abaixo), sem esperar o proximo
+   "Sincronizar". Faz upsert em `Onu` por `(oltId, slotNo, portNo,
    logicalPortNo)`, so quando ha serial (sem serial nao da pra identificar
-   a ONU de forma estavel entre walks). **Nunca deleta** ONUs que sumiram
-   do walk, ao contrario de `GponInterface` - `Alarm`/`Event.onuId` tem
-   `onDelete: Cascade`, entao apagar a ONU apagaria o historico dela junto.
-   Essa e a primeira coisa no projeto que cria linhas em `Onu` (antes desta
-   feature a tabela era sempre vazia - ver nota em "Serial da ONU" acima).
+   a ONU de forma estavel entre walks). ONUs que sumiram do walk (posicao
+   que existia no banco e nao apareceu mais) sao **movidas pra
+   `OnuRemoved`**, nao simplesmente apagadas - ver "Remocao de ONU" abaixo.
 
 **Nunca lanca**: qualquer erro (timeout, community errada, etc) vira
 `bootstrapStatus: FAILED` + `bootstrapError` com a mensagem, nunca uma
@@ -147,12 +146,66 @@ mente pra dar esse match sem depender do nome cru da MIB (`mibName`).
 
 **Nao ha trap de remocao de ONU nesta MIB** (`GPON-OLT-FAULT.mib`) -
 conferido: nenhum `NOTIFICATION-TYPE` dos grupos ONU (`oltOnuAlarmIndication`,
-`oltOnuEventIndication`) fala de remover/desregistrar uma ONU. Os traps mais
-proximos sao `bLACKLISt` (ONU entrou em lista negra, mas continua existindo)
-e `oNUDNi`/ONU DOWN (alarme, ONU so ficou offline). Uma ONU que sai
-fisicamente da rede so aparece como "sumiu do walk" (`walkOnus` nao a acha
-mais) - e por isso o walk **nao deleta** ONUs ausentes (ver acima); nao ha
-como saber via trap que ela foi removida de verdade.
+`oltOnuEventIndication`) fala de remover/desregistrar uma ONU. Uma ONU que
+sai fisicamente da rede so aparece como "sumiu do walk" - por isso a
+deteccao de remocao (ver abaixo) so acontece no walk de reconciliacao, nao
+via trap.
+
+### Status em tempo real via trap
+
+`Onu.status` e mantido pelas proprias traps, sem esperar o cliente clicar
+em "Sincronizar" - `TrapReceiverService.resolveOnuStatusFromTrap()` mapeia:
+
+- `oNUDNi` (ONU down, alarme com SET/CLEAR) - SET vira `INACTIVE`, CLEAR
+  vira `ACTIVE`. E o sinal mais direto de "ONU ativa ou nao" que a MIB tem.
+- `bLACKLISt` (ONU entrou em lista negra) - vira `DISABLE`.
+
+Chama `OltBootstrapService.updateOnuStatusFromTrap(oltId, position, status)`
+(so `updateMany` por posicao - nao cria ONU nova, so atualiza uma que ja
+existe; a maioria dessas traps nao carrega serial, so slot/pon/posicao).
+Trap de qualquer outro tipo (sinal, performance, energia etc) nao mexe em
+`status` - so os dois casos acima tem correspondencia direta com os valores
+de `OnuStatus`. O walk continua sendo a fonte de verdade inicial (primeira
+vez que a ONU e vista) e de reconciliacao (recalcula status do zero se por
+algum motivo a ONU nunca mandou uma dessas traps).
+
+### Remocao de ONU (OnuRemoved)
+
+Toda vez que o walk completa com sucesso, `reconcileRemovedOnus()` compara
+as posicoes (`slotNo.portNo.logicalPortNo`) encontradas com as que ja
+existem em `Onu` pra aquela OLT - o que sumiu e considerado removido.
+Serial e posicao podem ser reaproveitados depois por outro cliente/ONU
+(hardware trocado de lugar, ONU reaproveitada), entao a linha da `Onu` **e
+apagada** (nao fica "zumbi" configuravel por engano) e o que ela era vira
+um snapshot em `OnuRemoved` (mesmos campos + `removedAt`) - assim da pra
+ver "quem esteve nessa posicao antes" sem reinterpretar a linha atual.
+
+Isso roda numa transacao por ONU removida: cria o snapshot em `OnuRemoved`,
+fecha (`CLEARED`) qualquer `Alarm` ainda `ACTIVE` dela (nao faz sentido um
+alarme ativo pra sempre de uma ONU que nao existe mais), migra todo
+`Alarm`/`Event` que apontava pra ela (`onuId` -> `removedOnuId`) e so entao
+apaga a `Onu`. Por isso `Alarm.onuId`/`Event.onuId` sao `onDelete: SetNull`
+(nao `Cascade` como antes) - o fluxo controlado sempre desvincula antes de
+apagar, o `SetNull` e so rede de seguranca se algo apagar a `Onu` direto.
+
+**Rede de seguranca contra falso-positivo de remocao**: se as 3 tabelas
+devolverem varbinds (`> 0`) mas nenhum parsear como posicao valida (ver
+`parseOnuPosition`), isso e sinal de erro de formato/OID - exatamente o que
+ja aconteceu em producao (ver "Pegadinha ja vivida em producao" acima) -
+e **nao** de que todas as ONUs sumiram de verdade. Nesse caso
+`reconcileRemovedOnus` e pulado (so um `WARN` no log) em vez de mover toda
+ONU cadastrada pra `OnuRemoved` por engano. So reconcilia quando o parsing
+bateu com pelo menos alguma posicao, ou quando as 3 tabelas vieram
+genuinamente vazias (0 varbinds, sem erro).
+
+### Vinculo Alarm/Event -> Onu por posicao, nao so por serial
+
+`AlarmIngestService.resolveOnu()` tenta achar a `Onu` primeiro por serial
+(so `lOSi` carrega esse dado) e, se nao achar, cai pra busca por posicao
+exata (`oltId, slotNo, portNo, logicalPortNo`) - sem esse fallback, a
+maioria das traps de ONU (`oNUDNi`, `sDi`, `lANLOS` etc, que so trazem
+posicao) nunca teria `onuId` preenchido, e o botao "Ver alarmes" da aba
+ONUs (que filtra por `onuId`) ficaria vazio pra quase todo alarme.
 
 `POST /olts/:id/sync-gpons` (botao "Sincronizar" na listagem de OLTs,
 `OltListPage.tsx`) refaz o bootstrap inteiro (GPONs + ONUs) sob demanda -
@@ -188,6 +241,20 @@ portNo}` no `where` do Prisma (`AlarmService.findAll`/`summary`,
 GPONs de OLTs e slots diferentes numa unica selecao, ao contrario de um
 filtro `slotNo`/`portNo` de valor unico.
 
+### Alarmes/eventos de uma ONU especifica (botao "Ver alarmes")
+
+Cada linha da aba ONUs tem um botao "Ver alarmes" (`OnuAlarmsModal` em
+`AlarmsPage.tsx`) que abre um modal com toggle **Ativo**/**Historico**,
+filtrando so aquela posicao (`?onuId=<id da Onu>`) - de proposito **nao**
+cruza por `serialNumber` entre posicoes/clientes diferentes, ja que a aba
+ONUs mostra o que esta ativo na OLT agora (ver "Remocao de ONU" acima pra
+entender por que serial/posicao podem ser reaproveitados). Ativo busca
+`Alarm` com `condition=ACTIVE`; Historico busca `Alarm` (todas condicoes) +
+`Event`. `onuId`/`removedOnuId` em `QueryAlarmsDto`/`QueryEventsDto` sao o
+filtro mais especifico de todos - quando presente, substitui
+`oltPort`/`oltId`/`slotNo`/`portNo` por completo (uma ONU so pertence a uma
+posicao).
+
 ## Modelo de dados (destaques)
 
 - **Alarm**: um por ocorrencia (raised → cleared). Indice unico PARCIAL
@@ -200,6 +267,12 @@ filtro `slotNo`/`portNo` de valor unico.
   simultaneas colidem (o codigo trata o erro `P2002` como "a outra chamada
   ganhou a corrida, so atualiza").
 - **Event**: ocorrencia pontual sem par de limpeza, sem merge/dedup.
+- **OnuRemoved**: snapshot de uma `Onu` cuja posicao sumiu de um walk (ver
+  "Remocao de ONU" acima) - `Alarm`/`Event` tem `removedOnuId` opcional pra
+  guardar o historico dela mesmo depois que a linha de `Onu` e apagada.
+  `Alarm.onuId`/`Event.onuId` sao `onDelete: SetNull` (nao `Cascade`) desde
+  essa feature - o fluxo de remocao sempre migra pra `removedOnuId` antes
+  de apagar a `Onu`.
 - **Olt.manufacturer**: enum `OltManufacturer` (`PARKS`, `HUAWEI`, `ZTE`,
   `FIBERHOME`, `DATACOM`) - **obrigatorio**. E um enum fixo (nao cadastravel
   pelo cliente) porque cada fabricante vai exigir um parser de trap proprio
@@ -224,7 +297,9 @@ resposta `{ data, total, page, pageSize }`) - `pageSize` vai ate 500
 (`QueryAlarmsDto`/`QueryEventsDto`/`QueryOnusDto`). O filtro de OLT aceita
 uma ou varias (`?oltId=abc` ou `?oltId=abc,def`, mesma convencao de
 `?severity=A,B`) ou `?oltPort=oltId:slot:porta,...` pra GPON individual (ver
-"Selecao de GPON individual" acima - vale pros 3 endpoints).
+"Selecao de GPON individual" acima - vale pros 3 endpoints). `/alarms` e
+`/events` tambem aceitam `?onuId=...`/`?removedOnuId=...`, mais especifico
+ainda que `oltPort` (ver "Alarmes/eventos de uma ONU especifica" acima).
 `OnuModule` (`apps/api/src/onu/`) e um modulo a parte, nao dentro de
 `OltModule` - segue o mesmo padrao de `EventModule` (recurso paginavel e
 filtravel tipo log), so que consultando a tabela `Onu` em vez de `Event`.

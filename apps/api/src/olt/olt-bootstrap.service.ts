@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OltBootstrapStatus, OnuStatus } from '@prisma/client';
+import { AlarmCondition, AlarmSeverity, OltBootstrapStatus, OnuStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/encryption.service';
 import { createSnmpSession, getOid, walkSubtree, type SnmpVarbind } from './snmp-client.util';
@@ -170,6 +170,31 @@ export class OltBootstrapService {
   }
 
   /**
+   * Atualiza o status de uma ONU ja cadastrada em tempo real, a partir de
+   * uma trap que indica mudanca de estado (ex: oNUDNi SET/CLEAR) - sem
+   * esperar o proximo "Sincronizar". So faz UPDATE (updateMany, nao upsert):
+   * se a ONU ainda nao existe no banco (walk inicial nunca rodou), a trap
+   * nao cria ela sozinha - isso fica pro walk completo ou pra trap
+   * pROVISIONED (ver upsertOnuFromProvisionedTrap), que tem serial pra
+   * identificar a ONU de forma estavel. Fire-and-forget (chamado sem
+   * `await` no trap receiver) - nunca lanca, so loga se a query falhar.
+   */
+  async updateOnuStatusFromTrap(oltId: string, position: OnuPosition, status: OnuStatus): Promise<void> {
+    try {
+      await this.prisma.onu.updateMany({
+        where: { oltId, slotNo: position.slotNo, portNo: position.portNo, logicalPortNo: position.logicalPortNo },
+        data: { status, lastSeenAt: new Date() },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Falha ao atualizar status da ONU via trap (OLT ${oltId}, ` +
+          `${position.slotNo}/${position.portNo}/${position.logicalPortNo}): ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  /**
    * Passo 1: anda ifName e substitui (delete + insert) as GponInterface da
    * OLT pelas que comecam com "gpon" (case-insensitive - convencao Parks).
    */
@@ -197,9 +222,13 @@ export class OltBootstrapService {
    * indexadas por slot.pon.posicao) e faz upsert em Onu por
    * (oltId, slotNo, portNo, logicalPortNo). So cria/atualiza uma ONU quando
    * ha serial (sem serial nao da pra identificar ela de forma estavel entre
-   * walks). Ao contrario de GponInterface, nunca deleta ONUs que sumiram do
-   * walk - Alarm/Event tem onDelete: Cascade em onuId, entao apagar a ONU
-   * apagaria o historico de alarmes dela junto.
+   * walks). O status em si e mantido em tempo real pelas traps (ver
+   * updateOnuStatusFromTrap/upsertOnuFromProvisionedTrap) - esse valor aqui
+   * so serve de base inicial/reconciliacao, caso a ONU nunca tenha mandado
+   * trap de status ainda. ONUs que sumiram do walk (posicao que existia no
+   * banco e nao apareceu mais) sao movidas pra OnuRemoved - ver
+   * reconcileRemovedOnus - em vez de simplesmente apagadas, pra nao perder
+   * o historico de alarmes/eventos delas.
    */
   private async walkOnus(oltId: string, session: ReturnType<typeof createSnmpSession>): Promise<number> {
     const [aliasVarbinds, serialVarbinds, statusVarbinds] = await Promise.all([
@@ -259,6 +288,78 @@ export class OltBootstrapService {
       });
       count += 1;
     }
+
+    // Rede de seguranca: se o walk trouxe varbinds mas nenhum parseou como
+    // posicao valida, isso e sinal de erro de formato/OID (ja aconteceu em
+    // producao - ver historico do bug de OID base) e NAO de que todas as
+    // ONUs sumiram de verdade. Rodar a reconciliacao nesse caso apagaria
+    // (moveria pra OnuRemoved) toda ONU ja cadastrada por engano - so
+    // reconcilia quando o parsing bateu com pelo menos alguma linha, ou
+    // quando as 3 tabelas vieram genuinamente vazias (sem varbind nenhum).
+    const rawVarbindCount = aliasVarbinds.length + serialVarbinds.length + statusVarbinds.length;
+    if (rawVarbindCount > 0 && serialByKey.size === 0) {
+      this.logger.warn(
+        `walkOnus (OLT ${oltId}): ${rawVarbindCount} varbind(s) recebido(s) mas nenhum parseou como ` +
+          `posicao valida - pulando reconciliacao de ONUs removidas pra nao apagar tudo por um possivel ` +
+          `erro de formato/OID (ver logs de debug acima pra investigar).`,
+      );
+    } else {
+      await this.reconcileRemovedOnus(oltId, new Set(serialByKey.keys()));
+    }
+
     return count;
+  }
+
+  /**
+   * Move pra OnuRemoved qualquer Onu da OLT cuja posicao (slot.pon.posicao)
+   * nao apareceu neste walk - ela saiu fisicamente da rede (ou foi
+   * substituida por outra ONU naquela posicao, que o upsert acima ja teria
+   * atualizado com o novo serial). Cada remocao roda numa transacao: cria o
+   * snapshot em OnuRemoved, migra Alarm/Event pra removedOnuId (fecha
+   * qualquer alarme ainda ACTIVE primeiro - nao faz sentido um alarme ativo
+   * pra sempre de uma ONU que nao existe mais) e so entao apaga a linha de
+   * Onu.
+   */
+  private async reconcileRemovedOnus(oltId: string, presentKeys: Set<string>): Promise<void> {
+    const existing = await this.prisma.onu.findMany({ where: { oltId } });
+    const removed = existing.filter((onu) => !presentKeys.has(onuPositionKey(onu)));
+
+    for (const onu of removed) {
+      await this.prisma.$transaction(async (tx) => {
+        const archived = await tx.onuRemoved.create({
+          data: {
+            oltId: onu.oltId,
+            serialNumber: onu.serialNumber,
+            alias: onu.alias,
+            slotNo: onu.slotNo,
+            portNo: onu.portNo,
+            logicalPortNo: onu.logicalPortNo,
+            status: onu.status,
+            onuCreatedAt: onu.createdAt,
+            lastSeenAt: onu.lastSeenAt,
+          },
+        });
+
+        await tx.alarm.updateMany({
+          where: { onuId: onu.id, condition: AlarmCondition.ACTIVE },
+          data: { condition: AlarmCondition.CLEARED, severity: AlarmSeverity.CLEAR, clearedAt: new Date() },
+        });
+        await tx.alarm.updateMany({
+          where: { onuId: onu.id },
+          data: { onuId: null, removedOnuId: archived.id },
+        });
+        await tx.event.updateMany({
+          where: { onuId: onu.id },
+          data: { onuId: null, removedOnuId: archived.id },
+        });
+
+        await tx.onu.delete({ where: { id: onu.id } });
+      });
+
+      this.logger.log(
+        `ONU removida (sumiu do walk): OLT ${oltId} ${onu.slotNo}/${onu.portNo}/${onu.logicalPortNo} ` +
+          `(serial ${onu.serialNumber}) - historico migrado pra OnuRemoved`,
+      );
+    }
   }
 }

@@ -27,17 +27,19 @@ export class AlarmService {
     const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
     const oltPorts = parseOltPortKeys(query.oltPort);
     const where: Prisma.AlarmWhereInput = {
-      // oltPort (GPON individual selecionada na arvore) e mais especifico
-      // que oltId/slotNo/portNo separados - quando presente, substitui os
-      // dois em vez de combinar.
-      ...(oltPorts.length
-        ? { OR: oltPorts.map((p) => ({ oltId: p.oltId, slotNo: p.slotNo, portNo: p.portNo })) }
-        : {
-            oltId: query.oltId?.length ? { in: query.oltId } : undefined,
-            slotNo: query.slotNo,
-            portNo: query.portNo,
-          }),
-      logicalPortNo: query.logicalPortNo,
+      // onuId/removedOnuId (botao "Ver alarmes" na aba ONUs) e o filtro mais
+      // especifico de todos - substitui oltPort/oltId/slotNo/portNo por
+      // completo, ja que uma ONU so pertence a uma OLT/posicao.
+      ...(query.onuId || query.removedOnuId
+        ? { onuId: query.onuId, removedOnuId: query.removedOnuId }
+        : oltPorts.length
+          ? { OR: oltPorts.map((p) => ({ oltId: p.oltId, slotNo: p.slotNo, portNo: p.portNo })) }
+          : {
+              oltId: query.oltId?.length ? { in: query.oltId } : undefined,
+              slotNo: query.slotNo,
+              portNo: query.portNo,
+            }),
+      logicalPortNo: query.onuId || query.removedOnuId ? undefined : query.logicalPortNo,
       severity: query.severity?.length ? { in: query.severity } : undefined,
       condition,
       raisedAt:

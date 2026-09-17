@@ -14,9 +14,14 @@ export class EventService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
     const oltPorts = parseOltPortKeys(query.oltPort);
-    const where: Prisma.EventWhereInput = oltPorts.length
-      ? { OR: oltPorts.map((p) => ({ oltId: p.oltId, slotNo: p.slotNo, portNo: p.portNo })) }
-      : { oltId: query.oltId?.length ? { in: query.oltId } : undefined };
+    // Ver AlarmService.findAll - onuId/removedOnuId e o filtro mais
+    // especifico, usado pelo botao "Ver alarmes" da aba ONUs.
+    const where: Prisma.EventWhereInput =
+      query.onuId || query.removedOnuId
+        ? { onuId: query.onuId, removedOnuId: query.removedOnuId }
+        : oltPorts.length
+          ? { OR: oltPorts.map((p) => ({ oltId: p.oltId, slotNo: p.slotNo, portNo: p.portNo })) }
+          : { oltId: query.oltId?.length ? { in: query.oltId } : undefined };
 
     const [data, total] = await Promise.all([
       this.prisma.event.findMany({

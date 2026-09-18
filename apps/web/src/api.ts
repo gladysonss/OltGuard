@@ -97,6 +97,13 @@ export interface AllowedNetwork {
   createdAt: string;
 }
 
+/** OLT resumida como vem embutida em Alarm/Event - inclui city pra distinguir OLTs com nomes iguais em cidades diferentes. */
+export interface AlarmOlt {
+  id: string;
+  name: string;
+  city: { id: string; name: string } | null;
+}
+
 export interface Alarm {
   id: string;
   oltId: string;
@@ -115,7 +122,7 @@ export interface Alarm {
   confirmedAt: string | null;
   raisedAt: string;
   clearedAt: string | null;
-  olt: { id: string; name: string };
+  olt: AlarmOlt;
   onu: { id: string; serialNumber: string; alias: string | null } | null;
   /** Snapshot da ONU se ela ja foi removida (ver OnuRemoved) desde que o alarme foi levantado. */
   removedOnu: { id: string; serialNumber: string; alias: string | null } | null;
@@ -144,7 +151,7 @@ export interface OltGuardEvent {
   description: string | null;
   severity: AlarmSeverity;
   occurredAt: string;
-  olt: { id: string; name: string };
+  olt: AlarmOlt;
   onu: { id: string; serialNumber: string; alias: string | null } | null;
   /** Ver Alarm.removedOnu. */
   removedOnu: { id: string; serialNumber: string; alias: string | null } | null;
@@ -311,6 +318,8 @@ export const api = {
     return request<AlarmSummary>(`/alarms/summary${qs ? `?${qs}` : ''}`);
   },
   alarmSummaryByOlt: () => request<OltWorstSeverity>('/alarms/summary-by-olt'),
+  /** Chave "oltId:slotNo:portNo" (mesmo formato de gponKey() em AlarmsPage.tsx). */
+  alarmSummaryByGpon: () => request<OltWorstSeverity>('/alarms/summary-by-gpon'),
   confirmAlarm: (id: string) => request<Alarm>(`/alarms/${id}/confirm`, { method: 'PATCH', body: '{}' }),
   clearAlarm: (id: string) => request<Alarm>(`/alarms/${id}/clear`, { method: 'PATCH' }),
   confirmAndClearAlarm: (id: string) =>

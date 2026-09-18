@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import {
   api,
   type Alarm,
@@ -110,9 +110,16 @@ export function AlarmsPage() {
   const [onusTotal, setOnusTotal] = useState(0);
   const [summary, setSummary] = useState<AlarmSummary | null>(null);
   const [oltWorstSeverity, setOltWorstSeverity] = useState<OltWorstSeverity>({});
+  const [gponWorstSeverity, setGponWorstSeverity] = useState<OltWorstSeverity>({});
   const [selectedOltIds, setSelectedOltIds] = useState<Set<string>>(new Set());
   const [selectedGponKeys, setSelectedGponKeys] = useState<Set<string>>(new Set());
+  // Comeca com tudo colapsado (arvore fechada ao abrir o sistema) - so
+  // sabemos os nomes das cidades depois do primeiro carregamento de OLTs,
+  // entao o preenchimento real acontece no efeito abaixo (initializedCollapseRef
+  // garante que isso roda so uma vez, senao um reload periodico reabriria
+  // tudo que o usuario tinha fechado/aberto manualmente).
   const [collapsedCities, setCollapsedCities] = useState<Set<string>>(new Set());
+  const initializedCollapseRef = useRef(false);
   const [expandedOltIds, setExpandedOltIds] = useState<Set<string>>(new Set());
   const [gponInterfacesByOlt, setGponInterfacesByOlt] = useState<
     Record<string, GponInterface[] | 'loading' | 'error'>
@@ -135,7 +142,7 @@ export function AlarmsPage() {
       // AlarmService.findAll/EventService.findAll no backend).
       const oltPort = selectedGponKeys.size ? [...selectedGponKeys] : undefined;
       const oltId = !oltPort && selectedOltIds.size ? [...selectedOltIds] : undefined;
-      const [oltsRes, alarmsRes, summaryRes, eventsRes, onusRes, worstRes] = await Promise.all([
+      const [oltsRes, alarmsRes, summaryRes, eventsRes, onusRes, worstByOltRes, worstByGponRes] = await Promise.all([
         api.listOlts(),
         api.listAlarms({
           oltId,
@@ -154,6 +161,7 @@ export function AlarmsPage() {
         api.listEvents({ oltId, oltPort, page, pageSize }),
         api.listOnus({ oltId, oltPort, page, pageSize }),
         api.alarmSummaryByOlt(),
+        api.alarmSummaryByGpon(),
       ]);
       setOlts(oltsRes);
       setAlarms(alarmsRes.data);
@@ -163,7 +171,12 @@ export function AlarmsPage() {
       setEventsTotal(eventsRes.total);
       setOnus(onusRes.data);
       setOnusTotal(onusRes.total);
-      setOltWorstSeverity(worstRes);
+      setOltWorstSeverity(worstByOltRes);
+      setGponWorstSeverity(worstByGponRes);
+      if (!initializedCollapseRef.current && oltsRes.length > 0) {
+        initializedCollapseRef.current = true;
+        setCollapsedCities(new Set(groupOltsByCity(oltsRes).map((g) => g.city)));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados');
     } finally {
@@ -383,6 +396,17 @@ export function AlarmsPage() {
                                   ) : (
                                     <span style={{ width: 13, flexShrink: 0 }} />
                                   )}
+                                  {key && (
+                                    <span
+                                      style={{
+                                        width: 7,
+                                        height: 7,
+                                        borderRadius: '50%',
+                                        background: oltDotColor(gponWorstSeverity, key),
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  )}
                                   {g.ifName}
                                 </div>
                               );
@@ -561,7 +585,7 @@ export function AlarmsPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               <div style={eventRowGridStyle('head')}>
-                <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Cliente (ONU)</span><span>Alarme</span><span>Levantado / Resolvido</span>
+                <span>Severidade</span><span>OLT</span><span>Cidade</span><span>Slot/Porta</span><span>Cliente (ONU)</span><span>Alarme</span><span>Levantado / Resolvido</span>
               </div>
 
               {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
@@ -586,6 +610,7 @@ export function AlarmsPage() {
                     {SEVERITY_LABEL[alarm.severity]}
                   </span>
                   <span>{alarm.olt.name}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{alarm.olt.city?.name ?? NO_CITY_LABEL}</span>
                   <span className="mono" style={{ color: 'var(--text-muted)' }}>
                     {alarm.slotNo}{alarm.portNo ? `/${alarm.portNo}` : ''}{alarm.logicalPortNo ? `/${alarm.logicalPortNo}` : ''}
                   </span>
@@ -623,7 +648,7 @@ export function AlarmsPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div style={{ flex: 1, overflow: 'auto' }}>
               <div style={eventLogRowGridStyle('head')}>
-                <span>Severidade</span><span>OLT</span><span>Slot/Porta</span><span>Cliente (ONU)</span><span>Evento</span><span>Ocorrido em</span>
+                <span>Severidade</span><span>OLT</span><span>Cidade</span><span>Slot/Porta</span><span>Cliente (ONU)</span><span>Evento</span><span>Ocorrido em</span>
               </div>
 
               {loading && <div style={{ padding: 16, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</div>}
@@ -648,6 +673,7 @@ export function AlarmsPage() {
                     {SEVERITY_LABEL[ev.severity]}
                   </span>
                   <span>{ev.olt.name}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{ev.olt.city?.name ?? NO_CITY_LABEL}</span>
                   <span className="mono" style={{ color: 'var(--text-muted)' }}>
                     {ev.slotNo}{ev.portNo ? `/${ev.portNo}` : ''}{ev.logicalPortNo ? `/${ev.logicalPortNo}` : ''}
                   </span>
@@ -960,7 +986,7 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '110px 1fr 0.7fr 1.3fr 2.1fr 1.2fr',
+    gridTemplateColumns: '110px 1fr 0.9fr 0.7fr 1.3fr 1.9fr 1.2fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',
@@ -975,7 +1001,7 @@ function eventRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
 function eventLogRowGridStyle(kind: 'head' | 'row'): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: '110px 1fr 0.7fr 1.3fr 2.1fr 1.1fr',
+    gridTemplateColumns: '110px 1fr 0.9fr 0.7fr 1.3fr 1.9fr 1.1fr',
     alignItems: 'center',
     gap: 12,
     padding: '9px 14px',

@@ -260,6 +260,25 @@ portNo}` no `where` do Prisma (`AlarmService.findAll`/`summary`,
 GPONs de OLTs e slots diferentes numa unica selecao, ao contrario de um
 filtro `slotNo`/`portNo` de valor unico.
 
+Cada GPON na sub-arvore tambem tem um indicador de severidade (bolinha
+colorida, igual o de cada OLT) - vem de `GET /alarms/summary-by-gpon`
+(`AlarmService.summaryByGpon()`), que agrupa `Alarm` por `(oltId, slotNo,
+portNo)` (so `condition: ACTIVE`, `portNo` nao nulo) e devolve a pior
+severidade por chave `"oltId:slotNo:portNo"` - mesmo formato de
+`gponKey()`, mesma logica de `summaryByOlt()` (independente de paginacao/
+filtro, senao uma GPON sem alarme na pagina atual pareceria "sem
+problema"). Agrupa alarme de ONU e de PON-link juntos (os dois tem `portNo`
+setado) porque pra quem esta olhando a arvore os dois sao "problema nessa
+GPON".
+
+A arvore de OLTs/cidades comeca **fechada** (`collapsedCities` inicializado
+com todas as cidades assim que `olts` carrega pela primeira vez -
+`initializedCollapseRef` garante que isso so acontece uma vez, senao um
+reload periodico reabriria cidades que o usuario tinha fechado de
+proposito). Cada OLT dentro de uma cidade tambem comeca fechada
+(`expandedOltIds` vazio por padrao) - so mostra as GPONs quando o usuario
+clica no chevron.
+
 ### Alarmes/eventos de uma ONU especifica (botao "Ver alarmes")
 
 Cada linha da aba ONUs tem um botao "Ver alarmes" (`OnuAlarmsModal` em
@@ -281,6 +300,11 @@ posicao).
 alarme/evento foi registrado). Sem o fallback pra `removedOnu` a coluna
 ficaria vazia pra todo alarme historico de uma posicao que ja nao existe
 mais na OLT.
+
+`olt` nessas duas respostas tambem inclui `city` (`{id, name}` ou `null`) -
+usado pela coluna "Cidade" nas duas telas, ja que o nome da OLT sozinho nao
+e unico (pode ter "OLT 01" em cidades diferentes) e a tabela nao mostra a
+arvore de contexto que a lateral mostra.
 
 ## Modelo de dados (destaques)
 

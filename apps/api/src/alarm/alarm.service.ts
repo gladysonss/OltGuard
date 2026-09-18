@@ -52,7 +52,9 @@ export class AlarmService {
       this.prisma.alarm.findMany({
         where,
         include: {
-          olt: { select: { id: true, name: true } },
+          // city incluida pra distinguir OLTs com nomes iguais em cidades
+          // diferentes na tabela de Alarmes (ver AlarmsPage.tsx).
+          olt: { select: { id: true, name: true, city: { select: { id: true, name: true } } } },
           // removedOnu cobre o caso da ONU ja ter sido removida (ver
           // OnuRemoved) depois que o alarme foi levantado - sem isso a
           // coluna de identificacao do cliente ficaria vazia pra todo
@@ -114,6 +116,33 @@ export class AlarmService {
       const current = worst[group.oltId];
       if (!current || SEVERITY_RANK[group.severity] > SEVERITY_RANK[current]) {
         worst[group.oltId] = group.severity;
+      }
+    }
+    return worst;
+  }
+
+  /**
+   * Pior severidade ativa por GPON (oltId:slotNo:portNo, mesma chave de
+   * `oltPort`/`gponKey()` no front) - usado pra colorir o indicador de cada
+   * GPON na sub-arvore de uma OLT, igual ja existe por OLT (summaryByOlt).
+   * Agrupa alarmes de ONU e de PON-link juntos (ambos tem portNo setado -
+   * so alarmes de nivel OLT, sem porta, ficam de fora) porque os dois tipos
+   * sao "problema nessa GPON" pra quem esta olhando a arvore.
+   */
+  async summaryByGpon(): Promise<Record<string, AlarmSeverity>> {
+    const groups = await this.prisma.alarm.groupBy({
+      by: ['oltId', 'slotNo', 'portNo', 'severity'],
+      where: { condition: AlarmCondition.ACTIVE, portNo: { not: null } },
+      _count: { _all: true },
+    });
+
+    const worst: Record<string, AlarmSeverity> = {};
+    for (const group of groups) {
+      if (group.portNo === null) continue;
+      const key = `${group.oltId}:${group.slotNo}:${group.portNo}`;
+      const current = worst[key];
+      if (!current || SEVERITY_RANK[group.severity] > SEVERITY_RANK[current]) {
+        worst[key] = group.severity;
       }
     }
     return worst;

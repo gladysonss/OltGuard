@@ -22,6 +22,11 @@ export class AlarmController {
     return this.alarmService.summaryByOlt();
   }
 
+  @Get('summary-by-gpon')
+  summaryByGpon() {
+    return this.alarmService.summaryByGpon();
+  }
+
   @Patch(':id/confirm')
   confirm(@Param('id') id: string, @Body() dto: ConfirmAlarmDto) {
     return this.alarmService.confirm(id, dto);

@@ -27,8 +27,8 @@ export class EventService {
       this.prisma.event.findMany({
         where,
         include: {
-          olt: { select: { id: true, name: true } },
-          // Ver AlarmService.findAll - mesmo motivo pro removedOnu.
+          // Ver AlarmService.findAll - mesmo motivo pra incluir city.
+          olt: { select: { id: true, name: true, city: { select: { id: true, name: true } } } },
           onu: { select: { id: true, serialNumber: true, alias: true } },
           removedOnu: { select: { id: true, serialNumber: true, alias: true } },
         },

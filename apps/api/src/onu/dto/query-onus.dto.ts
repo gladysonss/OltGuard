@@ -25,6 +25,11 @@ export class QueryOnusDto {
   @IsEnum(OnuStatus)
   status?: OnuStatus;
 
+  /** Busca livre (case-insensitive, "contem") por serial ou alias - ver OnuService.findAll. */
+  @IsOptional()
+  @IsString()
+  search?: string;
+
   /** 1-indexado. Padrao 1. */
   @IsOptional()
   @Type(() => Number)

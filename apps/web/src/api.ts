@@ -337,14 +337,23 @@ export const api = {
     const qs = search.toString();
     return request<Paginated<OltGuardEvent>>(`/events${qs ? `?${qs}` : ''}`);
   },
-  listOnus: (params?: { oltId?: string[]; oltPort?: string[]; status?: OnuStatus; page?: number; pageSize?: number }) => {
-    const search = new URLSearchParams();
-    if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
-    if (params?.oltPort?.length) search.set('oltPort', params.oltPort.join(','));
-    if (params?.status) search.set('status', params.status);
-    if (params?.page) search.set('page', String(params.page));
-    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
-    const qs = search.toString();
+  listOnus: (params?: {
+    oltId?: string[];
+    oltPort?: string[];
+    status?: OnuStatus;
+    /** Busca livre por serial ou alias - ver QueryOnusDto.search. */
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }) => {
+    const qsParams = new URLSearchParams();
+    if (params?.oltId?.length) qsParams.set('oltId', params.oltId.join(','));
+    if (params?.oltPort?.length) qsParams.set('oltPort', params.oltPort.join(','));
+    if (params?.status) qsParams.set('status', params.status);
+    if (params?.search) qsParams.set('search', params.search);
+    if (params?.page) qsParams.set('page', String(params.page));
+    if (params?.pageSize) qsParams.set('pageSize', String(params.pageSize));
+    const qs = qsParams.toString();
     return request<Paginated<Onu>>(`/onus${qs ? `?${qs}` : ''}`);
   },
 };

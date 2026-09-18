@@ -284,6 +284,8 @@ export const api = {
     oltId?: string[];
     oltPort?: string[];
     onuId?: string;
+    /** Busca livre por serial ou alias da ONU - ver QueryAlarmsDto.onuSearch. */
+    onuSearch?: string;
     condition?: AlarmCondition;
     severity?: AlarmSeverity[];
     slotNo?: number;
@@ -298,6 +300,7 @@ export const api = {
     if (params?.oltId?.length) search.set('oltId', params.oltId.join(','));
     if (params?.oltPort?.length) search.set('oltPort', params.oltPort.join(','));
     if (params?.onuId) search.set('onuId', params.onuId);
+    if (params?.onuSearch) search.set('onuSearch', params.onuSearch);
     if (params?.condition) search.set('condition', params.condition);
     if (params?.severity?.length) search.set('severity', params.severity.join(','));
     if (params?.slotNo) search.set('slotNo', String(params.slotNo));

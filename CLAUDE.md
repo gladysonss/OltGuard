@@ -60,9 +60,15 @@ certo) e trabalho futuro, ainda nao implementado.
 Vem na trap como `OCTET STRING(SIZE(16))` - 16 chars ASCII hex (4 bytes de
 vendor ID + 4 bytes de serie). `formatOnuSerialNumber()`
 (`apps/api/src/olt/onu-serial.util.ts`) decodifica os 8 primeiros chars como
-ASCII e mantem os ultimos 8 como hex maiusculo (ex: `TPLG2D01EF28`). So a
-trap `lOSi` carrega esse dado hoje (unica trap Alarm cujo payload MIB inclui
-`oltOnuSerialNumber`).
+ASCII e mantem os ultimos 8 como hex, **tudo em minusculo** (ex:
+`tplg2d01ef28`, inclusive o ID do fabricante, que decodifica em maiusculo
+por natureza mas e forcado pra minusculo tambem) - e assim que a interface
+da propria Parks mostra/espera o serial, entao da pra copiar direto da tela
+do OltGuard e colar no cadastro da ONU na OLT sem converter a caixa
+manualmente. A migration `20260923090000_lowercase_onu_serial` fez o
+backfill do que ja existia em maiusculo (`Onu`/`OnuRemoved`/`Alarm.serialNumber`).
+So a trap `lOSi` carrega esse dado hoje (unica trap Alarm cujo payload MIB
+inclui `oltOnuSerialNumber`).
 
 O serial e gravado direto em `Alarm.serialNumber`, **nao** via o relaciona-
 mento `Alarm.onuId → Onu` - o vinculo relacional (`prisma.onu.findFirst` por
@@ -292,6 +298,17 @@ entender por que serial/posicao podem ser reaproveitados). Ativo busca
 filtro mais especifico de todos - quando presente, substitui
 `oltPort`/`oltId`/`slotNo`/`portNo` por completo (uma ONU so pertence a uma
 posicao).
+
+O painel de filtros da aba Alarmes tambem tem um campo de busca livre "ONU
+(serial ou alias)" (`AlarmFilters.onuSearch` -> `QueryAlarmsDto.onuSearch`
+em `AlarmService.findAll`) - pra achar os alarmes de uma ONU especifica sem
+precisar saber o `onuId` de antemao (diferente do botao "Ver alarmes", que
+ja parte de uma ONU escolhida na aba ONUs). Casa "contem" (case-insensitive,
+`mode: 'insensitive'`) contra `Alarm.serialNumber` (so preenchido por
+`lOSi`) e `onu`/`removedOnu.serialNumber`/`alias` ao mesmo tempo (`OR`
+combinado via `AND` com o resto do `where` - precisa ser um `AND` explicito
+porque o filtro de `oltPort` ja usa a chave `OR` pra combinar GPONs, e um
+segundo `OR` no mesmo objeto sobrescreveria o primeiro em vez de somar).
 
 `GET /alarms` e `GET /events` tambem incluem `onu`/`removedOnu`
 (`{id, serialNumber, alias}`) na resposta - usado pela coluna "Cliente

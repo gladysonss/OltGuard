@@ -92,12 +92,30 @@ interface AlarmFilters {
   logicalPortNo: string;
   from: string;
   to: string;
+  /** Busca livre por serial ou alias da ONU - ver QueryAlarmsDto.onuSearch. */
+  onuSearch: string;
 }
 
-const EMPTY_FILTERS: AlarmFilters = { severity: [], slotNo: '', portNo: '', logicalPortNo: '', from: '', to: '' };
+const EMPTY_FILTERS: AlarmFilters = {
+  severity: [],
+  slotNo: '',
+  portNo: '',
+  logicalPortNo: '',
+  from: '',
+  to: '',
+  onuSearch: '',
+};
 
 function hasActiveFilters(f: AlarmFilters): boolean {
-  return f.severity.length > 0 || f.slotNo !== '' || f.portNo !== '' || f.logicalPortNo !== '' || f.from !== '' || f.to !== '';
+  return (
+    f.severity.length > 0 ||
+    f.slotNo !== '' ||
+    f.portNo !== '' ||
+    f.logicalPortNo !== '' ||
+    f.from !== '' ||
+    f.to !== '' ||
+    f.onuSearch !== ''
+  );
 }
 
 export function AlarmsPage() {
@@ -154,6 +172,7 @@ export function AlarmsPage() {
           logicalPortNo: filters.logicalPortNo ? Number(filters.logicalPortNo) : undefined,
           from: filters.from ? new Date(filters.from).toISOString() : undefined,
           to: filters.to ? new Date(filters.to).toISOString() : undefined,
+          onuSearch: filters.onuSearch.trim() || undefined,
           page,
           pageSize,
         }),
@@ -496,8 +515,14 @@ export function AlarmsPage() {
             {view === 'alarms' && (
               <button onClick={() => setShowFilters((s) => !s)} style={hasActiveFilters(filters) ? primaryBtnStyle : secondaryBtnStyle}>
                 Filtros{hasActiveFilters(filters) ? ` (${
-                  [filters.severity.length > 0, filters.slotNo !== '', filters.portNo !== '', filters.logicalPortNo !== '', filters.from !== '' || filters.to !== '']
-                    .filter(Boolean).length
+                  [
+                    filters.severity.length > 0,
+                    filters.slotNo !== '',
+                    filters.portNo !== '',
+                    filters.logicalPortNo !== '',
+                    filters.from !== '' || filters.to !== '',
+                    filters.onuSearch !== '',
+                  ].filter(Boolean).length
                 })` : ''}
               </button>
             )}
@@ -507,6 +532,16 @@ export function AlarmsPage() {
 
         {view === 'alarms' && showFilters && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+              <span style={filterLabelStyle}>ONU (serial ou alias)</span>
+              <input
+                type="text"
+                placeholder="Ex: tplg2d01ef28 ou nome do cliente"
+                value={filters.onuSearch}
+                onChange={(e) => setFilters((f) => ({ ...f, onuSearch: e.target.value }))}
+                style={filterInputStyle}
+              />
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={filterLabelStyle}>Severidade</span>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>

@@ -26,11 +26,11 @@ export class AlarmService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
     const oltPorts = parseOltPortKeys(query.oltPort);
-    const where: Prisma.AlarmWhereInput = {
-      // onuId/removedOnuId (botao "Ver alarmes" na aba ONUs) e o filtro mais
-      // especifico de todos - substitui oltPort/oltId/slotNo/portNo por
-      // completo, ja que uma ONU so pertence a uma OLT/posicao.
-      ...(query.onuId || query.removedOnuId
+    // onuId/removedOnuId (botao "Ver alarmes" na aba ONUs) e o filtro mais
+    // especifico de todos - substitui oltPort/oltId/slotNo/portNo por
+    // completo, ja que uma ONU so pertence a uma OLT/posicao.
+    const scopeWhere: Prisma.AlarmWhereInput =
+      query.onuId || query.removedOnuId
         ? { onuId: query.onuId, removedOnuId: query.removedOnuId }
         : oltPorts.length
           ? { OR: oltPorts.map((p) => ({ oltId: p.oltId, slotNo: p.slotNo, portNo: p.portNo })) }
@@ -38,14 +38,35 @@ export class AlarmService {
               oltId: query.oltId?.length ? { in: query.oltId } : undefined,
               slotNo: query.slotNo,
               portNo: query.portNo,
-            }),
-      logicalPortNo: query.onuId || query.removedOnuId ? undefined : query.logicalPortNo,
-      severity: query.severity?.length ? { in: query.severity } : undefined,
-      condition,
-      raisedAt:
-        query.from || query.to
-          ? { gte: query.from ? new Date(query.from) : undefined, lte: query.to ? new Date(query.to) : undefined }
-          : undefined,
+            };
+    // Busca livre por ONU (serial/alias) - OR proprio, combinado via AND com
+    // o resto pra nao colidir com o OR de oltPorts acima (mesma chave "OR"
+    // num objeto so sobrescreveria a anterior).
+    const searchWhere: Prisma.AlarmWhereInput | undefined = query.onuSearch
+      ? {
+          OR: [
+            { serialNumber: { contains: query.onuSearch, mode: 'insensitive' } },
+            { onu: { serialNumber: { contains: query.onuSearch, mode: 'insensitive' } } },
+            { onu: { alias: { contains: query.onuSearch, mode: 'insensitive' } } },
+            { removedOnu: { serialNumber: { contains: query.onuSearch, mode: 'insensitive' } } },
+            { removedOnu: { alias: { contains: query.onuSearch, mode: 'insensitive' } } },
+          ],
+        }
+      : undefined;
+    const where: Prisma.AlarmWhereInput = {
+      AND: [
+        scopeWhere,
+        ...(searchWhere ? [searchWhere] : []),
+        {
+          logicalPortNo: query.onuId || query.removedOnuId ? undefined : query.logicalPortNo,
+          severity: query.severity?.length ? { in: query.severity } : undefined,
+          condition,
+          raisedAt:
+            query.from || query.to
+              ? { gte: query.from ? new Date(query.from) : undefined, lte: query.to ? new Date(query.to) : undefined }
+              : undefined,
+        },
+      ],
     };
 
     const [data, total] = await Promise.all([

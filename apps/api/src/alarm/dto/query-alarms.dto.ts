@@ -36,6 +36,17 @@ export class QueryAlarmsDto {
   @IsString()
   removedOnuId?: string;
 
+  /**
+   * Busca livre (case-insensitive, "contem") por serial ou alias da ONU -
+   * pro filtro "buscar uma ONU especifica" na aba Alarmes, sem precisar
+   * saber o onuId de antemao. Casa contra Alarm.serialNumber (so preenchido
+   * pela trap lOSi) e onu/removedOnu.serialNumber/alias (ver
+   * AlarmService.findAll) - cobre tanto ONU ainda ativa quanto ja removida.
+   */
+  @IsOptional()
+  @IsString()
+  onuSearch?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

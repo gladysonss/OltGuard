@@ -310,6 +310,13 @@ combinado via `AND` com o resto do `where` - precisa ser um `AND` explicito
 porque o filtro de `oltPort` ja usa a chave `OR` pra combinar GPONs, e um
 segundo `OR` no mesmo objeto sobrescreveria o primeiro em vez de somar).
 
+A aba ONUs tem o mesmo tipo de busca livre, so que direto no topo da tela
+(nao dentro de um painel de filtros - a aba ONUs nao tem um) - campo
+"Buscar por serial ou alias..." (`onuListSearch` em `AlarmsPage.tsx` ->
+`QueryOnusDto.search` em `OnuService.findAll()`). Mesma logica de `AND`
+explicito que o filtro de Alarmes, pelo mesmo motivo (`oltPort` ja usa
+`OR`).
+
 `GET /alarms` e `GET /events` tambem incluem `onu`/`removedOnu`
 (`{id, serialNumber, alias}`) na resposta - usado pela coluna "Cliente
 (ONU)" nas duas telas (`onuIdentity()` em `AlarmsPage.tsx`, que prefere
@@ -390,6 +397,16 @@ de cada uma.
   pras outras. `onu-status.ts` (`ONU_STATUS_LABEL`/`ONU_STATUS_COLOR_VAR`)
   e o equivalente de `severity.ts` pro status da ONU (ver "Bootstrap da
   OLT" acima pros valores).
+- **Atualizacao automatica**: dropdown ao lado do botao "Atualizar"
+  (desligado/10s/30s/1min/5min, `autoRefreshSeconds` em `AlarmsPage.tsx`)
+  chama `reload()` num `setInterval` enquanto ligado - vale pras 3 abas
+  (Alarmes/Eventos/ONUs), ja que `reload()` busca tudo de uma vez
+  (`Promise.all`). Persistido em `localStorage`
+  (`oltguard_auto_refresh_seconds`) pra nao precisar reconfigurar a cada
+  visita, mesmo padrao ja usado pro token de auth (`AuthContext.tsx`).
+  `reload()` nao usa `setLoading(true)` no inicio (so `setLoading(false)`
+  no fim) - de proposito, senao a tela piscaria "Carregando..." a cada tick
+  automatico; `loading` fica reservado pro carregamento inicial da pagina.
 - `SEVERITY_ORDER` (`severity.ts`) **nao inclui `CLEAR`** de proposito: e
   usado so no grafico de barras de "alarmes ativos agora" na tela de
   Alarmes, que reflete o estado atual (via `/alarms/summary`, que so conta

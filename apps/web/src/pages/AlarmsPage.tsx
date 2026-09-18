@@ -28,6 +28,17 @@ const ALARM_STATUS_CONDITION: Record<AlarmStatusFilter, AlarmCondition | undefin
 
 const NO_CITY_LABEL = 'Sem cidade';
 
+/** Segundos entre reloads automaticos - 0 = desligado. Persistido em localStorage pra nao precisar reconfigurar a cada visita. */
+const AUTO_REFRESH_KEY = 'oltguard_auto_refresh_seconds';
+const AUTO_REFRESH_OPTIONS = [0, 10, 30, 60, 300];
+const AUTO_REFRESH_LABEL: Record<number, string> = {
+  0: 'Atualizacao automatica: desligada',
+  10: 'A cada 10s',
+  30: 'A cada 30s',
+  60: 'A cada 1min',
+  300: 'A cada 5min',
+};
+
 function groupOltsByCity(olts: Olt[]): { city: string; olts: Olt[] }[] {
   const groups = new Map<string, Olt[]>();
   for (const olt of olts) {
@@ -151,6 +162,12 @@ export function AlarmsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [onuAlarmsFor, setOnuAlarmsFor] = useState<Onu | null>(null);
+  /** Busca por serial/alias na aba ONUs - independente do filtro de ONU da aba Alarmes (AlarmFilters.onuSearch). */
+  const [onuListSearch, setOnuListSearch] = useState('');
+  const [autoRefreshSeconds, setAutoRefreshSeconds] = useState<number>(() => {
+    const stored = Number(localStorage.getItem(AUTO_REFRESH_KEY));
+    return AUTO_REFRESH_OPTIONS.includes(stored) ? stored : 0;
+  });
 
   const reload = useCallback(async () => {
     setError(null);
@@ -178,7 +195,7 @@ export function AlarmsPage() {
         }),
         api.alarmSummary(oltId, oltPort),
         api.listEvents({ oltId, oltPort, page, pageSize }),
-        api.listOnus({ oltId, oltPort, page, pageSize }),
+        api.listOnus({ oltId, oltPort, search: onuListSearch.trim() || undefined, page, pageSize }),
         api.alarmSummaryByOlt(),
         api.alarmSummaryByGpon(),
       ]);
@@ -201,18 +218,30 @@ export function AlarmsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedOltIds, selectedGponKeys, alarmStatusFilter, filters, page, pageSize]);
+  }, [selectedOltIds, selectedGponKeys, alarmStatusFilter, filters, onuListSearch, page, pageSize]);
 
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // Atualizacao automatica: reload() a cada N segundos enquanto
+  // autoRefreshSeconds > 0. Nao usa setLoading(true) - loading e so pro
+  // carregamento inicial/manual, senao a tela piscaria "Carregando..." a
+  // cada tick automatico. reload() ja tem seu proprio setLoading(false) no
+  // finally, mas isso e inofensivo (so reafirma false).
+  useEffect(() => {
+    localStorage.setItem(AUTO_REFRESH_KEY, String(autoRefreshSeconds));
+    if (autoRefreshSeconds <= 0) return;
+    const interval = setInterval(() => reload(), autoRefreshSeconds * 1000);
+    return () => clearInterval(interval);
+  }, [autoRefreshSeconds, reload]);
 
   // Qualquer mudanca de escopo (selecao de OLT/GPON, filtro, aba) invalida a
   // pagina atual - senao o usuario pode ficar "preso" numa pagina que nao
   // existe mais pro novo resultado.
   useEffect(() => {
     setPage(1);
-  }, [selectedOltIds, selectedGponKeys, alarmStatusFilter, filters, view]);
+  }, [selectedOltIds, selectedGponKeys, alarmStatusFilter, filters, onuListSearch, view]);
 
   function toggleSeverity(sev: AlarmSeverity) {
     setFilters((f) => ({
@@ -511,7 +540,7 @@ export function AlarmsPage() {
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {view === 'alarms' && (
               <button onClick={() => setShowFilters((s) => !s)} style={hasActiveFilters(filters) ? primaryBtnStyle : secondaryBtnStyle}>
                 Filtros{hasActiveFilters(filters) ? ` (${
@@ -526,6 +555,25 @@ export function AlarmsPage() {
                 })` : ''}
               </button>
             )}
+            {view === 'onus' && (
+              <input
+                type="text"
+                placeholder="Buscar por serial ou alias..."
+                value={onuListSearch}
+                onChange={(e) => setOnuListSearch(e.target.value)}
+                style={{ ...filterInputStyle, width: 220 }}
+              />
+            )}
+            <select
+              value={autoRefreshSeconds}
+              onChange={(e) => setAutoRefreshSeconds(Number(e.target.value))}
+              title="Atualizacao automatica"
+              style={{ ...secondaryBtnStyle, cursor: 'pointer' }}
+            >
+              {AUTO_REFRESH_OPTIONS.map((secs) => (
+                <option key={secs} value={secs}>{AUTO_REFRESH_LABEL[secs]}</option>
+              ))}
+            </select>
             <button onClick={() => reload()} style={secondaryBtnStyle}>Atualizar</button>
           </div>
         </div>

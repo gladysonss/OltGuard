@@ -1,106 +1,163 @@
-# Pesquisa de MIBs de trap - FiberHome
+# Pesquisa de traps/alarmes - FiberHome
 
-Resumo do que foi encontrado (pesquisa web, sem acesso a uma OLT FiberHome
-real) pra viabilizar o parser multi-vendor (ver `Olt.manufacturer` no
-schema - `HUAWEI`/`ZTE`/`FIBERHOME`/`DATACOM` ja existem no enum mas nenhum
-tem parser implementado, so Parks).
+Resumo do que foi encontrado (pesquisa web + captura real de pacotes com o
+cliente, sem acesso direto a uma OLT/UNM FiberHome) pra viabilizar o
+parser multi-vendor (ver `Olt.manufacturer` no schema - `HUAWEI`/`ZTE`/
+`FIBERHOME`/`DATACOM` ja existem no enum mas nenhum parser implementado
+ainda, so Parks).
 
-## Diferenca estrutural chave em relacao a Parks
+## Conclusao principal (24/09): SNMP trap NAO e o canal certo pra FiberHome
+
+Depois de analisar 8+ capturas reais de trap de uma OLT FiberHome em
+producao (community "adsl", destino configurado pelo cliente), ficou claro
+que **o SNMP trap dessa OLT nao carrega alarme nenhum** - ela so manda um
+relatorio generico e periodico (OID fixo `1.3.6.1.4.1.5875.88.5.888`,
+"privFormat" segundo o manual oficial), repetindo o mesmo conteudo (as
+vezes byte-a-byte identico por dias) num intervalo de ~10-30s. Decodificado
+via BER/ASN.1 bruto (nao so o resumo do tcpdump) pra confirmar tipo de
+cada campo - ver `decode_ber.py` no historico da sessao (nao versionado
+ainda, so usado pra depuracao pontual).
+
+**O motivo real**: a arquitetura da FiberHome pra esse tipo de OLT nao usa
+SNMP trap como canal principal de alarme. O fluxo real e:
+
+```
+OLT <--protocolo interno proprietario--> ANM2000/UNM2000 (EMS da FiberHome)
+                                              |
+                                              +--> TL1 (northbound, TCP porta 3337) --> OSS/NMS terceiros (ex: OltGuard)
+                                              +--> SNMP (monitoramento basico/generico - e o que capturamos)
+```
+
+O SNMP trap que a OLT manda pro nosso coletor e so um recurso de
+monitoramento basico da OLT em si - **nao e o canal de alarme "de
+verdade"**. O canal oficial pra sistema de terceiro receber alarme
+detalhado e o **TL1** (Transaction Language 1, protocolo texto orientado a
+sessao, padrao Telcordia usado por varios fabricantes), falando
+**com o servidor ANM2000/UNM2000**, no **nao** com a OLT diretamente.
+Confirmado no manual oficial "FiberHome Element Management System
+Northbound Interface (TL1) User Manual" (salvo nesta pasta) e batendo com
+como integradores brasileiros de ISP (IXC, Voalle, Hubsoft) documentam a
+integracao com FiberHome.
+
+## Como o TL1 funciona (resumo do manual)
+
+1. **Conexao**: TCP no servidor ANM2000/UNM2000 (nao na OLT), porta
+   **3337** por padrao. Precisa do servico `EMS-TL1-SERVER` ativo no
+   servidor onde o ANM/UNM esta instalado.
+2. **Login**: `LOGIN:::CTAG::UN=usuario,PWD=senha;` - **usuario/senha TL1
+   sao alocados exclusivamente pelo EMS da FiberHome pro cliente**, nao e
+   a mesma credencial de acesso a interface web/CLI. Precisa pedir/gerar
+   isso no ANM/UNM do cliente antes de qualquer coisa.
+3. **Assinatura de alarme em tempo real**: `SUBSCRIBE:::CTAG::;` - depois
+   disso o EMS empurra os alarmes automaticamente na mesma conexao TCP,
+   em tempo real (nao e polling).
+4. Tambem existem comandos de consulta pontual (`QUERY-ALARM`,
+   `LST-ALARM`), confirmacao (`ACK-ALARM`) e limpeza (`CLR-ALARM`) -
+   Capitulo 6.9 e 8 do manual.
+
+Isso significa: o parser multi-vendor da FiberHome **nao vai ser um
+receptor SNMP** (como `TrapReceiverService` e hoje pra Parks) - vai ser um
+**cliente TCP/TL1** (protocolo texto, sessao com login, nao UDP
+fire-and-forget). Arquitetura bem diferente, precisa de modulo proprio.
+
+## A tabela de alarmes (o que faltava desde a pesquisa anterior)
+
+O Capitulo 11 ("The List of Alarms") do manual TL1 tem a tabela completa e
+oficial: **Alarm Type, Alarm Level, Alarm ID (numerico), Alarm Name, Alarm
+Reason** - exatamente o que faltava pra montar o equivalente do
+`PARKS_TRAP_MAP`. Extraida integralmente em
+`TL1-Alarm-List-extracted.txt` nesta pasta. Alguns destaques relevantes
+pra ONU (lista "Alarm definition list (OLT)", ja que e a OLT que reporta
+alarme de ONU, igual a Parks):
+
+| Alarm ID | Alarm Name | Nivel | Equivalente Parks |
+|---|---|---|---|
+| 110004 | ILEGAL_ONU_REGISTE | Major | - (ONU invalida tentando registrar) |
+| 110008 | ONU_Power_Fail | Critical | `dGi`/`dYINGGASP` (falta de energia na ONU) |
+| 310003 | NO_OPTICS_SIGNAL (uplink port) | Critical | - (nivel OLT, nao ONU) |
+| 310005 | ONU_OFF_LINE | Critical | `oNUDNi` (ONU down) |
+| 310009 | RX_POWER_ALARM (OLT PON port) | Major | `sDi`/sinal degradado |
+| 310011 | ONU_Uplink_Error-Frame_Too_Many | Major | - |
+
+Ha tambem uma "Alarm definition list (FTTB ONU)" (alarmes da propria ONU
+como NE gerenciavel - CPU/temperatura/bateria) e uma "Alarm definition
+list (EMS)" (saude do proprio servidor de gerencia) - ambas tambem
+extraidas no arquivo.
+
+**Ainda nao confirmado com dado real**: o formato exato da mensagem
+autonoma TL1 que carrega um alarme de verdade (o manual mostra o formato
+de resposta de comando tipo `SUBSCRIBE`, mas nao um exemplo completo de
+alarme chegando via `REPT ALM` com todos os campos - severidade, ONU
+serial/posicao etc). Isso so da pra confirmar com uma sessao TL1 real
+(`SUBSCRIBE` numa OLT que realmente tenha um evento acontecendo).
+
+## Proximos passos
+
+1. **Pedir ao cliente usuario/senha TL1** do ANM2000/UNM2000 dele (contato
+   com a FiberHome/revenda, ou verificar se ja existe uma credencial
+   dedicada pra integracao - alguns integradores brasileiros ja tem isso
+   documentado nas wikis deles, ver fontes abaixo).
+2. Com a credencial em maos, testar uma sessao TL1 manual (`telnet`/`nc`
+   na porta 3337, ou um script simples) - `LOGIN` + `SUBSCRIBE` - e
+   provocar um alarme real (desconectar ONU) pra capturar o formato exato
+   da mensagem autonoma de alarme.
+3. So depois disso da pra desenhar o modulo TL1 (`TrapReceiverService`
+   equivalente, mas TCP client com sessao/login em vez de UDP listener) e
+   o mapeamento `Alarm ID -> descricao/severidade` (baseado na tabela do
+   Capitulo 11, ja extraida).
+4. Decidir se vale in paralelo manter um fallback de reconciliacao via
+   SNMP GET nas tabelas `currentAlarmTable`/`hisAlarmTable`
+   (`1.3.6.1.4.1.5875.800.3.60.3`/`.60.4`, ver secao antiga abaixo) usando
+   o campo `Olt.reconciliationIntervalMinutes` que ja existe no schema mas
+   nunca foi ligado a nenhum job - baixo custo pro equipamento (poll
+   esporadico, nao continuo), mas ainda sofre do mesmo problema de nao ter
+   os nomes/severidades documentados por esse canal (a tabela do TL1 e
+   estruturada pelo `Alarm ID`, nao necessariamente o mesmo `alarmOrEventCode`
+   que aparece na tabela SNMP - precisa confirmar se os IDs batem).
+
+## Historico da investigacao SNMP (mantido por referencia)
+
+A investigacao anterior (documentada abaixo) partiu do pressuposto de que
+o SNMP trap seria o canal de alarme, igual a Parks. Ficou provado que
+**nao e** pra esse tipo de instalacao/modelo - mas o levantamento da
+estrutura SNMP (indication objects, `ifIndex` composto por aritmetica,
+`alarmOrEventCode`/`alarmOrEventStatus`) continua util caso outra OLT
+FiberHome do cliente esteja configurada de outro jeito (sem UNM no meio,
+falando SNMP direto) - vale conferir o IP de origem da trap antes de
+assumir que e sempre via UNM.
+
+### Diferenca estrutural em relacao a Parks (canal SNMP)
 
 A MIB da Parks (`GPON-OLT-FAULT.mib`) tem um `NOTIFICATION-TYPE` distinto
 por alarme/evento (ex: `oltOnuAlarmIndication.13` = `oNUDNi`), cada um com
-OID proprio - e assim que `PARKS_TRAP_MAP` funciona (indexado pelo OID
-completo da trap).
+OID proprio. A trap SNMP que a FiberHome manda (capturada em producao) usa
+um unico OID fixo (`...88.5.888`) com indication objects genericos
+(`alarmOrEventCode`/`alarmOrEventStatus`/`ifIndex` composto por aritmetica
+`slot × 33554432 + pon × 524288 + onu × 256 + porta`) - mas na pratica,
+pra essa instalacao, esse canal so carrega um relatorio de status/PM
+periodico, nao alarme de fato (ver conclusao principal acima).
 
-**A FiberHome NAO funciona assim.** Pelo `AN6000-Series-MIB-User-Manual.pdf`
-(manual oficial, capitulo 8 "Alarms"), TODO alarme/evento sai pelo MESMO
-mecanismo generico de trap:
+### O que falta nesse canal (se algum dia for usado)
 
-- `snmpTrapOID` (`1.3.6.1.6.3.1.1.4.1`, padrao SNMPv2-MIB) - sempre o
-  mesmo tipo de OID pra qualquer alarme, nao um por alarme como na Parks.
-- `alarmOrEventCode` (`1.3.6.1.4.1.5875.88.4.13`) - um inteiro que
-  identifica QUAL alarme/evento e (equivalente ao `mibName` da Parks) -
-  **os valores numericos concretos (o que cada codigo significa) nao estao
-  documentados em nenhum PDF publico que eu consegui achar** - ver secao
-  "O que falta" abaixo.
-- `alarmOrEventStatus` (`1.3.6.1.4.1.5875.88.4.6`) - `0` = alarme
-  desapareceu (CLEAR), `1` = alarme apareceu (SET). Equivalente ao
-  `oltAlarmCondition` da Parks.
-- `ifIndex` (`1.3.6.1.2.1.2.2.1.1`) - **um unico inteiro composto**
-  codificando slot/porta/ONU/porta-da-ONU por aritmetica, nao 3 objetos
-  separados como a Parks (`oltAlarmSlotNo`/`PortNo`/`LogicalPortNo`):
-
-  ```
-  ifIndex = slot × 33554432 + porta_PON × 524288 + ONU × 256 + porta_da_ONU
-  ```
-
-  (mesma formula usada nas tabelas de alarme ativo/historico pollable via
-  SNMP GET, `currentAlarmIfIndex`/`hisAlarmIfIndex` - ver abaixo.)
-- `oltCardType`/`oltPortType`/`onuType`/`onuPortType` - tipo do objeto
-  alarmado e do pai dele (ints, cujos valores viram nomes na tabela de
-  "Port Types"/"Card Types" do Apendice do mesmo manual).
-- `detailedInformation` - `Hex-STRING` com detalhes extras (nao documentado
-  o formato exato - possivel candidato a carregar serial da ONU em algum
-  alarme especifico, precisa confirmar com trap real).
-
-Isso significa que o parser da FiberHome vai precisar de uma logica
-diferente da Parks: decodificar `ifIndex` por aritmetica (nao string split
-de sufixo de OID) e mapear `alarmOrEventCode` (inteiro) pra
-descricao/severidade, em vez de mapear por OID completo.
-
-## Tabelas pollable (alem de trap)
-
-O mesmo capitulo 8 documenta `currentAlarmTable`
-(`1.3.6.1.4.1.5875.800.3.60.3`) e `hisAlarmTable`
-(`...800.3.60.4`) - permitem consultar alarmes ativos/historicos via SNMP
-GET/walk direto, sem depender de trap. Pode valer a pena usar isso pra
-reconciliacao periodica (analogo ao que o walk de ONUs ja faz pra Parks),
-ja que a FiberHome parece dar mais suporte de primeira classe a polling do
-que a Parks.
-
-## O que falta (bloqueador pra implementar o parser)
-
-**A tabela de valores numericos de `alarmOrEventCode` -> nome do
-alarme/evento nao foi encontrada em nenhuma fonte publica** durante essa
-pesquisa. O que existe:
-
-- `AN5116-06B_Alarm-and-Event-Reference_extracted.txt` (nesta pasta) - texto
-  extraido de uma pagina de preview (nao o PDF original) do documento
-  oficial "Alarm and Event Reference" (Code: MN000003105) - tem NOMES de
-  alarme (`LINK_LOSS`, `LASER_ALWAYS_ON`, `PHYSIC_ID_CONFLICT`,
-  `RX_POWER_LOW_ALARM`, `ONU_REGISTER_FAILED`, `ONU_REPLACE_EVENT`, etc),
-  nivel (critico/major/minor/prompt), causa provavel e procedimento de
-  resolucao - mas **sem o codigo numerico correspondente**, so o nome
-  usado no EMS (software de gerenciamento ANM2000) da FiberHome.
-
-Sem essa tabela nome<->codigo, nao da pra montar o equivalente de
-`PARKS_TRAP_MAP` pra FiberHome ainda.
-
-## Proximos passos sugeridos
-
-1. **Capturar traps reais de uma OLT FiberHome em producao** (mesma
-   metodologia usada pra confirmar o formato real do OID da Parks nesse
-   projeto - ver "Pegadinha ja vivida em producao" no CLAUDE.md) - o valor
-   de `alarmOrEventCode` capturado ao vivo, cruzado com o alarme que
-   apareceu no EMS/na tela da propria OLT no mesmo momento, da o mapeamento
-   real sem depender de documentacao incompleta.
-2. Se possivel, conseguir o PDF original e completo do "Alarm and Event
-   Reference" (Code MN000003105) direto com a FiberHome/revenda - o texto
-   extraido aqui e so um preview parcial de terceiros.
-3. Confirmar o formato de `detailedInformation` (Hex-STRING) contra uma
-   trap real - candidato a carregar serial da ONU nalgum alarme especifico
-   (equivalente ao `oltOnuSerialNumber` que so a trap `lOSi` carrega na
-   Parks).
+A tabela de valores numericos de `alarmOrEventCode` (SNMP) nao foi
+encontrada em nenhuma fonte publica - so a tabela de `Alarm ID` do TL1
+(que pode ou nao usar a mesma numeracao).
 
 ## Arquivos nesta pasta
 
 - `FIBERHOME-OLT-COMMON-MIB.mib` - MIB bruta (fonte:
   [LibreNMS](https://github.com/librenms/librenms-mibs/blob/master/FIBERHOME-OLT-COMMON-MIB)) -
-  define as tabelas de objeto (incluindo `currentAlarmTable`/
-  `hisAlarmTable`), mas **nao tem nenhum `NOTIFICATION-TYPE`** - so
-  confirma a estrutura ja descrita acima, sem enum de codigos de alarme.
+  define as tabelas de objeto SNMP (incluindo `currentAlarmTable`/
+  `hisAlarmTable`), sem nenhum `NOTIFICATION-TYPE`.
 - `AN6000-Series-MIB-User-Manual.pdf` - manual oficial FiberHome/Intelbras,
-  capitulo 8 "Alarms" e a fonte principal da estrutura de trap descrita
-  acima.
-- `AN5116-06B_Alarm-and-Event-Reference_extracted.txt` - ver nota no topo
-  do proprio arquivo (texto de preview, nao o PDF original).
+  capitulo 8 "Alarms" - estrutura do trap SNMP generico (ver acima, canal
+  que se mostrou nao ser o de alarme real nessa instalacao).
+- `AN5116-06B_Alarm-and-Event-Reference_extracted.txt` - texto de preview
+  de terceiros (nao o PDF original) com nomes/niveis/causas de alarme no
+  estilo do EMS local (ANM2000) - complementa a tabela do TL1.
+- **`TL1-Northbound-Interface-User-Manual.pdf`** - manual oficial da
+  interface TL1 (fonte principal da conclusao acima) - login, subscribe,
+  query/ack/clear de alarme, e a tabela completa de alarmes (Capitulo 11).
+- **`TL1-Alarm-List-extracted.txt`** - Capitulo 11 do manual acima extraido
+  em texto puro (Alarm Type/Level/ID/Name/Reason) - a fonte pra montar o
+  mapeamento de alarme quando o modulo TL1 for implementado.

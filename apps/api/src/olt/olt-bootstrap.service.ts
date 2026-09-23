@@ -195,6 +195,47 @@ export class OltBootstrapService {
   }
 
   /**
+   * Recalcula o status da ONU a partir dos alarmes ACTIVE que ela tem hoje,
+   * em vez de so "ligar/desligar" com base na trap que acabou de chegar -
+   * uma ONU pode ter varios alarmes de queda concorrentes (ex: lOSi + dGi
+   * ao mesmo tempo) e um CLEAR isolado de um deles nao significa que a ONU
+   * voltou a ficar ativa enquanto o outro continua ACTIVE. So mexe se a
+   * ONU nao estiver em DISABLE (bLACKLISt) - blacklist e um estado a parte,
+   * sem trap de CLEAR nesta MIB, entao nao deve ser sobrescrito por uma
+   * reconciliacao de sinal/energia.
+   */
+  async reconcileOnuStatusFromAlarms(oltId: string, position: OnuPosition, downTrapOids: string[]): Promise<void> {
+    try {
+      const activeDownAlarms = await this.prisma.alarm.count({
+        where: {
+          oltId,
+          slotNo: position.slotNo,
+          portNo: position.portNo,
+          logicalPortNo: position.logicalPortNo,
+          trapOid: { in: downTrapOids },
+          condition: AlarmCondition.ACTIVE,
+        },
+      });
+      await this.prisma.onu.updateMany({
+        where: {
+          oltId,
+          slotNo: position.slotNo,
+          portNo: position.portNo,
+          logicalPortNo: position.logicalPortNo,
+          status: { not: OnuStatus.DISABLE },
+        },
+        data: { status: activeDownAlarms > 0 ? OnuStatus.INACTIVE : OnuStatus.ACTIVE, lastSeenAt: new Date() },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Falha ao reconciliar status da ONU a partir dos alarmes (OLT ${oltId}, ` +
+          `${position.slotNo}/${position.portNo}/${position.logicalPortNo}): ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  /**
    * Passo 1: anda ifName e substitui (delete + insert) as GponInterface da
    * OLT pelas que comecam com "gpon" (case-insensitive - convencao Parks).
    */

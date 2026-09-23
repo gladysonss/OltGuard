@@ -167,20 +167,35 @@ via trap.
 ### Status em tempo real via trap
 
 `Onu.status` e mantido pelas proprias traps, sem esperar o cliente clicar
-em "Sincronizar" - `TrapReceiverService.resolveOnuStatusFromTrap()` mapeia:
+em "Sincronizar" - `TrapReceiverService.processNotification()` trata dois
+casos:
 
-- `oNUDNi` (ONU down, alarme com SET/CLEAR) - SET vira `INACTIVE`, CLEAR
-  vira `ACTIVE`. E o sinal mais direto de "ONU ativa ou nao" que a MIB tem.
-- `bLACKLISt` (ONU entrou em lista negra) - vira `DISABLE`.
-
-Chama `OltBootstrapService.updateOnuStatusFromTrap(oltId, position, status)`
-(so `updateMany` por posicao - nao cria ONU nova, so atualiza uma que ja
-existe; a maioria dessas traps nao carrega serial, so slot/pon/posicao).
-Trap de qualquer outro tipo (sinal, performance, energia etc) nao mexe em
-`status` - so os dois casos acima tem correspondencia direta com os valores
-de `OnuStatus`. O walk continua sendo a fonte de verdade inicial (primeira
-vez que a ONU e vista) e de reconciliacao (recalcula status do zero se por
-algum motivo a ONU nunca mandou uma dessas traps).
+- `bLACKLISt` (ONU entrou em lista negra, evento sem par de CLEAR nesta
+  MIB) - seta `DISABLE` direto via
+  `OltBootstrapService.updateOnuStatusFromTrap(oltId, position, status)`
+  (`updateMany` por posicao).
+- Qualquer trap de "queda" (`ONU_DOWN_TRAP_OIDS` em `parks-trap-mapping.ts`
+  - `oNUDNi`, `lOSi`/`sFi` e as de energia `dGi`/`dYINGGASP`/`pOWERING`/
+  `bATTERYMISSING`/`bATTERYFAILURE`/`bATTERYLOW`/`vOLTAGERED`) chama
+  `OltBootstrapService.reconcileOnuStatusFromAlarms(oltId, position,
+  ONU_DOWN_TRAP_OIDS)`, que **recalcula** o status a partir da contagem de
+  `Alarm` `ACTIVE` daquela posicao dentre esses OIDs (`INACTIVE` se > 0,
+  senao `ACTIVE`) em vez de so togglar SET/CLEAR da trap que chegou. Isso
+  existe porque uma ONU pode ter mais de um alarme de queda simultaneo
+  (ex: `lOSi` + `dGi` ao mesmo tempo, sinal e energia) - um toggle ingenuo
+  por trap deixaria a ONU voltar pra `ACTIVE` no CLEAR do primeiro alarme
+  mesmo com o segundo ainda ativo (bug real ja visto em producao: ONU
+  aparecia `ACTIVE` com alarme de desligamento e de sem-sinal ativos ao
+  mesmo tempo). So roda depois que o `Alarm` da trap atual foi gravado
+  (`alarmIngest.ingest(parsed)` encadeado via `.then()`, nao em paralelo) -
+  senao a query de contagem podia rodar antes do proprio alarme dessa trap
+  existir no banco. `sDi` (degradado, ONU continua funcional) e `lANLOS`
+  (so o lado LAN, optico/ONU continua up) ficam de fora de proposito - nao
+  sao "queda" pro status administrativo. `updateOnuStatusFromTrap` so seta
+  direto pra `bLACKLISt` porque esse evento nao tem CLEAR pra reconciliar
+  contra. O walk continua sendo a fonte de verdade inicial (primeira vez
+  que a ONU e vista) e de reconciliacao total (recalcula status do zero se
+  por algum motivo a ONU nunca mandou nenhuma dessas traps).
 
 ### Remocao de ONU (OnuRemoved)
 

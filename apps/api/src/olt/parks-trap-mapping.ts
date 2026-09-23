@@ -291,3 +291,27 @@ export const PARKS_TRAP_MAP: Record<string, ParksTrapDefinition> = Object.fromEn
   eventEntry(TRAP_GROUP_OID.oltOnuEventIndication, 10, 'sETONUSTATECOMPLETED', 'info', OltInternalEvent.OnuEvent,
     'A OLT terminou de aplicar um comando de estado nessa ONU - informativo, resultado de uma acao administrativa.'),
 ]);
+
+/**
+ * Eventos de ONU cuja presenca ACTIVE significa "ONU fora do ar" pro
+ * status administrativo (ver Onu.status) - sinal (lOSi/sFi) e energia
+ * (dGi/dYINGGASP/pOWERING/bATTERYMISSING/bATTERYFAILURE/bATTERYLOW/vOLTAGERED) sao tao diretos quanto
+ * oNUDNi (down) nesse sentido; sDi (degradado) e lANLOS (so o LAN, ONU
+ * optica continua up) ficam de fora de proposito, e oNUAlarm e generico
+ * demais pra inferir "fora do ar" com seguranca.
+ */
+const ONU_DOWN_EVENTS: ReadonlySet<OltInternalEvent> = new Set([
+  OltInternalEvent.OnuDown,
+  OltInternalEvent.OnuSignalLoss,
+  OltInternalEvent.OnuSignalFail,
+  OltInternalEvent.OnuPowerLoss,
+]);
+
+/**
+ * OIDs de trap cujo alarme ACTIVE conta pra reconciliar Onu.status (ver
+ * OltBootstrapService.reconcileOnuStatusFromAlarms) - derivado de
+ * ONU_DOWN_EVENTS pra nao duplicar a lista de OIDs manualmente.
+ */
+export const ONU_DOWN_TRAP_OIDS: string[] = Object.values(PARKS_TRAP_MAP)
+  .filter((def) => def.isAlarm && ONU_DOWN_EVENTS.has(def.event))
+  .map((def) => def.oid);

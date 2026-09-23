@@ -10,6 +10,7 @@ Um subdiretório por fabricante:
 mibs/
 ├── parks/
 │   └── *.mib
+├── fiberhome/  # so pesquisa ate agora, sem parser implementado - ver FIBERHOME-RESEARCH.md
 ├── huawei/     # pós-MVP
 └── zte/        # pós-MVP
 ```

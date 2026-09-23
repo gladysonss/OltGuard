@@ -1,0 +1,328 @@
+11                  The List of Alarms
+
+                    The list of alarms reported by the integrated alarm system is as follows:
+
+                    u     Alarm definition list (OLT)
+
+ Alarm Type        Alarm Level       Alarm ID           Alarm Name             Alarm Reason
+ Equipment event   Critical alarm    110001             OLT-START              The OLT is cold-started / hot-started.
+ Equipment alarm   Critical alarm    110002             OLT-BOARD-OFF-LINE     The OLT card is off-line.
+                                                                               The OLT card status is abnormal,
+                                                                               including abnormal running, the card
+                                                        OLT-BOARD-STATE-
+ Equipment alarm   Critical alarm    110003                                    not being activated, and card type
+                                                        ABNORMAL
+                                                                               being inconsistent with the configured
+                                                                               type.
+                                                        ILEGAL_ONU_
+ Equipment alarm   Major alarm       110004                                    An invalid ONU tries to register.
+                                                        REGISTE
+                                                        OLT-REMOTE-ONU-        The OLT failed to send the
+ Equipment alarm   Major alarm       110005
+                                                        CONFIG-FAILURE         configuration to the ONU.
+                                                        CPU_USAGE_OVER_        The CPU usage exceeds the preset
+ Equipment alarm   Minor alarm       110006
+                                                        THRESHOLD              threshold.
+                                                                               A certain ONU connected to the OLT
+ Equipment alarm   Critical alarm    110007             LASER_ALWAYS_ON
+                                                                               constantly emits light.
+
+                                                                               The OLT detects a certain connected
+ Equipment alarm   Critical alarm    110008             ONU_Power_Fail
+                                                                               ONU is powered off.
+
+                                                                               The active / standby switching occurs
+                                                        BOARD_INVERSION_
+ Equipment event   Major alarm       110009                                    on the SCU and PON cards of the
+                                                        SUCCESSFUL
+                                                                               OLT.
+                                                                               The active / standby switching occurs
+                                                        PORT_INVERSION_
+ Equipment event   Major alarm       110010                                    on the uplink and PON ports of the
+                                                        SUCCESSFUL
+                                                                               OLT.
+ Communication                                          OLT_PON_Optical_       The optical module of the EPON OLT
+                   Critical alarm    310001
+ alarm                                                  Module_Fail            PON port fails.
+
+ Communication                                          OLT_Uplink_Optical_    The optical module of the EPON OLT
+                   Critical alarm    310002
+ alarm                                                  Module_Fail            uplink port fails.
+
+                                                                               The optical path between the Tx part
+ Communication                                          NO_OPTICS_SIGNAL
+                   Critical alarm    310003                                    of the EPON uplink OLT and the Rx
+ alarm                                                  (uplink port)
+                                                                               part of the OLT uplink port fails.
+
+ Communication                                          NO_OPTICS_SIGNAL       (1) The trunk optical fiber is cut.
+                   Critical alarm    310004
+ alarm                                                  (optical port)         (2) The splitter fails.
+
+
+Version: 04                                                                                                          327
+Northbound Interface TL1 User Manual
+
+
+ Alarm Type       Alarm Level      Alarm ID   Alarm Name                   Alarm Reason
+                                                                           The probable reasons include: (1) The
+ Communication                                                             optical path between the splitter and
+                  Critical alarm   310005     ONU_OFF_LINE
+ alarm                                                                     the ONU is abnormal. (2) The ONU
+                                                                           works abnormally.
+
+ Communication                                                             The EMS cannot communicate with
+                  Critical alarm   310006     OLT_OFF_Adminis
+ alarm                                                                     the OLT.
+                                                                           The Rx optical power of the OLT
+                                                                           uplink port exceeds the threshold. The
+                                                                           probable reasons include: (1) The
+                                              RX_POWER_ALARM
+ Communication                                                             Ethernet optical module of the
+                  Major alarm      310007     (for the optical module of
+ alarm                                                                     equipment uplinked with the OLT is
+                                              the OLT uplink port)
+                                                                           abnormal. (2) The optical path
+                                                                           between the equipment uplinked with
+                                                                           the OLT and the OLT Rx end fails.
+                                                                           The Tx optical power of the OLT
+                                                                           uplink port exceeds the threshold. The
+                                              TX_POWER_ALARM
+ Communication                                                             probable reasons include: (1) The
+                  Major alarm      310008     (for the optical module of
+ alarm                                                                     optical module of the OLT uplink port
+                                              the OLT uplink port)
+                                                                           works abnormally. (2) The OLT
+                                                                           uplink card or port is abnormal.
+
+                                                                           The Rx optical power of the OLT
+                                                                           PON port is abnormal. The probable
+ Communication                                RX_POWER_ALARM
+                  Major alarm      310009                                  reasons include: (1) The optical power
+ alarm                                        (for the OLT PON port)
+                                                                           exceeds the threshold.(2) The ONU
+                                                                           PON optical module is abnormal.
+
+                                                                           The Tx optical power of the OLT
+                                                                           PON port is abnormal. The probable
+ Communication                                TX_POWER_ALARM
+                  Major alarm      310010                                  reasons include: (1) The optical power
+ alarm                                        (for the OLT PON port)
+                                                                           exceeds the threshold. (2) The ONU
+                                                                           PON optical module is abnormal.
+
+                                                                           The optical path between the OLT and
+                                                                           the ONU is abnormal. The probable
+                                                                           reasons include: (1) The optical path
+ Communication                                ONU_Uplink_Error-            between the OLT and the splitter is
+                  Major alarm      310011
+ alarm                                        Frame_Too_Many               abnormal. (2) The optical path
+                                                                           between the splitter and a certain
+                                                                           ONU is abnormal. (3) The ONU PON
+                                                                           module is abnormal.
+ Communication
+                  Warning alarm    310012     LACP_LINK_Failure            The LACP link fails.
+ alarm
+
+
+
+
+328                                                                                                     Version: 04
+                                                                                      11 The List of Alarms
+
+
+ Alarm Type    Alarm Level      Alarm ID   Alarm Name                 Alarm Reason
+ Environment                                                          The OLT power supply card is
+               Critical alarm   210001     OLT_POWER_FAILURE
+ alarm                                                                abnormal.
+ Environment                               OLT_ POWER_OFF_            The OLT power supply card is off-
+               Critical alarm   210002
+ alarm                                     LINE                       line.
+ Environment                               LOCAL_INPUT_
+               Major alarm      210003                                The local subrack power input fails.
+ alarm                                     POWER_FAILURE
+
+ Environment                               TEMP_HIGH_ALARM            The temperature of the core switch
+               Critical alarm   210004
+ alarm                                     (the core switch card)     card is too high.
+
+ Environment                               TEMP_HIGH_ALARM            The temperature of an OLT card is too
+               Critical alarm   210005
+ alarm                                     (the OLT card)             high.
+
+ Environment                               TEMP_LOW_ALARM             The temperature of an OLT card is too
+               Critical alarm   210006
+ alarm                                     (the OLT card)             low.
+ Environment
+               Major alarm      210007     AC Failure                 The AC power supply fails.
+ alarm
+ Environment
+               Major alarm      210008     Battery Failure            The circuit of the battery group fails.
+ alarm
+ Environment
+               Major alarm      210009     LOADFUSE                   The load fuse is blown.
+ alarm
+ Environment
+               Major alarm      210010     Rectifier Module Failure   The rectifier module fails.
+ alarm
+ Environment
+               Major alarm      210011     FANFAIL                    The ONU fan is abnormal.
+ alarm
+ Environment
+               Major alarm      210012     FAN_OFF_LINE               The OLT fan is off-line.
+ alarm
+ Environment                               TEMP_ ALARM (the           The OLT optical module works
+               Critical alarm   210013
+ alarm                                     OLT optical module)        abnormally.
+
+ Environment                               MEMORY_USAGE_              The working load of the system is
+               Major alarm      210014
+ alarm                                     OVER_THRESHOLD             excessive.
+                                                                      The external environment alarms,
+                                                                      including the abnormality of the
+ Environment
+               Critical alarm   210015     Dry_CONTACT_Alarm          access control system, the power
+ alarm
+                                                                      supply, the temperature, the humidity,
+                                                                      etc.
+                                                                      The number of traffic cross-threshold
+                                           ETH_STATISTICS_
+ QoS alarm     Major alarm      410001                                times of the statistics gathered based
+                                           TRAFFIC_OVER_LIMIT
+                                                                      on the Ethernet.
+                                           ETH_STATISTICS_            The number of conflict cross-
+ QoS alarm     Major alarm      410002     CONFLICT_OVER_             threshold times of the statistics
+                                           LIMIT                      gathered based on the Ethernet.
+
+
+
+
+Version: 04                                                                                                  329
+Northbound Interface TL1 User Manual
+
+
+ Alarm Type        Alarm Level      Alarm ID       Alarm Name               Alarm Reason
+                                                   ONU-OPTICAL-
+                                                                            The ONU optical channel generates
+ QoS alarm         Warning alarm    410003         SIGNALDEGRADA-
+                                                                            errors.
+                                                   TION
+                                                                            The number of CRC errors occurred
+                                                   ETH_CRC_ERROR_
+ QoS alarm         Major alarm      410004                                  on the OLT Ethernet port exceeds the
+                                                   OVER_LIMIT
+                                                                            threshold.
+
+
+                    u     Alarm definition list (FTTB ONU)
+
+ Alarm Type        Alarm Level      Alarm ID       Alarm Name               Alarm Reason
+                                                   ONU-BOARD-OFF-           The card connected with the ONU is
+ Equipment alarm   Critical alarm   120000
+                                                   LINE                     off-line.
+                                                                            The status of the card connected with
+                                                                            the ONU is abnormal, including
+                                                   ONU-BOARD-STATE-
+ Equipment alarm   Critical alarm   120001                                  abnormal running, the card not being
+                                                   ABNORMAL
+                                                                            activated, and card type being
+                                                                            inconsistent with the configured type.
+
+ Equipment alarm   Major alarm      120002         ETH_PORT_LOOP            A loop is detected on the user port.
+
+                                                                            A DoS attack is detected on the user
+ Equipment alarm   Major alarm      120003         DoS_ATTACK
+                                                                            port.
+
+                                                   CPU_USAGE_OVER_          The CPU usage exceeds the preset
+ Equipment alarm   Minor alarm      120004
+                                                   THRESHOLD                threshold.
+ Communication                                     ONU_H248_
+                   Critical alarm   320001                                  The ONU H.248 link fails.
+ alarm                                             BREAKOUT
+ Communication                                     ONU_MGCP_
+                   Critical alarm   320002                                  The ONU MGCP link fails.
+ alarm                                             BREAKOUT
+ Communication
+                   Critical alarm   320003         ONU_SIP_BREAKOUT         The SIP link fails.
+ alarm
+                                                   ENVIRONMENT_
+                                                                            The connection between the external
+ Communication                                     MONITOR_UNIT_
+                   Major alarm      320004                                  environment monitoring unit and the
+ alarm                                             COMMUNICATION_
+                                                                            ONU is abnormal.
+                                                   FAILURE
+ Communication                                     RX_POWER_ALARM           The Rx optical power of the ONU
+                   Major alarm      320005
+ alarm                                             (for the ONU PON port)   PON port is abnormal.
+
+ Communication                                     TX_POWER_ALARM           The Tx optical power of the ONU
+                   Major alarm      320006
+ alarm                                             (for the ONU PON port)   PON port is abnormal.
+
+ Communication                                                              The EMS cannot communicate with
+                   Major alarm      320007         ONU_OFF_Adminis
+ alarm                                                                      the ONU.
+ Environment                                                                The AC power supply of the ONU
+                   Critical alarm   220001         AC Failure (ONU)
+ alarm                                                                      fails.
+
+
+330                                                                                                     Version: 04
+                                                                                             11 The List of Alarms
+
+
+ Alarm Type     Alarm Level       Alarm ID           Alarm Name                Alarm Reason
+ Environment                                         BATTERY_VOLTAGE_
+                Critical alarm    220002                                       The ONU backup battery runs out.
+ alarm                                               LOW (ONU)
+
+ Environment
+                Critical alarm    220003             TEMP_ALARM (ONU)          The ONU temperature is abnormal.
+ alarm
+ Environment
+                Critical alarm    220004             FANFAIL (ONU)             The ONU fan is abnormal.
+ alarm
+ Environment                                         TEMP_ALARM (ONU           The optical module temperature is
+                Critical alarm    220005
+ alarm                                               optical module)           abnormal.
+                                                                               The external environment alarms,
+                                                                               including the abnormality of the
+ Environment
+                Critical alarm    220006             Dry_CONTACT_Alarm         access control system, the power
+ alarm
+                                                                               supply, the temperature, the humidity,
+                                                                               etc.
+
+
+                 u     Alarm definition list (EMS)
+
+ Alarm Type    Alarm Level       Alarm ID    Alarm Name                Alarm Reason
+ Equipment
+               Major alarm       130001      SERVER_EXCEPTION          The EMS internal process is abnormal.
+ alarm
+ Equipment                                   CPU_OVER_                 The CPU usage of the EMS network
+               Major alarm       130002
+ alarm                                       THRESHOLD                 management server is too high.
+
+ Equipment                                   MEM_OVER_                 The memory usage of the EMS network
+               Major alarm       130003
+ alarm                                       THRESHOLD                 management server is too high.
+
+ Equipment                                   HD_OVER_                  The hard disk usage of the EMS network
+               Major alarm       130004
+ alarm                                       THRESHOLD                 management server is too high.
+
+ Equipment                                   DBSPACE_OVER_             The database usage of the EMS server is too
+               Major alarm       130005
+ alarm                                       THRESHOLD                 high.
+
+ Equipment                                   LIC_OVER_                 The EMS license agreement usage is too
+               Major alarm       130006
+ alarm                                       THRESHOLD                 high.
+
+
+
+
+Version: 04                                                                                                        331
